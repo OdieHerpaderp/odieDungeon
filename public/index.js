@@ -379,9 +379,9 @@ let abilitySlotHtml = `
 function generateShopHtml() {
   return `
     <div class="frame-pad">
-      <div id="shopColumns" class="col-flex-row" style="margin-bottom: 8px;"></div>
+      ${buildGearTabsHtml('shop')}
+      <div id="shopBodies" class="gear-scroll"></div>
       <button style="background-color:#68b" class="buy-btn" onclick="donate()" id="donateBtn">👼 Donate (50g)</button>
-      <h6 class="h6-donate">A wandering merchant sells fresh gear.</h6>
     </div>
   `;
 }
@@ -397,14 +397,59 @@ const EQUIPMENT_CATEGORIES = [
 function generateEquipmentHtml() {
   return `
     <div class="frame-pad">
-      <div class="flex-between" style="margin-bottom: 6px;">
-        <div style="font-weight: bold;">Equipment</div>
-        <button id="refreshEquipmentBtn" style="background-color: #555; color: white; border: none; padding: 2px 6px; border-radius: 3px; font-size: 11px; cursor: pointer;" onclick="forceRefreshEquipment()">🔄 Refresh</button>
-      </div>
-      <div id="equipmentColumns" class="col-flex-row"></div>
+      ${buildGearTabsHtml('equip')}
+      <div id="equipmentBodies" class="gear-scroll"></div>
     </div>
   `;
 }
+
+// Shared tab infrastructure for the Equipment and Shop frames. Each gear category is a
+// tab; only the active tab's body is shown. Active selection persists in these vars
+// so it survives panel re-renders.
+let _activeEquipCat = EQUIPMENT_CATEGORIES[0].label;
+let _activeShopCat = EQUIPMENT_CATEGORIES[0].label;
+
+function buildGearTabsHtml(prefix) {
+  const active = prefix === 'equip' ? _activeEquipCat : _activeShopCat;
+  return `<div class="gear-tabs">${EQUIPMENT_CATEGORIES.map(c =>
+    `<button class="gear-tab ${c.label === active ? 'active' : ''}" onclick="selectGearTab('${prefix}', '${c.label}')">${c.icon} ${c.label}</button>`
+  ).join('')}</div>`;
+}
+
+window.selectGearTab = function(prefix, label) {
+  if (prefix === 'equip') _activeEquipCat = label; else _activeShopCat = label;
+  const active = prefix === 'equip' ? _activeEquipCat : _activeShopCat;
+  const frame = prefix === 'equip' ? equipmentFrame : shopFrame;
+  const tabs = frame?.$('.gear-tabs');
+  if (tabs) tabs.querySelectorAll('.gear-tab').forEach((tab, i) =>
+    tab.classList.toggle('active', EQUIPMENT_CATEGORIES[i].label === active));
+  const bodies = frame?.$('.gear-scroll');
+  if (bodies) bodies.querySelectorAll('.gear-tab-body').forEach(b =>
+    b.classList.toggle('active', b.dataset.label === active));
+};
+
+function gearTableRow(cellsHtml) {
+  return `<tr>${cellsHtml}</tr>`;
+}
+
+// Build one category's tab body: a sticky equipped header (optional) + a real table.
+function buildGearCategoryBody(prefix, category, equippedRow, rows) {
+  const active = (prefix === 'equip' ? _activeEquipCat : _activeShopCat) === category.label;
+  const head = prefix === 'shop'
+    ? '<th class="gear-col-item">Item</th><th class="gear-col-mid">Price</th><th class="gear-col-act">Buy</th>'
+    : '<th class="gear-col-item">Item</th><th class="gear-col-act">Equip</th>';
+  const empty = rows.length ? '' : `<div style="font-size:11px; color:#777; padding:2px;">${prefix === 'shop' ? 'No stock' : 'No spares'}</div>`;
+  return `
+    <div class="gear-tab-body ${active ? 'active' : ''}" data-label="${category.label}">
+      ${equippedRow}
+      ${empty}
+      <table class="gear-table"><thead><tr>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>
+    </div>`;
+}
+
+window.unequipItem = function(slot) {
+  window.equipInventoryItem(null, slot);
+};
 
 function generateFloorControlHtml() {
   return `
@@ -488,9 +533,9 @@ function generateOptionsFrameHtml() {
 // Frame Configurations
 const frameConfigs = [
   { name: 'Skills', title: '🎯 Skills', left: 2, top: 285, width: 190, height: 320, minWidth: 160, minHeight: 200, html: `<div id="skillsPanel" style="padding:6px; color:white; font-size:12px; height:100%; overflow-y:auto; box-sizing:border-box;"></div>` },
-  { name: 'AbilitySlots', title: '🧩 Ability Slots', left: 210, top: 285, width: 540, minWidth: 420, height: 320, minHeight: 200, html: `<div id="abilitySlotsPanel" style="padding:6px; color:white; font-size:12px; height:100%; box-sizing:border-box; overflow:hidden;"></div>` },
-  { name: 'Equipment', title: '🎒 Equipment & Inventory', left: 700, top: 400, width: 580, height: 240, minWidth: 520, minHeight: 160, html: generateEquipmentHtml() },
-  { name: 'Shop', title: '🛒 Shop (town only)', left: 700, top: 400, width: 580, height: 240, minWidth: 160, minHeight: 520, html: generateShopHtml() },
+  { name: 'AbilitySlots', title: '🧩 Ability Slots', left: 210, top: 285, width: 420, minWidth: 252, height: 320, minHeight: 200, html: `<div id="abilitySlotsPanel" style="padding:6px; color:white; font-size:12px; height:100%; box-sizing:border-box; overflow:hidden;"></div>` },
+  { name: 'Equipment', title: '🎒 Equipment & Inventory', left: 605, top: 285, width: 234, height: 260, minWidth: 150, minHeight: 160, html: generateEquipmentHtml() },
+  { name: 'Shop', title: '🛒 Shop (town only)', left: 845, top: 285, width: 234, height: 260, minWidth: 150, minHeight: 160, html: generateShopHtml() },
   { name: 'Win1', title: '📜 Event Log', left: 720, top: 600, width: 380, height: 100, minWidth: 160, minHeight: 80, html: '<div id="eventLog" style="width:100%; height:100%; color:white; overflow-y:scroll; font-size:12px; z-index:1000;"></div>' },
   { name: 'FloorControls', title: '🗺️ Floor Controls', left: 850, top: 550, width: 200, height: 250, minWidth: 160, minHeight: 200, html: generateFloorControlHtml() },
   { name: 'CurrentPlayer', title: '👤 Current Player', left: 2, top: 50, width: 315, height: 230, minWidth: 200, minHeight: 150, html: generatePlayerFrameHtml() },
@@ -880,101 +925,79 @@ function flashClass(el, cls) {
     return tooltip;
   }
 
+  // Shared item-name cell markup (name + Lv + rarity + count + stats + tier badge).
+  // Kept as a plain table cell: rarity is shown as a thin left accent + colored text,
+  // not a filled background, so the row still reads as a table row.
+  function itemNameCell(calculated, count, fontSize, tooltipPrefix = '') {
+    const name = calculated?.displayName || calculated?.name || calculated?.id || 'Unknown';
+    const level = calculated?.level ? ` Lv${calculated.level}` : '';
+    const colour = getColourFromRarity(calculated?.rarity);
+    const rarity = calculated?.rarity ? ` <span style="color:${colour.text};">(${calculated.rarity}★)</span>` : '';
+    const countBadge = count > 1 ? ` <span style="font-size:10px; color:#9f9;">x${count}</span>` : '';
+    const stats = itemStatsHtml(calculated, fontSize);
+    const tip = `${tooltipPrefix}${itemTooltip(calculated)}`;
+    return `<td class="gear-name-cell" title="${tip}" style="border-left:3px solid ${colour.border}; color:${colour.text};">
+      <div style="position:relative;">${name}${level}${rarity}${countBadge}${stats}${itemTierBadge(calculated)}</div></td>`;
+  }
+
+  // Sticky equipped header shown at the top of a category tab (always visible).
+  function equippedHeaderHtml(calculated, slot) {
+    if (!calculated) return `<div class="gear-sticky-head" style="color:#ccc;">Empty</div>`;
+    const colour = getColourFromRarity(calculated?.rarity);
+    const name = calculated?.displayName || calculated?.name || calculated?.id || 'Unknown';
+    const level = calculated?.level ? ` Lv${calculated.level}` : '';
+    const rarity = calculated?.rarity ? ` <span style="color:${colour.text};">(${calculated.rarity}★)</span>` : '';
+    const stats = itemStatsHtml(calculated, '11px');
+    return `<div class="gear-sticky-head" title="${itemTooltip(calculated)}" style="background:${colour.bg}; border-color:${colour.border}; color:${colour.text};">
+      <div style="font-weight:bold; font-size:11px; margin-bottom:2px;">Equipped</div>
+      <div style="position:relative; font-size:11px;">${name}${level}${rarity}${stats}${itemTierBadge(calculated)}
+        <button class="gear-act-btn gear-act-unequip" onclick="unequipItem('${slot}')" style="position:absolute; right:0; top:0;">Unequip</button></div>
+    </div>`;
+  }
+
+  function groupItems(items, keyFn) {
+    const groups = new Map();
+    for (const entry of items) {
+      const item = entry?.item ?? entry;
+      if (!item || typeof item !== 'object' || item.id == null) continue; // skip junk entries
+      const key = keyFn(item);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(entry);
+    }
+    return Array.from(groups.values());
+  }
+
   let lastEquipmentSnapshot = null;
   function renderEquipmentPanel(player, force = false) {
     if (!player) return;
-    const inventoryContainer = equipmentFrame?.$('#equipmentColumns');
-    if (!inventoryContainer) return;
+    const container = equipmentFrame?.$('#equipmentBodies');
+    if (!container) return;
 
     const equipment = player.equipment || {};
     const inventory = Array.isArray(player.inventory) ? player.inventory : [];
 
     // Change-detection is the only guard here (no time throttle): only rebuild the
-    // panel when the equipment/inventory contents actually changed. Re-rendering on
-    // every party-state tick destroys/recreates the DOM and discards any transient UI
-    // (hover, scroll position) for no benefit.
+    // panel when the equipment/inventory contents actually changed.
     const snapshot = JSON.stringify({ equipment, inventory });
-    if (!force && snapshot === lastEquipmentSnapshot && inventoryContainer.innerHTML) {
-      return;
-    }
+    if (!force && snapshot === lastEquipmentSnapshot && container.innerHTML) return;
     lastEquipmentSnapshot = snapshot;
 
-    const CATEGORIES = EQUIPMENT_CATEGORIES;
-
-    function groupKey(item) {
-      const base = item.baseItem || item.id;
-      return `${base}|${item.level ?? 1}|${item.rarity ?? 1}`;
-    }
-
-    function renderColumn(category, equipment, inventory) {
+    container.innerHTML = EQUIPMENT_CATEGORIES.map(category => {
       const equipped = equipment[category.equippedKey];
-      const calculatedEquipped = equipped ? getCalculatedItem(equipped, category.equippedKey) : null;
-      const eqName = calculatedEquipped?.displayName || calculatedEquipped?.name || calculatedEquipped?.id || 'Empty';
-      const eqLevel = calculatedEquipped?.level ? ` Lv${calculatedEquipped.level}` : '';
-      const eqColour = getColourFromRarity(calculatedEquipped?.rarity);
-      const eqRarity = calculatedEquipped?.rarity ? ` <span style="color:${eqColour.text};">(${calculatedEquipped.rarity}★)</span>` : '';
-      const eqStats = calculatedEquipped ? itemStatsHtml(calculatedEquipped, '11px') : '';
-      const eqTooltip = calculatedEquipped ? itemTooltip(calculatedEquipped) : '';
+      const header = equippedHeaderHtml(equipped ? getCalculatedItem(equipped, category.equippedKey) : null, category.equippedKey);
 
-      const headerBg = equipped ? eqColour.bg : '#2a2a2a';
-      const headerBorder = equipped ? eqColour.border : '#777';
-      const headerNameColor = equipped ? eqColour.text : '#ccc';
-      const header = `
-        <div title="${eqTooltip}" style="position:sticky; top:0; z-index:2; background:${headerBg}; border:1px solid ${headerBorder}; padding:3px; border-radius:4px; margin-bottom:4px;">
-          <div style="font-weight:bold; font-size:11px; margin-bottom:2px; color:${headerNameColor};">${category.icon} ${equipped ? 'Equipped' : 'Empty'}</div>
-          <div style="position:relative; font-size:11px; color:${headerNameColor};">${eqName}${eqLevel}${eqRarity}${eqStats}${itemTierBadge(calculatedEquipped)}</div>
-        </div>`;
-
-      const filtered = inventory.filter(item => category.slots.includes(item.slot));
-      let body;
-      if (!filtered.length) {
-        body = `<div style="font-size:11px; color:#777; padding:2px;">No spares</div>`;
-      } else {
-        const groups = new Map();
-        for (const item of filtered) {
-          const key = groupKey(item);
-          if (!groups.has(key)) groups.set(key, []);
-          groups.get(key).push(item);
-        }
-        body = Array.from(groups.values()).map(group => {
-          const rep = group[0];
-          const count = group.length;
-          const calculated = getCalculatedItem(rep, category.equippedKey);
-          const name = calculated?.displayName || calculated?.name || calculated?.id || 'Unknown';
-          const level = calculated?.level ? ` Lv${calculated.level}` : '';
-          const colour = getColourFromRarity(calculated?.rarity);
-          const rarity = calculated?.rarity ? ` <span style="color:${colour.text};">(${calculated.rarity}★)</span>` : '';
-          const statsDisplay = itemStatsHtml(calculated, '10px');
-          const tooltip = itemTooltip(calculated);
-          const countBadge = count > 1 ? ` <span style="font-size:10px; color:#9f9;">x${count}</span>` : '';
-
-          const calculatedForPrice = getCalculatedItem(rep, category.equippedKey);
-          const baseValue = calculatedForPrice?.baseValue;
-          const itemLevel = calculatedForPrice?.level ?? rep.level ?? 1;
-          const itemRarity = calculatedForPrice?.rarity ?? rep.rarity ?? 1;
-          let sellPrice = 0;
-          if (typeof baseValue === 'number') {
-            const val = window.itemGenerator?.calculateItemPrice?.(baseValue, itemLevel, itemRarity);
-            if (typeof val === 'number') sellPrice = Math.max(1, Math.floor(val * 0.75));
-          }
-
-          return `
-            <div style="display:flex; gap:2px; margin-bottom:3px;">
-              <button class="buy-btn" title="${tooltip}" onclick="equipInventoryItem('${rep.id}', '${category.equippedKey}')" style="position:relative; flex:1; text-align:left; padding:3px; font-size:11px; background:${colour.bg}; border:1px solid ${colour.border}; color:${colour.text};">${name}${level}${rarity}${countBadge}${statsDisplay}${itemTierBadge(calculated)}</button>
-              <button class="buy-btn" title="Sell for ${sellPrice}g" onclick="sellInventoryItem('${rep.id}')" style="flex:1; text-align:center; padding:3px; font-size:11px; background-color:#a44;">Sell ${sellPrice}g</button>
-            </div>`;
-        }).join('');
-      }
-
-      return `
-        <div class="inner-col">
-          <div style="font-size:11px; font-weight:bold; text-align:center; margin-bottom:3px; color:#ccc;">${category.icon} ${category.label}</div>
-          ${header}
-          ${body}
-        </div>`;
-    }
-
-    inventoryContainer.innerHTML = CATEGORIES.map(category => renderColumn(category, equipment, inventory)).join('');
+      const groups = groupItems(inventory.filter(i => i && i.id != null && category.slots.includes(i.slot)),
+        i => `${i.baseItem || i.id}|${i.level ?? 1}|${i.rarity ?? 1}`);
+      const rows = groups.map(group => {
+        const rep = group[0];
+        const calc = getCalculatedItem(rep, category.equippedKey);
+        return gearTableRow(`${itemNameCell(calc, group.length, '10px')}
+          <td class="gear-col-act">
+            <button class="gear-act-btn gear-act-equip" onclick="equipInventoryItem('${rep.id}', '${category.equippedKey}')">Equip</button>
+          </td>`);
+      });
+      return buildGearCategoryBody('equip', category, header, rows);
+    }).join('');
   }
 
 // Render shop stock items
@@ -982,7 +1005,7 @@ let lastShopSnapshot = null;
 function renderShopStock(shopStock, force = false) {
   if (!shopFrame) return;
 
-  const container = shopFrame.$('#shopColumns');
+  const container = shopFrame.$('#shopBodies');
   if (!container) return;
 
   // Incremental party-state updates usually omit shopStock; don't let an
@@ -990,12 +1013,9 @@ function renderShopStock(shopStock, force = false) {
   if (shopStock === undefined) return;
 
   // Change-detection is the only guard here (no time throttle): only rebuild the
-  // panel when the shop stock actually changed, so party-state ticks that don't touch
-  // the shop don't waste work rebuilding the DOM.
+  // panel when the shop stock actually changed.
   const snapshot = JSON.stringify(shopStock);
-  if (!force && snapshot === lastShopSnapshot && container.innerHTML) {
-    return;
-  }
+  if (!force && snapshot === lastShopSnapshot && container.innerHTML) return;
   lastShopSnapshot = snapshot;
 
   if (!shopStock || shopStock.length === 0) {
@@ -1003,53 +1023,39 @@ function renderShopStock(shopStock, force = false) {
     return;
   }
 
-  const indexed = shopStock.map((item, index) => ({ item, index }));
+  // Keep original indices (buyGear('shop_<index>') references the server array) but
+  // skip any entry that isn't a real item object, which would otherwise crash
+  // on .baseItem / .id access during grouping.
+  const indexed = [];
+  shopStock.forEach((item, index) => {
+    if (item && typeof item === 'object' && item.id != null) indexed.push({ item, index });
+  });
+  const groups = groupItems(indexed, it =>
+    `${it.baseItem || it.id}|${it.level ?? 1}|${it.rarity ?? 1}`);
 
-  function renderShopColumn(category) {
-    const items = indexed.filter(({ item }) => category.slots.includes(item.slot));
-    if (!items.length) {
-      return `
-        <div class="inner-col">
-          <div style="font-size:11px; font-weight:bold; text-align:center; margin-bottom:3px; color:#ccc;">${category.icon} ${category.label}</div>
-          <div style="font-size:11px; color:#777; padding:2px;">No stock</div>
-        </div>`;
-    }
-
-    const groups = new Map();
-    for (const entry of items) {
-      const { item } = entry;
-      const base = item.baseItem || item.id;
-      const key = `${base}|${item.level ?? 1}|${item.rarity ?? 1}`;
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(entry);
-    }
-
-    const body = Array.from(groups.values()).map(group => {
-      const { item, index } = group[0];
-      const count = group.length;
-      const calculatedItem = window.itemGenerator?.calculateItemStats?.(item) || item;
-      const name = calculatedItem?.displayName || calculatedItem?.name || calculatedItem?.id || 'Unknown';
-      const level = calculatedItem?.level ? ` Lv${calculatedItem.level}` : '';
-      const colour = getColourFromRarity(calculatedItem?.rarity);
-      const rarity = calculatedItem?.rarity ? ` <span style="color:${colour.text};">(${calculatedItem.rarity}★)</span>` : '';
-      const price = Math.max(20,
-        typeof calculatedItem?.baseValue === 'number'
-          ? (window.itemGenerator?.calculateItemPrice?.(calculatedItem.baseValue, calculatedItem.level, calculatedItem.rarity) ?? calculatedItem.price ?? 40)
-          : (calculatedItem?.price ?? 40));
-      const statsDisplay = itemStatsHtml(calculatedItem, '9px');
-      const tooltip = itemTooltip(calculatedItem, `Price: ${price}g\n`);
-      const countBadge = count > 1 ? ` <span style="font-size:10px; color:#9f9;">x${count}</span>` : '';
-      return `<button class="buy-btn" title="${tooltip}" onclick="buyGear('shop_${index}')" style="position:relative; width:100%; text-align:left; padding:3px; margin-bottom:3px; font-size:11px; background:${colour.bg}; border:1px solid ${colour.border}; color:${colour.text};">${name}${level}${rarity}${countBadge} (${price}g)${statsDisplay}${itemTierBadge(calculatedItem)}</button>`;
-    }).join('');
-
-    return `
-      <div class="inner-col">
-        <div style="font-size:11px; font-weight:bold; text-align:center; margin-bottom:3px; color:#ccc;">${category.icon} ${category.label}</div>
-        ${body}
-      </div>`;
+  // price lookup table keyed by the same group key, so each tab can price its own rows
+  const priceByKey = new Map();
+  for (const g of groups) {
+    const { item } = g[0];
+    const calc = window.itemGenerator?.calculateItemStats?.(item) || item;
+    const price = Math.max(20,
+      typeof calc?.baseValue === 'number'
+        ? (window.itemGenerator?.calculateItemPrice?.(calc.baseValue, calc.level, calc.rarity) ?? calc.price ?? 40)
+        : (calc?.price ?? 40));
+    priceByKey.set(`${item.baseItem || item.id}|${item.level ?? 1}|${item.rarity ?? 1}`, price);
   }
 
-  container.innerHTML = EQUIPMENT_CATEGORIES.map(renderShopColumn).join('');
+  container.innerHTML = EQUIPMENT_CATEGORIES.map(category => {
+    const catGroups = groups.filter(g => category.slots.includes(g[0].item.slot));
+    const rows = catGroups.map(group => {
+      const { item, index } = group[0];
+      const price = priceByKey.get(`${item.baseItem || item.id}|${item.level ?? 1}|${item.rarity ?? 1}`);
+      const calc = window.itemGenerator?.calculateItemStats?.(item) || item;
+      const cell = itemNameCell(calc, group.length, '9px', `Price: ${price}g\n`);
+      return gearTableRow(`${cell}<td class="gear-col-mid">${price}g</td><td class="gear-col-act"><button class="gear-act-btn gear-act-buy" onclick="buyGear('shop_${index}')">Buy</button></td>`);
+    });
+    return buildGearCategoryBody('shop', category, '', rows);
+  }).join('');
   }
 
 // Make functions available globally for clientNetwork access
@@ -1092,10 +1098,19 @@ function syncDungeonUI(data) {
     floorDisplayText.textContent = floorDisplayMsg;
   }
 
-  if (data.floor > 0 && data.dungeon && (data.dungeon !== currentDungeon || currentDungeon === undefined)) {
+  // Keep currentDungeon in sync whenever a dungeon is reported, regardless of
+  // whether it already matches. The clicker who selected the dungeon pre-embark
+  // already has currentDungeon set, so gating on a mismatch would skip the
+  // background refresh and leave them stuck on the Town background.
+  if (data.dungeon && data.dungeon !== currentDungeon) {
     currentDungeon = data.dungeon;
-    updateBackgroundColor(data.dungeon);
-  } else if (data.floor === 0) {
+  }
+
+  if (data.floor > 0) {
+    // In a dungeon: always refresh the background so the player that embarked
+    // (whose currentDungeon was pre-selected) also gets the new dungeon colour.
+    if (data.dungeon) updateBackgroundColor(data.dungeon);
+  } else {
     updateBackgroundColor(currentDungeon);
   }
 }

@@ -864,7 +864,6 @@ function broadcastCriticalGearUpdate(partyId, party) {
         utils.trackSocketIoSent('eventLog', { message: `Allocated ${points} points to ${stat}.`, type: 'info' });
         socket.emit('eventLog', { message: `Allocated ${points} points to ${stat}.`, type: 'info' });
 
-        characters.calcMaxHp(player); characters.calcMaxMp(player);
         console.log('[SERVER] Saving character after allocatePoints for:', player.name);
         saveCharacter(player.name, player);
         console.log('[SERVER] Character saved after allocatePoints');
@@ -1162,10 +1161,10 @@ function clearPartyDeltaState(partyId) {
         for (const socketId of party.players.keys()) {
             playerLastState.delete(socketId);
         }
-    }
-    for (const [key] of enemyLastState) {
-        if (key.startsWith('enemy_')) {
-            enemyLastState.delete(key);
+        // Delete this party's enemy delta snapshots. Enemy IDs come from
+        // generateEnemies (no 'enemy_' prefix), so match by live enemy id.
+        for (const enemy of party.enemies || []) {
+            enemyLastState.delete(enemy.id);
         }
     }
     partyLastState.delete(partyId);
@@ -1216,16 +1215,21 @@ function resetPlayersActionBars(party) {
     });
 }
 
-// Clear enemies and end combat for a party (used across floor/teleport handlers).
-function resetPartyCombat(party) {
-    resetPartyCombat(party);
+// Module-local convenience readers for the frequently-recomputed live-combatant
+// sets. Return fresh arrays each call (identity is not preserved), matching the
+// inline `Array.from(...).filter(...)` they replace. No packet-shape change.
+function livePlayers(party) {
+    return Array.from(party.players.values()).filter(p => p.hp > 0);
+}
+function liveEnemies(party) {
+    return (party.enemies || []).filter(e => e.hp > 0);
 }
 
 // Re-baseline the per-player/enemy delta state for a party to the current
 // server state. Used on embark/escape/dungeon-change so changes made before
 // the reset cannot be swallowed or overwrite the freshly-synced client state.
-// (Replaces the old clearPartyQueues intent now that deltas are computed
-// directly from state every tick instead of from a field queue.)
+// Deltas are computed directly from state every tick, so re-baselining simply
+// snapshots the current player/enemy/party state as the new comparison point.
 function resetPartyDeltaBaseline(partyId) {
     const party = parties.get(partyId);
     if (!party) return;
@@ -1248,7 +1252,7 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
     if (!nextState) return;
     Object.assign(combatant, nextState);
 
-    const livePlayers = Array.from(party.players.values()).filter(p => p.hp > 0);
+    const alivePlayers = livePlayers(party);
 
     // Handle defense-up self-buff abilities (armor proficiencies) before all others.
     if (ability.defenseUpAmount && ability.defenseUpDuration) {
@@ -1269,7 +1273,7 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
         const healAmount = skillEngine.calculateHealAmount(ability, combatant);
 
         // Get targets for the healing ability
-        const healTargets = skillEngine.getAbilityTargets(combatant, ability, [...livePlayers]);
+        const healTargets = skillEngine.getAbilityTargets(combatant, ability, [...alivePlayers]);
 
         // Apply healing to each target
         healTargets.forEach(target => {
@@ -1287,8 +1291,7 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
         combatant.skillsState = skillEngine.awardHealXp(combatant.skillsState, !isHealingAlly); // false = healing ally/non-enemy
     } else {
         // For offensive abilities, calculate damage and apply to targets
-        const liveEnemies = party.enemies.filter(e => e.hp > 0);
-        const damageTargets = skillEngine.getAbilityTargets(combatant, ability, liveEnemies);
+        const damageTargets = skillEngine.getAbilityTargets(combatant, ability, liveEnemies(party));
 
         // Calculate damage based on ability type
         let baseDamage = 1;
@@ -1402,9 +1405,9 @@ function startActionBarSystem(partyId, party) {
             spellCastIntervals.delete(partyId);
             return;
         }
-        const livePlayers = Array.from(party.players.values()).filter(p => p.hp > 0);
-        livePlayers.forEach(player => {
-            const ability = skillEngine.selectAbilityToCast(player, abilities, Date.now(), livePlayers);
+        const alive = livePlayers(party);
+        alive.forEach(player => {
+            const ability = skillEngine.selectAbilityToCast(player, abilities, Date.now(), alive);
             if (ability) castAbilityForPlayer(player, partyId, party, ability);
         });
     }, 100);
@@ -1420,9 +1423,9 @@ function startActionBarSystem(partyId, party) {
             actionIntervals.delete(partyId);
             return;
         }
-        const livePlayers = Array.from(party.players.values()).filter(p => p.hp > 0);
-        const liveEnemies = party.enemies.filter(e => e.hp > 0);
-            if (livePlayers.length === 0) {
+        const livePlayersList = livePlayers(party);
+        const liveEnemiesList = liveEnemies(party);
+            if (livePlayersList.length === 0) {
                 party.combatActive = false;
                 clearInterval(interval);
                 actionIntervals.delete(partyId);
@@ -1458,7 +1461,7 @@ function startActionBarSystem(partyId, party) {
                 return;
             }
 
-            if (liveEnemies.length === 0) {
+            if (liveEnemiesList.length === 0) {
                 party.combatActive = false;
                 clearInterval(interval);
                 clearInterval(dotInterval);
@@ -1553,7 +1556,7 @@ function startActionBarSystem(partyId, party) {
             }
 
         const agiFillRate = 4.8;
-        const combatants = [...livePlayers, ...liveEnemies];
+        const combatants = [...livePlayersList, ...liveEnemiesList];
 
         combatants.forEach(combatant => {
             if (combatant.hp > 0) {
@@ -1586,7 +1589,7 @@ function startActionBarSystem(partyId, party) {
                             source = party.players.get(dot.sourceId);
                         } else {
                             // Find source among players
-                            source = livePlayers.find(p => p.id === dot.sourceId);
+                            source = livePlayersList.find(p => p.id === dot.sourceId);
                         }
                         
                         // Track damage in combat stats
@@ -1623,7 +1626,7 @@ function startActionBarSystem(partyId, party) {
                             source = party.players.get(hot.sourceId);
                         } else {
                             // Find source among players
-                            source = livePlayers.find(p => p.id === hot.sourceId);
+                            source = livePlayersList.find(p => p.id === hot.sourceId);
                         }
                         
                         // Track healing in combat stats
@@ -1666,14 +1669,12 @@ function selectTarget(actor, livePlayers, liveEnemies) {
 }
 
 function calculateAttackMods(actor) {
-    const stats = { mod: 0, modD: 0, useMelee: '✊' };
     const activeWeapon = characters.getActiveWeapon(actor);
     const weaponClass = characters.getActiveWeaponClass(actor);
     const effectiveWeapon = activeWeapon?.damage || activeWeapon?.level || 0;
     const mod = 2 + effectiveWeapon;
     const modD = 0.1 + effectiveWeapon * 0.7 + effectiveWeapon * (1.3 + Math.random() / 3);
-    //stats.modD += characters.getEquipmentBonus(actor, 'HP') * 0.001;
-    return { ...stats, mod, modD, useMelee: stats.useMelee, weaponClass };
+    return { mod, modD, weaponClass };
 }
 
 function calculateRoll(actor, target, mod, party, partyId) {
@@ -1762,9 +1763,6 @@ function applyDamage(target, damage, partyId, party) {
     
     // The consolidated emitter sends HP/MP/AP immediately on the critical
     // cadence, so no separate queue call is needed here.
-    if (!target.isEnemy) {
-        // (HP/MP handled by emitPartyDeltas on the next tick)
-    }
     
     if (target.hp <= 0 && !target.isEnemy) {
         handlePlayerDeath(partyId, party, target);
@@ -1782,20 +1780,9 @@ function applyDamage(target, damage, partyId, party) {
     }
 }
 
-function updatePartyState(target, party) {
-    if (target.isEnemy) {
-        const idx = party.enemies.findIndex(e => e.id === target.id);
-        if (idx !== -1) party.enemies[idx] = { ...target };
-    } else if (target.hp > 0) {
-        party.players.set(target.id, { ...target });
-    }
-}
-
 // Perform action bar attack
 function performActionBarAttack(actor, partyId, party) {
-    const livePlayers = Array.from(party.players.values()).filter(p => p.hp > 0);
-    const liveEnemies = party.enemies.filter(e => e.hp > 0);
-    const target = selectTarget(actor, livePlayers, liveEnemies);
+    const target = selectTarget(actor, livePlayers(party), liveEnemies(party));
     if (!target) return;
 
     const { mod, modD } = calculateAttackMods(actor);
@@ -1840,8 +1827,6 @@ function performActionBarAttack(actor, partyId, party) {
         }
     }
 
-    updatePartyState(target, party);
-    
     if (target.isEnemy && target.hp <= 0) awardXP(partyId, party);
     
     broadcastCriticalUpdate(partyId, party, {
@@ -1994,7 +1979,7 @@ setInterval(() => {
 function startRegenSystem() {
     setInterval(() => {
         for (const [partyId, party] of parties) {
-            const inCombat = party.combatActive, live = Array.from(party.players.values()).filter(p => p.hp > 0);
+            const inCombat = party.combatActive, live = livePlayers(party);
             if (live.length === 0) continue;
             
             if (party.floor === 0) live.forEach(p => p.ap = Math.min(p.maxAp, p.ap + 5));
@@ -2039,7 +2024,7 @@ function startBroadcastSystem() {
 
             // Update max action bar during combat (derived from live player count).
             if (isCombat(party)) {
-                const live = [...party.players.values()].filter(p => p.hp > 0);
+                const live = livePlayers(party);
                 for (const p of live) p.maxActionBar = 105 + live.length;
             }
 
@@ -2063,6 +2048,10 @@ function startBroadcastSystem() {
 // derive from the same delta, so they no longer need a separate timer.
 // Enemy deltas are computed here too (BUG 2: they had no periodic emitter
 // once buildUpdatePacket was removed).
+// Note: `combatEvent` (broadcastCriticalUpdate WITH targetInfo — carries the
+// per-hit actor/target/roll payload) and `criticalUpdate` (the priority-delta
+// channel emitted here / by a bare broadcastCriticalUpdate flush) are distinct
+// channels; do not conflate them.
 // ═══════════════════════════════════════════════════════════════════
 const _lastDeltaBroadcast = new Map(); // partyId -> { critical, standard, background }
 
@@ -2281,136 +2270,6 @@ io.on('connection', (socket) => {
     
     socket.on('allocatePoints', (data) => handleAllocatePoints(socket, data));
     
-    // ═══════════════════════════════════════════════════════════════════
-    // UNIFIED MOVEMENT HANDLERS - Consolidates moveFloor and nextFloor
-    // ═══════════════════════════════════════════════════════════════════
-    const handleFloorMove = (partyId, direction) => {
-        const party = parties.get(partyId);
-        if (!party) return;
-        
-        // Initialize dungeonFloors and highestVisitedFloors if not exists
-        if (!party.dungeonFloors) party.dungeonFloors = {};
-        if (!party.highestVisitedFloors) party.highestVisitedFloors = {};
-        
-        // Get current dungeon-relative floor
-        const currentDungeonFloor = party.dungeonFloors[party.dungeon] || 0;
-        const dungeonData = characters.getDungeonData(party.dungeon);
-        
-        [spawnTimers, actionIntervals].forEach(m => m.has(partyId) && (m.get(partyId).constructor.name === 'Timeout' ? clearTimeout(m.get(partyId)) : clearInterval(m.get(partyId)), m.delete(partyId)));
-        const liveEnemies = (party.enemies || []).filter(e => e.hp > 0);
-        if (party.combatActive || liveEnemies.length > 0) {
-            broadcastToParty(partyId, 'movementBlocked', { message: `${liveEnemies.length} enemies alive!` });
-            return;
-        }
-        
-        // Calculate new dungeon-relative floor (1-100 per dungeon)
-        let newDungeonFloor = currentDungeonFloor;
-        if (direction === 'up') {
-            const dungeonDataForMove = characters.getDungeonData(party.dungeon);
-            const dungeonFloorMaxForMove = dungeonDataForMove?.floorAmount ?? 100;
-            newDungeonFloor = Math.min(currentDungeonFloor + 1, dungeonFloorMaxForMove);
-        } else {
-            // Going down - if at floor 1, go to town (floor 0)
-            if (currentDungeonFloor <= 1) {
-                // Going to town
-                party.dungeonFloors[party.dungeon] = 0;  // Keep dungeon floor at 1
-                party.floor = 0;
-                
-                // Clear enemies and combat state
-                resetPartyCombat(party);
-                resetPlayersActionBars(party);
-                
-                // Broadcast update
-                broadcastToParty(partyId, 'standardUpdate', { 
-                    partyId, 
-                    floor: party.floor, 
-                    dungeonFloors: party.dungeonFloors,
-                    highestVisitedFloors: party.highestVisitedFloors,
-                    combatActive: party.combatActive, 
-                    enemies: party.enemies, 
-                    timestamp: Date.now() 
-                });
-                broadcastToParty(partyId, 'eventLog', { message: '🏠 Safe in town!', type: 'info' });
-                return;
-            } else {
-                newDungeonFloor = Math.max(currentDungeonFloor - 1, 1);
-            }
-        }
-        
-        // Update dungeon-relative floor
-        party.dungeonFloors[party.dungeon] = newDungeonFloor;
-        
-        // Calculate absolute floor for display
-        party.floor = newDungeonFloor;
-        
-        // Initialize highestVisitedFloors for this dungeon if not exists
-        if (!party.highestVisitedFloors) party.highestVisitedFloors = {};
-        
-        // Update highest visited floor
-        const currentHighest = party.highestVisitedFloors[party.dungeon] || 0;
-        // Always update highestVisitedFloors when entering a new floor to ensure buttons work
-        if (newDungeonFloor >= 1 && (!party.highestVisitedFloors[party.dungeon] || newDungeonFloor > currentHighest)) {
-            party.highestVisitedFloors[party.dungeon] = newDungeonFloor;
-        }
-        
-        resetPartyCombat(party);
-        resetPlayersActionBars(party);
-        if (party.floor >= 1) { generateEnemies(party); party.combatActive = true; startActionBarSystem(partyId, party); }
-        broadcastToParty(partyId, 'standardUpdate', { 
-            partyId, 
-            floor: party.floor,
-            dungeonFloors: party.dungeonFloors,
-            highestVisitedFloors: party.highestVisitedFloors,
-            combatActive: party.combatActive, 
-            enemies: party.enemies, 
-            timestamp: Date.now() 
-        });
-        broadcastToParty(partyId, 'eventLog', { message: party.floor >= 1 ? '⚔️ Action Bars filling!' : '🏠 Safe in town!', type: 'info' });
-    };
-    // Manual floor movement disabled in favor of Embark flow (floor-by-floor via nextFloor after victory)
-    // socket.on('moveFloor', data => handleFloorMove(data.partyId, data.direction));
-    // socket.on('nextFloor', data => handleFloorMove(data.partyId, 'up'));
-
-    // ═══════════════════════════════════════════════════════════════════
-    // UNIFIED TELEPORT HANDLERS - Consolidates teleportToTown and teleportToFloor
-    // ═══════════════════════════════════════════════════════════════════
-    const handleTeleport = (partyId, targetFloor) => {
-        const party = parties.get(partyId);
-        if (!party || (targetFloor !== 0 && (party.floor !== 0 || targetFloor < 1 || targetFloor > 300))) {
-            socket.emit('eventLog', { message: !party ? 'Party not found!' : 'Invalid teleport!', type: 'error' });
-            return;
-        }
-        [spawnTimers, actionIntervals].forEach(m => m.has(partyId) && (m.get(partyId).constructor.name === 'Timeout' ? clearTimeout(m.get(partyId)) : clearInterval(m.get(partyId)), m.delete(partyId)));
-        if (targetFloor === 0) {
-            // Reset dungeon floor to 1 when going to town for consistency
-            if (!party.dungeonFloors) party.dungeonFloors = {};
-            party.dungeonFloors[party.dungeon] = 0;  // Keep dungeon floor at 1
-            party.floor = 0;
-            
-            Object.assign(party, { floor: 0, enemies: [], combatActive: false, combatTurn: 0 });
-            restorePartyToFull(partyId);
-            broadcastToParty(partyId, 'eventLog', { message: '🏠 Teleported to Town!', type: 'info' });
-        } else {
-            Object.assign(party, { floor: targetFloor, enemies: [], combatActive: false, combatTurn: 0 });
-            if (!party.dungeonFloors) party.dungeonFloors = {};
-            if (!party.highestVisitedFloors) party.highestVisitedFloors = {};
-            party.dungeonFloors[party.dungeon] = targetFloor;  // Keep dungeon floor at targetFloor
-            // Update highest visited floor if target is higher
-            const currentHighest = party.highestVisitedFloors[party.dungeon] || 0;
-            // Always update highestVisitedFloors when teleporting to ensure buttons work
-            if (targetFloor >= 1 && (!party.highestVisitedFloors[party.dungeon] || targetFloor > currentHighest)) {
-                party.highestVisitedFloors[party.dungeon] = targetFloor;
-            }
-            resetPlayersActionBars(party);
-            generateEnemies(party); party.combatActive = true; startActionBarSystem(partyId, party);
-            broadcastToParty(partyId, 'eventLog', { message: `📍 Teleported to Floor ${targetFloor}!`, type: 'info' });
-        }
-        broadcastFullState(partyId, party);
-    };
-    // Manual teleport disabled in favor of Embark flow
-    // socket.on('teleportToTown', data => handleTeleport(data.partyId, 0));
-    // socket.on('teleportToFloor', data => handleTeleport(data.partyId, data.floor));
-
     // 🏃 Escape Dungeon handler (return to Town after combat, reset progress)
     socket.on('escapeDungeon', (data) => handleEscapeDungeon(socket, data));
 
@@ -2514,9 +2373,19 @@ const broadcastIntervalId = startBroadcastSystem();
 
 // Initialize DoT system
 function initDotSystem() {
+    const EFFECT_FIELDS = ['dots', 'hots', 'actionSlowEffects', 'weakenEffects', 'vulnerabilityEffects', 'defenseDownEffects', 'defenseUpEffects'];
+    const hasActiveEffects = (party) => {
+        const combatants = [...party.players.values(), ...(party.enemies || [])];
+        return combatants.some(c => EFFECT_FIELDS.some(f => Array.isArray(c[f]) && c[f].length > 0));
+    };
     // Process DoTs every 1000ms for all parties (reduced from 160ms for less bandwidth)
     const dotInterval = setInterval(() => {
         for (const [partyId, party] of parties.entries()) {
+            // The process* calls are no-op-safe on empty effect arrays, so only
+            // gate the broadcast: skip the delta flush when no combatant has any
+            // active DoT/HoT/debuff/buff effect this tick.
+            const active = hasActiveEffects(party);
+
             // Process DoT ticks
             skillEngine.processDotTicks(party);
             
@@ -2531,8 +2400,11 @@ function initDotSystem() {
             skillEngine.processDefenseDownEffects(party);
             skillEngine.processDefenseUpEffects(party);
 
-            // OPTIMIZATION: Send critical update only if HP/AP changed, not full state
-            broadcastCriticalUpdate(partyId, party);
+            // OPTIMIZATION: only flush a critical delta update when effects were
+            // active (or just expired) this tick, instead of every party every second.
+            if (active) {
+                broadcastCriticalUpdate(partyId, party);
+            }
         }
     }, 1000);
     return dotInterval;

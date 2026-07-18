@@ -370,8 +370,6 @@ class ClientNetwork {
 },
         combatUpdate: (s, d) => s._handleWebRTCUpdate('combat', d),
         playerPosition: (s, d) => s._handleWebRTCUpdate('playerPosition', d),
-        actionBarUpdate: (s, d) => s._handleWebRTCUpdate('actionBar', d),
-        hpApUpdate: (s, d) => s.handleHPMpUpdate(d),
         hpMpUpdate: (s, d) => s.handleHPMpUpdate(d),
         combatEvent: (s, d) => s.handleCriticalUpdate(d), // Combat events go through critical handler
         criticalUpdate: (s, d) => s.handleCriticalUpdate(d),
@@ -379,16 +377,11 @@ class ClientNetwork {
         combatEnd: (s, d) => s.handleCombatEnd(d),
         dungeonChange: (s, d) => s.handleDungeonChange(d),
         standardUpdate: (s, d) => s.handleStandardUpdate(d),
-        deltaUpdate: (s, d) => s.handleDeltaUpdate(d),
         backgroundUpdate: (s, d) => s.handleBackgroundUpdate(d),
         fullState: (s, d) => s.handleFullStateUpdate(d),
         partyUpdate: (s, d) => s.handleFullStateUpdate(d),
         batchUpdate: (s, d) => s.handleBatchUpdate(d),
         eventLog: (s, d) => s.uiCallbacks.addToEventLog?.(d.message, d.type || 'info'),
-        nextFloor: (s, d) => s.uiCallbacks.onNextFloor?.(d),
-        teleportToTown: (s, d) => s.uiCallbacks.onTeleportToTown?.(d),
-        teleportToFloor: (s, d) => s.uiCallbacks.onTeleportToFloor?.(d),
-        moveFloor: (s, d) => s.uiCallbacks.onMoveFloor?.(d),
         leaveParty: (s, d) => s.uiCallbacks.onLeaveParty?.(d)
     };
 
@@ -532,7 +525,6 @@ class ClientNetwork {
         if (track) this.trackPacket(this.tcpStats, false);
         this[handler](d);
       });
-      regHandler('deltaUpdate', 'handleDeltaUpdate', true);
       regHandler('hpMpUpdate', 'handleHPMpUpdate', true);
       regHandler('criticalUpdate', 'handleCriticalUpdate', true);
       regHandler('standardUpdate', 'handleStandardUpdate', true);
@@ -636,43 +628,6 @@ class ClientNetwork {
             completedDungeons: { ...completedDungeons }
         };
         this.currentState = { ...fullState, completedDungeons };
-    }
-
-    handleDeltaUpdate(data) {
-        const { players, enemies, floor, dungeonFloors, combatActive, combatTurn, highestVisitedFloors, autoEmbark, completedDungeons } = data;
-        
-        // Update players
-        players && Object.entries(players).forEach(([id, delta]) => this._upsertPlayer(delta));
-
-        // Update enemies
-        enemies && Object.entries(enemies).forEach(([id, delta]) => this._upsertEnemy(delta));
-
-        // Remove dead enemies
-        this.currentState.enemies = (this.currentState.enemies || []).filter(e => {
-            if (e.hp <= 0) { 
-                this.lastKnownState.enemies.delete(e.id); 
-                return false; 
-            }
-            return true;
-        });
-
-        // Update party state
-        if (floor !== undefined) { this.currentState.floor = floor; this.lastKnownState.party.floor = floor; }
-        if (dungeonFloors !== undefined) { 
-            this.currentState.dungeonFloors = dungeonFloors; 
-            this.lastKnownState.party.dungeonFloors = { ...dungeonFloors };
-        }
-        if (combatActive !== undefined) { this.currentState.combatActive = combatActive; this.lastKnownState.party.combatActive = combatActive; }
-        if (combatTurn !== undefined) { this.currentState.combatTurn = combatTurn; this.lastKnownState.party.combatTurn = combatTurn; }
-        if (highestVisitedFloors !== undefined) { this.currentState.highestVisitedFloors = highestVisitedFloors; this.lastKnownState.party.highestVisitedFloors = { ...highestVisitedFloors }; }
-        if (autoEmbark !== undefined) { this.currentState.autoEmbark = autoEmbark; this.lastKnownState.party.autoEmbark = autoEmbark; }
-
-        if (completedDungeons !== undefined) {
-            this.currentState.completedDungeons = completedDungeons;
-            this.lastKnownState.party.completedDungeons = { ...completedDungeons };
-        }
-
-        this.uiCallbacks.updatePartyDisplay(this.currentState);
     }
 
     // Handle immediate HP/MP updates (high-frequency updates)
@@ -1008,6 +963,10 @@ class ClientNetwork {
         }
         // Periodic background payload carries the same dungeon-progress fields as
         // a full state sync; keep the client's dungeon UI in lockstep.
+        if (data.dungeon !== undefined) {
+            this.currentState.dungeon = data.dungeon;
+            this.lastKnownState.party.dungeon = data.dungeon;
+        }
         if (data.dungeonFloors !== undefined) {
             this.currentState.dungeonFloors = data.dungeonFloors;
             this.lastKnownState.party.dungeonFloors = { ...data.dungeonFloors };
@@ -1211,10 +1170,6 @@ class ClientNetwork {
         this.socket.emit(action, { partyId: this.currentPartyId, ...extra });
     }
 
-    moveFloor(dir) { this._sendAction('moveFloor', { direction: dir }); }
-    nextFloor() { this._sendAction('nextFloor'); }
-    teleportToTown() { this._sendAction('teleportToTown'); }
-    teleportToFloor(floor) { this._sendAction('teleportToFloor', { floor }); }
     embarkDungeon(dungeonKey) { this._sendAction('embarkDungeon', { dungeon: dungeonKey }); }
     toggleAutoEmbark(enabled) { this._sendAction('toggleAutoEmbark', { enabled }); }
     escapeDungeon() { this._sendAction('escapeDungeon', {}); }
@@ -1244,8 +1199,6 @@ class ClientNetwork {
 
     performCombatAction(actionData) { this.sendPreferWebRTC('combatAction', actionData); }
     updatePlayerPosition(posData) { this.sendPreferWebRTC('playerMove', posData); }
-    sendActionBarUpdate(barData) { this.sendPreferWebRTC('actionBarUpdate', barData); }
-    sendCombatUpdate(combatData) { this.sendPreferWebRTC('combatUpdate', combatData); }
 
     // ═══════════════════════════════════════════════════════════════
     // Client-Side Performance Optimizations
