@@ -171,20 +171,9 @@ function broadcastCriticalGearUpdate(partyId, party) {
     broadcastToParty(partyId, 'criticalUpdate', packet);
 }
 
-function broadcastStandardUpdate(partyId, party) {
-    broadcastToParty(partyId, 'standardUpdate', buildUpdatePacket(party, partyId, 'standard'));
-}
-
-function broadcastBackgroundUpdate(partyId, party) {
-    const now = Date.now();
-    const lastTime = lastBackgroundBroadcast.get(partyId) || 0;
-    if (now - lastTime < 2000) return;
-    lastBackgroundBroadcast.set(partyId, now);
-    broadcastToParty(partyId, 'backgroundUpdate', buildUpdatePacket(party, partyId, 'background'));
-}
-
-function broadcastFullState(partyId, party) {
-    broadcastToParty(partyId, 'partyUpdate', buildUpdatePacket(party, partyId, 'full'));
+function broadcastUpdate(partyId, party, type) {
+    const eventName = type === 'full' ? 'partyUpdate' : type + 'Update';
+    broadcastToParty(partyId, eventName, buildUpdatePacket(party, partyId, type));
 }
 
     // Rebuild a shop-stock-compatible item from a compact inventory entry so a
@@ -617,7 +606,7 @@ function broadcastFullState(partyId, party) {
         };
         broadcastToParty(partyId, 'dungeonChange', dungeonChangePacket);
         broadcastToParty(partyId, 'eventLog', { message: '🏠 Escaped to Town! Dungeon progress reset.', type: 'info' });
-        broadcastFullState(partyId, party);
+        broadcastUpdate(partyId, party, 'full');
         queueStateUpdate(partyId, ['players', 'enemies', 'floor', 'combatActive']);
 
         console.log(`[ESCAPE] Party ${partyId} escaped from ${oldDungeon} to Town`);
@@ -864,7 +853,7 @@ function broadcastFullState(partyId, party) {
             console.log('[SERVER] Character saved');
 
             const fullState = buildUpdatePacket(party, partyId, 'full');
-            broadcastFullState(partyId, party);
+            broadcastUpdate(partyId, party, 'full');
             console.log('[SERVER] Emitting joinedParty to client');
             utils.trackSocketIoSent('joinedParty', { partyId, player: character, fullState });
             socket.emit('joinedParty', { partyId, player: character, fullState });
@@ -941,7 +930,7 @@ function broadcastFullState(partyId, party) {
         console.log('[SERVER] Character saved after allocatePoints');
 
         // OPTIMIZATION: Use targeted broadcast instead of full state
-        broadcastFullState(partyId, party);
+        broadcastUpdate(partyId, party, 'full');
     }
 
     function handleDisconnect(socket, reason) {
@@ -1138,7 +1127,7 @@ app.get('/api/abilities', (req, res) => res.json(loadAbilities()));
 
 // 60-second packet statistics logging
 setInterval(() => {
-    const webrtcStats = webrtcServer.getPacketStats();
+    const webrtcStats = webrtcServer.packetTracker.getStats();
     
     const socketIoTotal = {
         sent: utils.socketIoPacketTracker.sent,
@@ -1170,7 +1159,7 @@ setInterval(() => {
     // Reset Socket.IO stats (WebRTC stats are reset externally if needed)
     utils.socketIoPacketTracker.sent = { total: { count: 0, bytes: 0 }, byType: {} };
     utils.socketIoPacketTracker.received = { total: { count: 0, bytes: 0 }, byType: {} };
-    webrtcServer.resetPacketStats();
+    webrtcServer.packetTracker.reset();
 }, 60000);
 
 // Define parties and spawnTimers BEFORE WebRTC initialization (fixes ReferenceError at line 174)
@@ -1761,7 +1750,7 @@ function startActionBarSystem(partyId, party) {
                     restorePartyToFull(partyId);
 
                     queueStateUpdate(partyId, ['players', 'enemies', 'floor', 'combatActive']);
-                    broadcastFullState(partyId, party);
+                    broadcastUpdate(partyId, party, 'full');
 
                     broadcastToParty(partyId, 'eventLog', { message: '🏠 Returned to Town!', type: 'info' });
 
@@ -2638,7 +2627,7 @@ io.on('connection', (socket) => {
             generateEnemies(party); party.combatActive = true; startActionBarSystem(partyId, party);
             broadcastToParty(partyId, 'eventLog', { message: `📍 Teleported to Floor ${targetFloor}!`, type: 'info' });
         }
-        broadcastFullState(partyId, party);
+        broadcastUpdate(partyId, party, 'full');
     };
     // Manual teleport disabled in favor of Embark flow
     // socket.on('teleportToTown', data => handleTeleport(data.partyId, 0));

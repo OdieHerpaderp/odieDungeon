@@ -73,12 +73,16 @@ class ClientNetwork {
         this.socket.connected ? this.setupWebRTCConnection() : this.socket.on('connect', () => this.setupWebRTCConnection());
     }
 
+    clearWebRTCTimers() {
+        if (this.webrtcReconnectTimer) { clearTimeout(this.webrtcReconnectTimer); this.webrtcReconnectTimer = null; }
+        if (this.webrtcIceRestartTimer) { clearTimeout(this.webrtcIceRestartTimer); this.webrtcIceRestartTimer = null; }
+    }
+
     // Cleanly tear down the current WebRTC peer so a reconnect does not leak
     // RTCPeerConnections / data channels.
     closeWebRTCConnection() {
         this.stopWebRTCPing();
-        if (this.webrtcReconnectTimer) { clearTimeout(this.webrtcReconnectTimer); this.webrtcReconnectTimer = null; }
-        if (this.webrtcIceRestartTimer) { clearTimeout(this.webrtcIceRestartTimer); this.webrtcIceRestartTimer = null; }
+        this.clearWebRTCTimers();
 
         try {
             if (this.webrtcDataChannel) {
@@ -185,8 +189,7 @@ class ClientNetwork {
             this.webrtcReconnecting = false;
             this.webrtcReconnectScheduled = false;
             this.webrtcRetryCount = 0;
-            if (this.webrtcReconnectTimer) { clearTimeout(this.webrtcReconnectTimer); this.webrtcReconnectTimer = null; }
-            if (this.webrtcIceRestartTimer) { clearTimeout(this.webrtcIceRestartTimer); this.webrtcIceRestartTimer = null; }
+            this.clearWebRTCTimers();
             this.uiCallbacks.addToEventLog('WebRTC connection established', 'success');
             this.uiCallbacks.updatePerformanceStatus();
             this.processMessageQueue();
@@ -313,18 +316,21 @@ class ClientNetwork {
         this.webrtcDataChannel.onmessage = (e) => {
             try {
                 const msg = JSON.parse(e.data);
-                this.trackUDPPacket(false);
+                this.trackPacket(this.udpStats, false);
+                this.udpStats.connected = this.webrtcConnected;
                 
                 // Update connection quality based on timestamp
                 if (msg.serverTimestamp) {
                     const rtt = Date.now() - msg.serverTimestamp;
-                    this.updateUDPPing(rtt);
+                    this.updatePing(this.udpStats, rtt);
+                    this.udpStats.connected = this.webrtcConnected;
                 }
                 
                 // Handle pong for WebRTC immediately - bypass any delays
                 if (msg.type === 'pong' && msg.data?.clientTimestamp) {
                     const rtt = Date.now() - msg.data.clientTimestamp;
-                    this.updateUDPPing(rtt);
+                    this.updatePing(this.udpStats, rtt);
+                    this.udpStats.connected = this.webrtcConnected;
                     // Immediately update performance status to reflect new ping
                     this.uiCallbacks.updatePerformanceStatus();
                 }
@@ -356,7 +362,12 @@ class ClientNetwork {
     // (handleBatchUpdate). Each entry is (self, data) where `data` is the
     // message payload (msg.data for single messages, messageData for batched).
     static WEBRTC_HANDLERS = {
-        pong: (s, d) => { if (d?.clientTimestamp) s.updateUDPPing(Date.now() - d.clientTimestamp); },
+        pong: (s, d) => { 
+    if (d?.clientTimestamp) { 
+        s.updatePing(s.udpStats, Date.now() - d.clientTimestamp); 
+        s.udpStats.connected = s.webrtcConnected; 
+    } 
+},
         combatUpdate: (s, d) => s._handleWebRTCUpdate('combat', d),
         playerPosition: (s, d) => s._handleWebRTCUpdate('playerPosition', d),
         actionBarUpdate: (s, d) => s._handleWebRTCUpdate('actionBar', d),
@@ -382,10 +393,14 @@ class ClientNetwork {
     };
 
     handleWebRTCMessage(msg) {
-        this.trackUDPPacket(false);
+        this.trackPacket(this.udpStats, false);
+        this.udpStats.connected = this.webrtcConnected;
         // testResponse reads the timestamp from the envelope, not the payload.
         if (msg.type === 'testResponse') {
-            if (msg.serverTimestamp) this.updateUDPPing(Date.now() - msg.serverTimestamp);
+            if (msg.serverTimestamp) {
+                this.updatePing(this.udpStats, Date.now() - msg.serverTimestamp);
+                this.udpStats.connected = this.webrtcConnected;
+            }
             return;
         }
         const handler = ClientNetwork.WEBRTC_HANDLERS[msg.type];
@@ -423,7 +438,8 @@ class ClientNetwork {
 
     sendWebRTCMessage(type, data) {
         if (this.webrtcConnected && this.webrtcDataChannel.readyState === 'open') {
-            this.trackUDPPacket(true);
+            this.trackPacket(this.udpStats, true);
+            this.udpStats.connected = this.webrtcConnected;
             this.webrtcDataChannel.send(JSON.stringify({ id: this.generateMessageId(), timestamp: Date.now(), type, data }));
             return true;
         }
@@ -513,7 +529,7 @@ class ClientNetwork {
 
     initDeltaHandlers() {
       const regHandler = (event, handler, track = false) => this.socket.on(event, (d) => {
-        if (track) this.trackTCPPacket(false);
+        if (track) this.trackPacket(this.tcpStats, false);
         this[handler](d);
       });
       regHandler('deltaUpdate', 'handleDeltaUpdate', true);
@@ -581,11 +597,11 @@ class ClientNetwork {
 
       this.socket.on('dungeonChange', (d) => this.handleDungeonChange(d));
 
-      this.socket.on('ping', (ts) => { this.trackTCPPacket(false); this.socket.emit('pong', ts); this.trackTCPPacket(true); });
+      this.socket.on('ping', (ts) => { this.trackPacket(this.tcpStats, false); this.socket.emit('pong', ts); this.trackPacket(this.tcpStats, true); });
       this.socket.on('pingUpdate', (ms) => {
         this.__hudPingMs = ms;
         window.clientPing = ms;
-        this.updateTCPPing(ms);
+        this.updatePing(this.tcpStats, ms);
         this.updatePerfHud();
         this.uiCallbacks.updatePerformanceStatus();
       });
@@ -1079,9 +1095,6 @@ class ClientNetwork {
         this.cleanupThroughputHistory(stats);
     }
 
-    trackTCPPacket(sent, bytes) { this.trackPacket(this.tcpStats, sent, bytes); }
-    trackUDPPacket(sent, bytes) { this.trackPacket(this.udpStats, sent, bytes); this.udpStats.connected = this.webrtcConnected; }
-
     cleanupThroughputHistory(stats) {
         const now = Date.now();
         stats.throughputHistory = stats.throughputHistory.filter(e => now - e.timestamp < this.throughputWindowSize);
@@ -1116,9 +1129,6 @@ class ClientNetwork {
         if (stats.pingHistory.length > 10) stats.pingHistory.shift();
     }
 
-    updateTCPPing(ping) { this.updatePing(this.tcpStats, ping); }
-    updateUDPPing(ping) { this.updatePing(this.udpStats, ping); this.udpStats.connected = this.webrtcConnected; }
-
     getNetworkStatistics() {
         return {
             tcp: { ping: this.calculateAveragePing(this.tcpStats), packetsPerSecond: this.calculatePacketsPerSecond('tcp'), totalSent: this.tcpStats.packetsSent, totalReceived: this.tcpStats.packetsReceived, bytesSent: this.tcpStats.bytesSent, bytesReceived: this.tcpStats.bytesReceived, throughputKBps: this.calculateThroughputKBps(this.tcpStats) },
@@ -1134,7 +1144,7 @@ class ClientNetwork {
         this.ownName = name;
         this.currentPartyId = partyId;
         // Initial connection must use TCP (WebRTC requires Socket.IO connection first)
-        this.trackTCPPacket(true);
+        this.trackPacket(this.tcpStats, true);
         this.socket.emit('joinParty', { partyId, name });
 
         // Try to establish WebRTC connection after joining
@@ -1150,7 +1160,7 @@ class ClientNetwork {
         if (this.webrtcConnected) {
             this.sendWebRTCMessage('leaveParty', { partyId: this.currentPartyId });
         } else {
-            this.trackTCPPacket(true);
+            this.trackPacket(this.tcpStats, true);
             this.socket.emit('leaveParty', this.currentPartyId);
         }
         this.uiCallbacks.onLeaveParty();
@@ -1161,7 +1171,7 @@ class ClientNetwork {
         // Use TCP for client-to-server actions that need guaranteed delivery
         // WebRTC is great for server-to-client updates but client actions should use TCP
         // for reliability and to ensure the server receives them
-        this.trackTCPPacket(true);
+        this.trackPacket(this.tcpStats, true);
         this.socket.emit(action, { partyId: this.currentPartyId, ...extra });
     }
 
@@ -1179,7 +1189,7 @@ class ClientNetwork {
     sellItem(itemId) { this._sendAction('sellItem', { itemId }); }
     changeDungeon(dungeon) { this._sendAction('changeDungeon', { dungeon }); }
     buyGear(type) { 
-        this.trackTCPPacket(true); 
+        this.trackPacket(this.tcpStats, true); 
         if (type.startsWith('shop_')) {
             // Handle shop items differently since they can't be mapped to standard event names
             const index = parseInt(type.split('_')[1]);
@@ -1189,10 +1199,17 @@ class ClientNetwork {
         }
     }
 
-    performCombatAction(actionData) { this.sendWebRTCMessage('combatAction', actionData) || (this.trackTCPPacket(true) && this.socket.emit('combatAction', actionData)); }
-    updatePlayerPosition(posData) { this.sendWebRTCMessage('playerMove', posData) || (this.trackTCPPacket(true) && this.socket.emit('playerMove', posData)); }
-    sendActionBarUpdate(barData) { this.sendWebRTCMessage('actionBarUpdate', barData) || (this.trackTCPPacket(true) && this.socket.emit('actionBarUpdate', barData)); }
-    sendCombatUpdate(combatData) { this.sendWebRTCMessage('combatUpdate', combatData) || (this.trackTCPPacket(true) && this.socket.emit('combatUpdate', combatData)); }
+    sendPreferWebRTC(type, data) {
+        if (this.sendWebRTCMessage(type, data)) return true;
+        this.trackPacket(this.tcpStats, true);
+        this.socket.emit(type, data);
+        return false;
+    }
+
+    performCombatAction(actionData) { this.sendPreferWebRTC('combatAction', actionData); }
+    updatePlayerPosition(posData) { this.sendPreferWebRTC('playerMove', posData); }
+    sendActionBarUpdate(barData) { this.sendPreferWebRTC('actionBarUpdate', barData); }
+    sendCombatUpdate(combatData) { this.sendPreferWebRTC('combatUpdate', combatData); }
 
     // ═══════════════════════════════════════════════════════════════
     // Client-Side Performance Optimizations
@@ -1344,11 +1361,6 @@ class ClientNetwork {
     // Performance Control
     // ═══════════════════════════════════════════════════════════════
 
-    changePerformanceMode(mode) {
-        this.setPerformanceMode(mode);
-        this.uiCallbacks.updatePerformanceStatus();
-    }
-    
     /**
      * Change batch size preference for this client.
      * Higher values = more batching = fewer packets = less bandwidth but higher latency.
@@ -1420,13 +1432,7 @@ class ClientNetwork {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // Getters & Cleanup
     // ═══════════════════════════════════════════════════════════════
-
-    getCurrentState() { return this.currentState; }
-    getCurrentPartyId() { return this.currentPartyId; }
-    getOwnName() { return this.ownName; }
-    getSocket() { return this.socket; }
 
     getPerformanceStats() {
         return {
@@ -1444,8 +1450,7 @@ class ClientNetwork {
 
     disconnect() {
         this.webrtcManualClose = true;
-        if (this.webrtcReconnectTimer) { clearTimeout(this.webrtcReconnectTimer); this.webrtcReconnectTimer = null; }
-        if (this.webrtcIceRestartTimer) { clearTimeout(this.webrtcIceRestartTimer); this.webrtcIceRestartTimer = null; }
+        this.clearWebRTCTimers();
         this.webrtcDataChannel?.close();
         this.webrtcPeer?.close();
         this.socket?.disconnect();

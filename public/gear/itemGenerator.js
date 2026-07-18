@@ -109,7 +109,7 @@
      if (!item) return null;
      var level = Number.isFinite(item.level) ? item.level : 1;
      var rarity = Number.isFinite(item.rarity) ? item.rarity : 1;
-     return (calculateItemStat(30, level, rarity) - 23) / 2.4;
+     return (calculateItemStat(30, level, rarity) - 23) / 2.2;
    }
 
    // Calculate the item's gold price (buy/sell base) using the POW formula.
@@ -118,9 +118,9 @@
     if (typeof baseValue !== 'number') {
       return baseValue; // Return as-is if not a number
     }
-    const levelMult = Math.pow(0.6 + level * 1.1, 1.3);
-    const rarityMult = Math.pow(0.6 + rarity * 1.4, 1.35);
-    return Math.round(Math.pow((baseValue * (0.65 + levelMult / 11) * (0.65 + rarityMult / 8)) * 2.1, 1.2)) / 10;
+    const levelMult = Math.pow(0.7 + level * 1.1, 1.2);
+    const rarityMult = Math.pow(0.7 + rarity * 1.6, 1.4);
+    return Math.round(Math.pow((baseValue * (0.7 + levelMult / 11) * (0.7 + rarityMult / 8)) * 2.1, 1.2)) / 10;
   }
 
   // Calculate bonuses based on base bonuses, level, and rarity
@@ -286,7 +286,7 @@
          generatedItem.level,
          generatedItem.rarity
        );
-       generatedItem.price = Math.max(20, Number.isFinite(calculatedValue) ? calculatedValue : 20);
+       generatedItem.price = Math.max(10, Number.isFinite(calculatedValue) ? calculatedValue : 10);
 
      return generatedItem;
    }

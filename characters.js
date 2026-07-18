@@ -61,16 +61,21 @@ function restockShopWithDungeonScaling(party, dungeon, dungeonData) {
   // Keep existing stock and add to it instead of clearing it out
   party.shopStock = party.shopStock || [];
 
-  // Generate 3-5 shop items with scaled levels
-  const numItems = 3 + Math.floor(Math.random() * 3); // 3-6 items
+  // Generate 1-3 items for every category so each restock always covers all
+  // gear types (weapon, armor, headgear, shoes).
   const categoryPool = ["weapon", "armor", "headgear", "shoes"];
 
-  for (let i = 0; i < numItems; i++) {
-      const item = itemGenerator.generateScaledItem(dungeonData, categoryPool);
-    // Timestamp so the periodic expiry sweep can drop items older than
-    // SHOP_ITEM_MAX_AGE_MS.
-    item.timestamp = Date.now();
-    party.shopStock.push(item);
+  for (const category of categoryPool) {
+    const count = 1 + Math.floor(Math.random() * 3); // 1-3 items
+    for (let i = 0; i < count; i++) {
+      // Pass a single-category pool so the generator's random pick always
+      // resolves to this category.
+      const item = itemGenerator.generateScaledItem(dungeonData, [category]);
+      // Timestamp so the periodic expiry sweep can drop items older than
+      // SHOP_ITEM_MAX_AGE_MS.
+      item.timestamp = Date.now();
+      party.shopStock.push(item);
+    }
   }
 
   // Sort the shop stock by price (most expensive first) so the priciest items appear at the top

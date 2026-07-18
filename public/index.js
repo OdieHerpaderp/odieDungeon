@@ -1560,7 +1560,8 @@ window.updatePartyDisplay = updatePartyDisplay;
 
   // Performance control functions
   function changePerformanceMode(mode) {
-      clientNetwork.changePerformanceMode(mode);
+      clientNetwork.setPerformanceMode(mode);
+      clientNetwork.updatePerformanceStatus();
   }
 
   function changeBatchSize(batchSize) {

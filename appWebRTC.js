@@ -301,17 +301,6 @@ class WebRTCServer extends EventEmitter {
     }
     
     // ═══════════════════════════════════════════════════════════════
-    // PACKET TRACKING METHODS
-    // ═══════════════════════════════════════════════════════════════
-    getPacketStats() {
-        return this.packetTracker.getStats();
-    }
-
-    resetPacketStats() {
-        this.packetTracker.reset();
-    }
-    
-    // ═══════════════════════════════════════════════════════════════
     // PARTY BROADCASTING METHODS
     // ═══════════════════════════════════════════════════════════════
     broadcastToPartyWebRTC(partyId, type, data, excludeSocket = null) {
@@ -325,11 +314,6 @@ class WebRTCServer extends EventEmitter {
         }
         return sent;
     }
-    
-    broadcastCriticalUpdate = (p, d) => this.broadcastToPartyWebRTC(p, 'criticalUpdate', d);
-    broadcastStandardUpdate = (p, d) => this.broadcastToPartyWebRTC(p, 'standardUpdate', d);
-    broadcastBackgroundUpdate = (p, d) => this.broadcastToPartyWebRTC(p, 'backgroundUpdate', d);
-    broadcastFullState = (p, d) => this.broadcastToPartyWebRTC(p, 'fullState', d);
     
     // ═══════════════════════════════════════════════════════════════
     // COMBAT & MOVEMENT HANDLERS
@@ -384,10 +368,6 @@ class WebRTCServer extends EventEmitter {
         return null;
     }
 
-    // Backward compatibility methods
-    getPlayerDelta(socketId, player) { return this.getDelta(socketId, player, 'player'); }
-    getEnemyDelta(enemyId, enemy) { return this.getDelta(enemyId, enemy, 'enemy'); }
-    
     initializePlayerDeltaState(partyId, party, socketId) {
         const player = party.players.get(socketId);
         if (player) this.playerLastState.set(socketId, buildSnapshot(player));
