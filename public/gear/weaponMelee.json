@@ -53,7 +53,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 60,
+    "value": 62,
     "description": "A basic sword for melee combat."
   },
   {
@@ -92,7 +92,7 @@
       "VIT": 0.2
     },
     "range": 1,
-    "value": 80,
+    "value": 82,
     "description": "A basic sword for melee combat."
   },
   {
@@ -112,7 +112,7 @@
       "AGI": 0.7
     },
     "range": 1,
-    "value": 50,
+    "value": 48,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -132,7 +132,7 @@
       "STR": 0.5
     },
     "range": 1,
-    "value": 70,
+    "value": 72,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -152,7 +152,7 @@
       "STR": 0.7
     },
     "range": 1,
-    "value": 95,
+    "value": 94,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -174,7 +174,7 @@
       "VIT": 0.4
     },
     "range": 1,
-    "value": 30,
+    "value": 32,
     "description": "Worn cloth wraps that protect the knuckles for brawling."
   },
   {
@@ -196,7 +196,7 @@
       "VIT": 0.45
     },
     "range": 1,
-    "value": 40,
+    "value": 42,
     "description": "Padded gloves built for delivering powerful punches."
   }
 ]

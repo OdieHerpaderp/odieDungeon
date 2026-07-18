@@ -10,7 +10,7 @@
       "HP": 1
     },
     "range": 1,
-    "value": 35,
+    "value": 34,
     "description": "Light protective armor made from animal hide."
   },
   {
@@ -24,7 +24,7 @@
       "CNC": 4
     },
     "range": 1,
-    "value": 50,
+    "value": 48,
     "description": "A light robe woven for spellcasters, shielding the mind more than the body."
   },
   {
@@ -38,7 +38,7 @@
       "INT": 2
     },
     "range": 1,
-    "value": 50,
+    "value": 48,
     "description": "A light robe woven for devout casters, shielding the spirit more than the body."
   },
   {
@@ -52,7 +52,7 @@
       "DEX": 3
     },
     "range": 1,
-    "value": 50,
+    "value": 48,
     "description": "Light protective armor made from animal hide."
   },
   {
@@ -67,7 +67,7 @@
       "AGI": 5
     },
     "range": 1,
-    "value": 70,
+    "value": 68,
     "description": "Medium armor formed from layered chitin, balancing mobility and guard."
   },
   {
@@ -97,7 +97,7 @@
       "HP": 20
     },
     "range": 1,
-    "value": 105,
+    "value": 106,
     "description": "Heavy protective armor made of metal plates."
   },
   {
@@ -112,7 +112,7 @@
       "STR": 3
     },
     "range": 1,
-    "value": 65,
+    "value": 64,
     "description": "Light armor tailored for silent strikes and swift escapes."
   },
   {
@@ -127,7 +127,7 @@
       "HP": 18
     },
     "range": 1,
-    "value": 95,
+    "value": 98,
     "description": "Heavy armor forged from iron plates, balancing weight and protection."
   }
 ]

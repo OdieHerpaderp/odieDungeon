@@ -169,6 +169,11 @@ function broadcastCriticalGearUpdate(partyId, party) {
         };
     }
     broadcastToParty(partyId, 'criticalUpdate', packet);
+    // Dual-deliver over Socket.IO as well, so gear/gold/inventory changes arrive
+    // even if the WebRTC data-channel batch stalls or drops the packet. The
+    // WebRTC-first path above is unchanged; this is an additional guaranteed path.
+    utils.trackSocketIoSent('criticalUpdate', packet);
+    io.to(partyId).emit('criticalUpdate', packet);
 }
 
 function broadcastUpdate(partyId, party, type) {
@@ -560,6 +565,10 @@ function broadcastUpdate(partyId, party, type) {
             return;
         }
 
+        // Drop any queued updates from before the escape so they cannot overwrite
+        // the freshly-synced Town state on the client.
+        clearPartyQueues(partyId);
+
         const oldDungeon = party.dungeon;
 
         // Clear any pending spawn timers
@@ -621,6 +630,7 @@ function broadcastUpdate(partyId, party, type) {
             return;
         }
 
+        clearPartyQueues(partyId);
         embarkParty(partyId, party, dungeon);
     }
 
@@ -653,6 +663,8 @@ function broadcastUpdate(partyId, party, type) {
             socket.emit('eventLog', { message: 'Party not found!', type: 'error' });
             return;
         }
+
+        clearPartyQueues(partyId);
 
         // Check if dungeon exists
         if (!dungeons[dungeon]) {
@@ -1311,10 +1323,10 @@ const PLAYER_DELTA_FIELDS = ['hp', 'ap', 'maxHp', 'maxAp', 'level', 'xp', 'xpToN
 // for another pass (e.g. skillsState, which only the standard pass sends). Without
 // this, a hit that also tweaks HP/MP would permanently swallow the skill-XP delta.
 const CRITICAL_DELTA_FIELDS = ['hp', 'ap', 'maxHp', 'maxAp'];
-const STANDARD_DELTA_FIELDS = ['actionBar', 'maxActionBar', 'level', 'skillsState'];
+const STANDARD_DELTA_FIELDS = ['actionBar', 'maxActionBar', 'level', 'skillsState', 'abilityCooldowns'];
 const BACKGROUND_DELTA_FIELDS = ['xp', 'xpToNext', 'gold', 'mp', 'maxMp', 'pointsToAllocate',
     'str', 'dex', 'agi', 'vit', 'int', 'cnc', 'wis', 'for', 'luk', 'pie',
-    'abilitySlots', 'abilityCooldowns', 'equipment', 'inventory'];
+    'abilitySlots', 'equipment', 'inventory'];
 const HPMP_FLUSH_DELTA_FIELDS = ['hp', 'maxHp', 'mp', 'maxMp', 'ap', 'maxAp'];
 
 // Fields tracked for per-enemy broadcast deltas.
@@ -1395,7 +1407,7 @@ const FIELD_PRIORITIES = [
     // Critical fields (HP/AP) - most frequent, fastest updates
     [/^players\.(hp|ap|maxHp|maxAp)$/, 'critical'],
     // Standard fields (combat-relevant) - action bars, combat state, skill progression
-    [/^players\.(actionBar|maxActionBar|level|skillsState)$/, 'standard'],
+    [/^players\.(actionBar|maxActionBar|level|skillsState|abilityCooldowns)$/, 'standard'],
     [/^(enemies|combatActive|combatTurn)$/, 'standard'],
     // Background fields (non-critical) - stats, gear, gold, XP
     [/^players\.(gold|xp)$/, 'background'],
@@ -1427,6 +1439,17 @@ function categorizeFieldChanges(partyId, changedFields) {
         categorized[priority].add(field);
     }
     return categorized;
+}
+
+// Empty the priority-queue field sets for a party so stale queued updates
+// (queued before a dungeon/state reset) cannot arrive later and overwrite the
+// client's freshly-synced state.
+function clearPartyQueues(partyId) {
+    const queues = priorityQueues.get(partyId);
+    if (!queues) return;
+    queues.critical.fields.clear();
+    queues.standard.fields.clear();
+    queues.background.fields.clear();
 }
 
 // Categorize changed fields into priority queues for throttled broadcast.
@@ -1717,7 +1740,11 @@ function startActionBarSystem(partyId, party) {
                 clearInterval(interval);
                 clearInterval(dotInterval);
                 actionIntervals.delete(partyId);
-                
+
+                // Drop any queued updates from the just-ended combat so stale
+                // packets cannot re-inject old enemies or flip combatActive back.
+                clearPartyQueues(partyId);
+
                 // Generate combat summary using shared function
                 generateCombatSummary(partyId, party, 'Victory! You can move now!');
 

@@ -24,7 +24,7 @@
       "DEX": 4
     },
     "range": 1,
-    "value": 40,
+    "value": 42,
     "description": "Simple travel boots for light armor."
   },
   {
@@ -38,7 +38,7 @@
       "CNC": 4
     },
     "range": 1,
-    "value": 40,
+    "value": 42,
     "description": "Simple travel boots for light armor."
   },
   {
@@ -52,7 +52,7 @@
       "INT": 2
     },
     "range": 1,
-    "value": 40,
+    "value": 42,
     "description": "Simple travel boots blessed for the faithful."
   },
   {
@@ -97,7 +97,7 @@
       "HP": 14
     },
     "range": 1,
-    "value": 70,
+    "value": 72,
     "description": "Heavy greaves forged from solid metal plates."
   },
   {
@@ -112,7 +112,7 @@
       "STR": 2
     },
     "range": 1,
-    "value": 45,
+    "value": 44,
     "description": "Padded boots designed for quiet, rapid movement."
   },
   {
@@ -127,7 +127,7 @@
       "HP": 12
     },
     "range": 1,
-    "value": 65,
+    "value": 64,
     "description": "Heavy greaves crafted from solid iron for unwavering defense."
   },
   {
@@ -142,7 +142,7 @@
       "HP": 4
     },
     "range": 1,
-    "value": 40,
+    "value": 38,
     "description": "Light boots of cured hide, offering quiet tread and agile movement."
   }
 ]

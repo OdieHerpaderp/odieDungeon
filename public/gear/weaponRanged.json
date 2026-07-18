@@ -8,15 +8,15 @@
     "spellPower": 2,
     "attackSpeed": 1.1,
     "bonuses": {
-      "DEX": 8,
-      "AGI": 5
+      "DEX": 7,
+      "CNC": 4
     },
     "damageModifiers": {
-      "STR": 0.3,
-      "DEX": 0.7
+      "DEX": 0.3,
+      "CNC": 0.7
     },
     "range": 24,
-    "value": 50,
+    "value": 44,
     "description": "A ranged weapon that shoots arrows with moderate damage."
   },
   {
@@ -29,14 +29,14 @@
     "attackSpeed": 1.1,
     "bonuses": {
       "DEX": 8,
-      "AGI": 5
+      "CNC": 5
     },
     "damageModifiers": {
       "STR": 0.3,
       "DEX": 0.7
     },
     "range": 24,
-    "value": 55,
+    "value": 58,
     "description": "A ranged weapon that shoots arrows with moderate damage."
   },
   {
@@ -56,7 +56,7 @@
       "DEX": 0.7
     },
     "range": 24,
-    "value": 70,
+    "value": 72,
     "description": "A ranged weapon that shoots arrows with moderate damage."
   }
 ]

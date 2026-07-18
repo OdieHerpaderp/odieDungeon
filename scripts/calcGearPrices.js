@@ -82,7 +82,7 @@ function normalize(score, minScore, maxScore) {
   if (span === 0) return 30;
   const raw = 30 + ((score - minScore) / span) * 80;
   const rounded = Math.round(raw);
-  return Math.round(rounded / 5) * 5;
+  return Math.round(rounded / 2) * 2;
 }
 
 function pad(s, n) {

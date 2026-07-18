@@ -914,6 +914,16 @@ class ClientNetwork {
             });
             this.uiCallbacks.updatePartyDisplay(this.currentState);
         }
+
+        // Combat just ended on the critical path: clear stale enemies so live-enemy
+        // computations (e.g. the escape button) use fresh state immediately.
+        if (data.combatActive === false && this.currentState.combatActive === true) {
+            this.currentState.enemies = [];
+            this.lastKnownState.enemies.clear();
+            this.currentState.combatActive = false;
+            this.lastKnownState.party.combatActive = false;
+            this.uiCallbacks.updatePartyDisplay(this.currentState);
+        }
     }
 
     handleStandardUpdate(data) {
@@ -935,9 +945,25 @@ class ClientNetwork {
             });
         }
         this.uiCallbacks.updatePartyDisplay(this.currentState);
-        if (data.combatActive !== undefined) this.currentState.combatActive = data.combatActive;
+        if (data.combatActive !== undefined) {
+            const prevCombatActive = this.currentState.combatActive;
+            this.currentState.combatActive = data.combatActive;
+            this.lastKnownState.party.combatActive = data.combatActive;
+            // Combat just ended: clear stale enemies so the escape button and
+            // other live-enemy computations use fresh state immediately.
+            if (data.combatActive === false && prevCombatActive === true) {
+                this.currentState.enemies = [];
+                this.lastKnownState.enemies.clear();
+            }
+            this.uiCallbacks.updatePartyDisplay(this.currentState);
+        }
         if (data.combatTurn !== undefined) this.currentState.combatTurn = data.combatTurn;
         if (data.floor !== undefined) { this.currentState.floor = data.floor; this.uiCallbacks.updatePartyDisplay(this.currentState); }
+        if (data.autoEmbark !== undefined) {
+            this.currentState.autoEmbark = data.autoEmbark;
+            this.lastKnownState.party.autoEmbark = data.autoEmbark;
+            this.uiCallbacks.updatePartyDisplay(this.currentState);
+        }
         if (data.enemies?.length) {
             data.enemies.forEach(e => {
                 const c = this.currentState.enemies?.find(x => x.id === e.id), l = this.lastKnownState.enemies.get(e.id);

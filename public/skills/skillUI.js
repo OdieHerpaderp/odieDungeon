@@ -82,8 +82,14 @@ function tickAbilityCooldowns() {
   });
 }
 
+let _lastCooldownsRefresh = 0;
 function _cooldownsHaveWork() {
   const el = document.getElementById('abilitySlotsPanel');
+  if (!el) return false;
+  // Keep the RAF loop alive while we have an own player whose cooldowns may still
+  // be settling in (server pushes every ~400ms). This prevents the loop from dying
+  // between standard ticks, so countdowns keep ticking smoothly.
+  if (lastOwnPlayerForCooldowns && _lastCooldownsRefresh >= Date.now() - 2000) return true;
   if (!el || !lastOwnPlayerForCooldowns) return false;
   const cooldowns = lastOwnPlayerForCooldowns?.abilityCooldowns || {};
   if (Object.values(cooldowns).some(end => typeof end === 'number' && end > Date.now())) return true;
@@ -593,6 +599,13 @@ window.renderAbilitySlotsPanel = async function(player) {
 
 let _skillPanelLastRender = 0;
 window.renderSkillPanel = async function(player, force = false) {
+  // Keep a live reference to the own player's cooldowns for the RAF tick, and mark
+  // the refresh time so the loop stays alive between server pushes (~400ms standard).
+  if (player) {
+    lastOwnPlayerForCooldowns = player;
+    _lastCooldownsRefresh = Date.now();
+    if (window.startCooldownsTick) window.startCooldownsTick();
+  }
   // Throttle full skill-panel rebuilds to at most ~2x/sec during rapid combat ticks.
   const now = Date.now();
   if (!force && now - _skillPanelLastRender < 500) return;
