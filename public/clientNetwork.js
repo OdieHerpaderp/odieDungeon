@@ -1006,6 +1006,16 @@ class ClientNetwork {
         } else {
             this.uiCallbacks.updatePartyDisplay(this.currentState);
         }
+        // Periodic background payload carries the same dungeon-progress fields as
+        // a full state sync; keep the client's dungeon UI in lockstep.
+        if (data.dungeonFloors !== undefined) {
+            this.currentState.dungeonFloors = data.dungeonFloors;
+            this.lastKnownState.party.dungeonFloors = { ...data.dungeonFloors };
+        }
+        if (data.highestVisitedFloors !== undefined) {
+            this.currentState.highestVisitedFloors = data.highestVisitedFloors;
+            this.lastKnownState.party.highestVisitedFloors = { ...data.highestVisitedFloors };
+        }
     }
 
     handleFullStateUpdate(data) {

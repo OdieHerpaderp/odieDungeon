@@ -6,31 +6,16 @@ const { buildSnapshot } = require('./utilities/deltaTracker');
 
 
 // Batching configuration - optimized for low-latency UDP-like behavior
-const DEFAULT_BATCH_CONFIG = {
-    critical: { interval: 100, maxBatchSize: 6 },
-    standard: { interval: 200, maxBatchSize: 8 },
-    background: { interval: 300, maxBatchSize: 10 },
-    immediate: { interval: 50, maxBatchSize: 4 }
-};
-
-const BATCH_INTERVAL_LIMITS = {
-    critical: { min: 100, max: 150 },
-    standard: { min: 200, max: 250 },
-    background: { min: 300, max: 350 },
-    immediate: { min: 50, max: 100 }
-};
-
-// Field aliases for message compression - reduces payload size
-const FIELD_ALIASES = {
-    hp: 'h', ap: 'a', maxHp: 'mh', maxAp: 'ma', actionBar: 'ab',
-    maxActionBar: 'mab', level: 'l', xp: 'x',
-    gold: 'g', mp: 'm', maxMp: 'mm', str: 's', dex: 'd', agi: 'ag',
-    vit: 'v', int: 'i', cnc: 'c', wis: 'w', for: 'f', luk: 'lk',
-    pie: 'p', armour: 'ar', weapon: 'wp', weaponMelee: 'wpm',
-    weaponRanged: 'wpr', weaponMagic: 'wpmg', shoes: 'sh', helmet: 'h',
-    isDead: 'dd', playerId: 'pid', position: 'pos', action: 'act',
-    timestamp: 'ts', priority: 'pr', messages: 'msgs', type: 't'
-};
+const DEFAULT_BATCH_CONFIG = { 
+    critical: { interval: 100, maxBatchSize: 6 }, 
+    standard: { interval: 200, maxBatchSize: 8 }, 
+    background: { interval: 300, maxBatchSize: 10 }, 
+    immediate: { interval: 50, maxBatchSize: 4 } };
+const BATCH_INTERVAL_LIMITS = { 
+    critical: { min: 100, max: 150 }, 
+    standard: { min: 200, max: 250 }, 
+    background: { min: 300, max: 350 }, 
+    immediate: { min: 50, max: 100 } };
 
 // ═══════════════════════════════════════════════════════════════════
 // PACKET TRACKING CLASS - For tracking sent/received packet counts and sizes
@@ -466,18 +451,6 @@ class WebRTCServer extends EventEmitter {
         return 'background';
     }
 
-    // Message compression using field aliases
-    compressMessage(data) {
-        if (typeof data !== 'object' || data === null) return data;
-        
-        const compressed = {};
-        for (const [key, value] of Object.entries(data)) {
-            const alias = FIELD_ALIASES[key] || key;
-            compressed[alias] = value;
-        }
-        return compressed;
-    }
-    
     queueForBatch(socketId, type, data, priority) {
         if (!priority) priority = this.determinePriority(data);
         const accumulator = this.getBatchAccumulator(socketId, priority);
