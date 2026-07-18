@@ -2,7 +2,7 @@
   {
     "id": "firstAid",
     "name": "First Aid",
-    "description": "Restores a small amount of health to yourself or an ally.",
+    "description": "Heals one ally.",
     "skillId": "skill_healing",
     "unlockSkillLevelMin": 0,
     "mpCostBase": 6,
@@ -17,7 +17,7 @@
   {
     "id": "heal_mended_light",
     "name": "Mended Light",
-    "description": "A gentle light that restores a small amount of health.",
+    "description": "Heals one ally.",
     "skillId": "skill_healing",
     "unlockSkillLevelMin": 2,
     "mpCostBase": 7,
@@ -32,7 +32,7 @@
   {
     "id": "healing_touch",
     "name": "Healing Touch",
-    "description": "Channel healing energy to restore moderate health.",
+    "description": "Heals one ally.",
     "skillId": "skill_healing",
     "unlockSkillLevelMin": 4,
     "mpCostBase": 13,
@@ -47,7 +47,7 @@
   {
     "id": "regenerating_touch",
     "name": "Regenerating Touch",
-    "description": "A healing touch that restores health immediately and over time.",
+    "description": "Heals one ally and heals over time.",
     "skillId": "skill_healing",
     "unlockSkillLevelMin": 7,
     "mpCostBase": 18,
@@ -64,7 +64,7 @@
   {
     "id": "divine_mend",
     "name": "Divine Mend",
-    "description": "A powerful healing spell that restores substantial health and applies a strong heal over time effect.",
+    "description": "Heals one ally and heals over time.",
     "skillId": "skill_healing",
     "unlockSkillLevelMin": 10,
     "mpCostBase": 22,
@@ -81,7 +81,7 @@
   {
     "id": "mass_rejuvenation",
     "name": "Mass Rejuvenation",
-    "description": "A wide-area healing spell that heals multiple allies and applies a moderate heal over time to all targets.",
+    "description": "Heals all allies and heals over time.",
     "skillId": "skill_healing",
     "unlockSkillLevelMin": 13,
     "mpCostBase": 30,

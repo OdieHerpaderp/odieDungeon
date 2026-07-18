@@ -428,22 +428,16 @@ window.selectGearTab = function(prefix, label) {
     b.classList.toggle('active', b.dataset.label === active));
 };
 
-function gearTableRow(cellsHtml) {
-  return `<tr>${cellsHtml}</tr>`;
-}
-
-// Build one category's tab body: a sticky equipped header (optional) + a real table.
+// Build one category's tab body: an equipped block (optional) + a flex column of
+// compact two-line item cards.
 function buildGearCategoryBody(prefix, category, equippedRow, rows) {
   const active = (prefix === 'equip' ? _activeEquipCat : _activeShopCat) === category.label;
-  const head = prefix === 'shop'
-    ? '<th class="gear-col-item">Item</th><th class="gear-col-mid">Price</th><th class="gear-col-act">Buy</th>'
-    : '<th class="gear-col-item">Item</th><th class="gear-col-act">Equip</th>';
   const empty = rows.length ? '' : `<div style="font-size:11px; color:#777; padding:2px;">${prefix === 'shop' ? 'No stock' : 'No spares'}</div>`;
   return `
     <div class="gear-tab-body ${active ? 'active' : ''}" data-label="${category.label}">
       ${equippedRow}
       ${empty}
-      <table class="gear-table"><thead><tr>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>
+      <div class="gear-list">${rows.join('')}</div>
     </div>`;
 }
 
@@ -533,9 +527,9 @@ function generateOptionsFrameHtml() {
 // Frame Configurations
 const frameConfigs = [
   { name: 'Skills', title: '🎯 Skills', left: 2, top: 285, width: 190, height: 320, minWidth: 160, minHeight: 200, html: `<div id="skillsPanel" style="padding:6px; color:white; font-size:12px; height:100%; overflow-y:auto; box-sizing:border-box;"></div>` },
-  { name: 'AbilitySlots', title: '🧩 Ability Slots', left: 210, top: 285, width: 420, minWidth: 252, height: 320, minHeight: 200, html: `<div id="abilitySlotsPanel" style="padding:6px; color:white; font-size:12px; height:100%; box-sizing:border-box; overflow:hidden;"></div>` },
-  { name: 'Equipment', title: '🎒 Equipment & Inventory', left: 605, top: 285, width: 234, height: 260, minWidth: 150, minHeight: 160, html: generateEquipmentHtml() },
-  { name: 'Shop', title: '🛒 Shop (town only)', left: 845, top: 285, width: 234, height: 260, minWidth: 150, minHeight: 160, html: generateShopHtml() },
+  { name: 'AbilitySlots', title: '🧩 Ability Slots', left: 195, top: 285, width: 420, minWidth: 252, height: 320, minHeight: 200, html: `<div id="abilitySlotsPanel" style="padding:6px; color:white; font-size:12px; height:100%; box-sizing:border-box; overflow:hidden;"></div>` },
+  { name: 'Equipment', title: '🎒 Equipment & Inventory', left: 605, top: 285, width: 300, height: 260, minWidth: 180, minHeight: 160, html: generateEquipmentHtml() },
+  { name: 'Shop', title: '🛒 Shop (town only)', left: 845, top: 285, width: 300, height: 260, minWidth: 180, minHeight: 160, html: generateShopHtml() },
   { name: 'Win1', title: '📜 Event Log', left: 720, top: 600, width: 380, height: 100, minWidth: 160, minHeight: 80, html: '<div id="eventLog" style="width:100%; height:100%; color:white; overflow-y:scroll; font-size:12px; z-index:1000;"></div>' },
   { name: 'FloorControls', title: '🗺️ Floor Controls', left: 850, top: 550, width: 200, height: 250, minWidth: 160, minHeight: 200, html: generateFloorControlHtml() },
   { name: 'CurrentPlayer', title: '👤 Current Player', left: 2, top: 50, width: 315, height: 230, minWidth: 200, minHeight: 150, html: generatePlayerFrameHtml() },
@@ -882,10 +876,12 @@ function flashClass(el, cls) {
     return parts.join('');
   }
 
+  // Inline tier marker (e.g. "♔3.5"), shown next to the name/rarity on the card's
+  // first line. Returns '' when no tier is available.
   function itemTierBadge(item) {
     const tier = window.itemGenerator?.calculateItemTier?.(item);
     if (typeof tier !== 'number') return '';
-    return `<span style="position:absolute; right:2px; bottom:1px; font-size:10px; color:#ffd54f; pointer-events:none;">♔${tier.toFixed(1)}</span>`;
+    return `<span class="gear-tier">♔${tier.toFixed(1)}</span>`;
   }
 
   function getColourFromRarity(rarity) {
@@ -900,6 +896,19 @@ function flashClass(el, cls) {
     };
     if (r >= 7) return { text: '#ff9800', bg: '#3a2a1a', border: '#ef6c00' };
     return map[r] || map[1];
+  }
+
+  // Client-side estimate of the gold a player would get for selling an item (75% of
+  // its buy price), mirroring the server's sellValue formula in app.js.
+  function getSellPrice(calculated) {
+    const calc = calculated || {};
+    let price;
+    if (typeof calc.baseValue === 'number') {
+      price = window.itemGenerator?.calculateItemPrice?.(calc.baseValue, calc.level, calc.rarity) ?? calc.baseValue;
+    } else {
+      price = calc.price ?? 40;
+    }
+    return Math.max(1, Math.floor(price * 0.75));
   }
 
   function itemTooltip(calculatedItem, extra = '') {
@@ -925,33 +934,71 @@ function flashClass(el, cls) {
     return tooltip;
   }
 
-  // Shared item-name cell markup (name + Lv + rarity + count + stats + tier badge).
-  // Kept as a plain table cell: rarity is shown as a thin left accent + colored text,
-  // not a filled background, so the row still reads as a table row.
-  function itemNameCell(calculated, count, fontSize, tooltipPrefix = '') {
-    const name = calculated?.displayName || calculated?.name || calculated?.id || 'Unknown';
-    const level = calculated?.level ? ` Lv${calculated.level}` : '';
-    const colour = getColourFromRarity(calculated?.rarity);
-    const rarity = calculated?.rarity ? ` <span style="color:${colour.text};">(${calculated.rarity}★)</span>` : '';
-    const countBadge = count > 1 ? ` <span style="font-size:10px; color:#9f9;">x${count}</span>` : '';
-    const stats = itemStatsHtml(calculated, fontSize);
-    const tip = `${tooltipPrefix}${itemTooltip(calculated)}`;
-    return `<td class="gear-name-cell" title="${tip}" style="border-left:3px solid ${colour.border}; color:${colour.text};">
-      <div style="position:relative;">${name}${level}${rarity}${countBadge}${stats}${itemTierBadge(calculated)}</div></td>`;
+  // Compact single-line stat tokens for the two-line gear card. Same colour coding as
+  // itemStatsHtml but space-separated so the whole stat block fits on one wrapping line.
+  function itemStatsInlineHtml(calculatedItem) {
+    const span = (text, color) => `<span style="color:${color};">${text}</span>`;
+    const parts = [];
+    const dmg = [];
+    if (calculatedItem.damage) dmg.push(span(`DMG:${calculatedItem.damage}`, '#ff6b6b'));
+    if (calculatedItem.spellPower) dmg.push(span(`SP:${calculatedItem.spellPower}`, '#4fc3f7'));
+    if (dmg.length) parts.push(dmg.join(' '));
+    const def = [];
+    if (calculatedItem.defense) def.push(span(`DEF:${calculatedItem.defense}`, '#4db6ac'));
+    if (calculatedItem.magicResist) def.push(span(`MR:${calculatedItem.magicResist}`, '#9575cd'));
+    if (def.length) parts.push(def.join(' '));
+    if (calculatedItem.damageModifiers) {
+      const mods = Object.entries(calculatedItem.damageModifiers)
+        .map(([stat, weight]) => `${stat}x${Number(weight).toFixed(2)}`).join(',');
+      parts.push(span(`MODS:${mods}`, '#ff6b6b'));
+    }
+    if (calculatedItem.attackSpeed) parts.push(span(`ASPD:${calculatedItem.attackSpeed}`, '#ffd54f'));
+    if (calculatedItem.bonuses) {
+      for (const [stat, value] of Object.entries(calculatedItem.bonuses)) {
+        parts.push(span(`+${value}${stat}`, '#ffb74d'));
+      }
+    }
+    return parts.join(' ');
   }
 
-  // Sticky equipped header shown at the top of a category tab (always visible).
-  function equippedHeaderHtml(calculated, slot) {
-    if (!calculated) return `<div class="gear-sticky-head" style="color:#ccc;">Empty</div>`;
-    const colour = getColourFromRarity(calculated?.rarity);
+  // Shared line-1 fragment for gear cards: name + level + rarity★ + tier + count.
+  function gearCardTitle(calculated, count) {
     const name = calculated?.displayName || calculated?.name || calculated?.id || 'Unknown';
     const level = calculated?.level ? ` Lv${calculated.level}` : '';
-    const rarity = calculated?.rarity ? ` <span style="color:${colour.text};">(${calculated.rarity}★)</span>` : '';
-    const stats = itemStatsHtml(calculated, '11px');
-    return `<div class="gear-sticky-head" title="${itemTooltip(calculated)}" style="background:${colour.bg}; border-color:${colour.border}; color:${colour.text};">
-      <div style="font-weight:bold; font-size:11px; margin-bottom:2px;">Equipped</div>
-      <div style="position:relative; font-size:11px;">${name}${level}${rarity}${stats}${itemTierBadge(calculated)}
-        <button class="gear-act-btn gear-act-unequip" onclick="unequipItem('${slot}')" style="position:absolute; right:0; top:0;">Unequip</button></div>
+    const rarity = calculated?.rarity ? ` <span style="color:${getColourFromRarity(calculated.rarity).text};">(${calculated.rarity}★)</span>` : '';
+    const countBadge = count > 1 ? ` <span style="font-size:10px; color:#9f9;">x${count}</span>` : '';
+    return `${name}${level}${rarity}${itemTierBadge(calculated)}${countBadge}`;
+  }
+
+  // Build a full item as a two-line, full-width rarity-banded card. Line 1 holds
+  // name/level/rarity/tier/count; line 2 holds the compact inline stats. The price +
+  // action button sit on the right, vertically centered, so cards stay short.
+  function itemRowCard(calculated, count, fontSize, tooltipPrefix, actionHtml, priceText) {
+    const colour = getColourFromRarity(calculated?.rarity);
+    const stats = itemStatsInlineHtml(calculated);
+    const tip = `${tooltipPrefix}${itemTooltip(calculated)}`;
+    const priceBlock = priceText ? `<div class="gear-card-price">${priceText}</div>` : '';
+    return `<div class="gear-card" title="${tip}" style="background:${colour.bg}; border:1px solid ${colour.border}; border-left:3px solid ${colour.border}; color:${colour.text};">
+      <div class="gear-card-main">
+        <div class="gear-card-l1">${gearCardTitle(calculated, count)}</div>
+        <div class="gear-card-l2">${stats}</div>
+      </div>
+      <div class="gear-card-side">${priceBlock}${actionHtml}</div>
+    </div>`;
+  }
+
+  // Equipped block shown at the top of a category tab, slimmed to two lines so it matches
+  // the item cards below it.
+  function equippedHeaderHtml(calculated, slot) {
+    if (!calculated) return `<div class="gear-card gear-card-equipped gear-sticky-empty" style="color:#ccc;">Empty</div>`;
+    const colour = getColourFromRarity(calculated?.rarity);
+    const stats = itemStatsInlineHtml(calculated);
+    return `<div class="gear-card gear-card-equipped" title="${itemTooltip(calculated)}" style="background:${colour.bg}; border:1px solid ${colour.border}; border-left:3px solid ${colour.border}; color:${colour.text};">
+      <div class="gear-card-main">
+        <div class="gear-card-l1"><b>Equipped</b> ${gearCardTitle(calculated, 1)}</div>
+        <div class="gear-card-l2">${stats}</div>
+      </div>
+      <div class="gear-card-side"><button class="gear-act-btn gear-act-unequip" onclick="unequipItem('${slot}')">Unequip</button></div>
     </div>`;
   }
 
@@ -991,10 +1038,10 @@ function flashClass(el, cls) {
       const rows = groups.map(group => {
         const rep = group[0];
         const calc = getCalculatedItem(rep, category.equippedKey);
-        return gearTableRow(`${itemNameCell(calc, group.length, '10px')}
-          <td class="gear-col-act">
-            <button class="gear-act-btn gear-act-equip" onclick="equipInventoryItem('${rep.id}', '${category.equippedKey}')">Equip</button>
-          </td>`);
+        const sellPrice = getSellPrice(calc);
+        const action = `<button class="gear-act-btn gear-act-equip" onclick="equipInventoryItem('${rep.id}', '${category.equippedKey}')">Equip</button>`
+          + `<button class="gear-act-btn gear-act-sell" onclick="sellInventoryItem('${rep.id}')">Sell ${sellPrice}g</button>`;
+        return itemRowCard(calc, group.length, '10px', '', action, '');
       });
       return buildGearCategoryBody('equip', category, header, rows);
     }).join('');
@@ -1051,8 +1098,8 @@ function renderShopStock(shopStock, force = false) {
       const { item, index } = group[0];
       const price = priceByKey.get(`${item.baseItem || item.id}|${item.level ?? 1}|${item.rarity ?? 1}`);
       const calc = window.itemGenerator?.calculateItemStats?.(item) || item;
-      const cell = itemNameCell(calc, group.length, '9px', `Price: ${price}g\n`);
-      return gearTableRow(`${cell}<td class="gear-col-mid">${price}g</td><td class="gear-col-act"><button class="gear-act-btn gear-act-buy" onclick="buyGear('shop_${index}')">Buy</button></td>`);
+      const action = `<button class="gear-act-btn gear-act-buy" onclick="buyGear('shop_${index}')">Buy</button>`;
+      return itemRowCard(calc, group.length, '10px', `Price: ${price}g\n`, action, `${price}g`);
     });
     return buildGearCategoryBody('shop', category, '', rows);
   }).join('');

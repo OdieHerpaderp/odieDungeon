@@ -1986,11 +1986,11 @@ function startRegenSystem() {
             
             live.forEach(p => {
                 // HP Regen (effective attributes include equipment bonuses)
-                let hpRegen = (inCombat ? 0.08 : 0.13) + characters.getEffectiveAttribute(p, 'vit') / 288 + characters.getEffectiveAttribute(p, 'str') / 344 + characters.getEffectiveAttribute(p, 'for') / 377 + characters.getEffectiveAttribute(p, 'pie') / 533 + (p.equipment?.shoes?.defense || 3) / 333;
-                p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 1.5 : 3.1));
+                let hpRegen = (inCombat ? 0.09 : 0.15) + characters.getEffectiveAttribute(p, 'vit') / 288 + characters.getEffectiveAttribute(p, 'str') / 344 + characters.getEffectiveAttribute(p, 'for') / 377 + characters.getEffectiveAttribute(p, 'pie') / 533 + (p.equipment?.shoes?.defense || 3) / 333;
+                p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 1.7 : 3.1));
 
                 // MP Regen (effective attributes include equipment bonuses)
-                let mpRegen = (inCombat ? 0.05 : 0.17) + characters.getEffectiveAttribute(p, 'int') / 422 + characters.getEffectiveAttribute(p, 'cnc') / 311 + characters.getEffectiveAttribute(p, 'wis') / 377 + characters.getEffectiveAttribute(p, 'pie') / 422 + (p.equipment?.shoes?.defense || 3) / 333;
+                let mpRegen = (inCombat ? 0.06 : 0.17) + characters.getEffectiveAttribute(p, 'int') / 422 + characters.getEffectiveAttribute(p, 'cnc') / 311 + characters.getEffectiveAttribute(p, 'wis') / 377 + characters.getEffectiveAttribute(p, 'pie') / 422 + (p.equipment?.shoes?.defense || 3) / 333;
                 p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 0.8 : 1.7));
                 
                 // HP/MP changes are emitted by the consolidated delta broadcaster

@@ -351,18 +351,20 @@ button { color: #eee; background-color: #494; border: none; border-radius: 4px; 
 .gear-tab.active { background: #444; color: #fff; border-bottom-color: #444; }
 .gear-tab-body { display: none; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .gear-tab-body.active { display: block; }
-.gear-sticky-head { position: sticky; top: 0; z-index: 2; background: #1d1d1d; border: 1px solid #555; border-radius: 4px; padding: 3px; margin-bottom: 4px; }
-.gear-table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; }
-.gear-table th { text-align: left; font-size: 9px; font-weight: 600; color: #aaa; padding: 2px 2px; border-bottom: 1px solid #555; }
-.gear-table td { padding: 2px 2px; border-bottom: 1px solid #333; vertical-align: middle; }
-.gear-name-cell { min-width: 0; word-break: break-word; }
-.gear-col-item { width: auto; }
-.gear-col-mid { width: 44px; text-align: right; white-space: nowrap; }
-.gear-col-act { width: 40px; text-align: center; white-space: nowrap; }
-.gear-col-act .gear-act-btn { display: block; width: 100%; margin: 0 auto 2px; }
-.gear-act-btn { font-size: 9px; padding: 1px 2px; cursor: pointer; white-space: nowrap; border: 1px solid #222; border-radius: 3px; line-height: 1.3; }
+.gear-sticky-head { position: sticky; top: 0; z-index: 2; border-radius: 4px; padding: 3px; margin-bottom: 4px; }
+.gear-sticky-empty { background: #1d1d1d; border: 1px solid #555; text-align:center; }
+.gear-list { display: flex; flex-direction: column; gap: 3px; }
+.gear-card { position: relative; display: flex; align-items: stretch; gap: 4px; border-radius: 4px; padding: 3px 4px; }
+.gear-card-equipped { border-width: 1px; border-style: solid; }
+.gear-card-l1 { font-size: 11px; font-weight: 600; line-height: 1.2; }
+.gear-tier { font-size: 10px; color: #ffd54f; margin-left: 2px; }
+.gear-card-l2 { font-size: 10px; line-height: 1.2; color: #ccc; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 1px; }
+.gear-card-main { flex: 1 1 auto; min-width: 0; word-break: break-word; }
+.gear-card-side { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px; white-space: nowrap; }
+.gear-act-btn { font-size: 9px; padding: 2px 6px; cursor: pointer; white-space: nowrap; border: 1px solid #222; border-radius: 3px; line-height: 1.3; }
 .gear-act-buy { background: #4a4; color: #fff; }
 .gear-act-equip { background: #48b; color: #fff; }
+.gear-act-sell { background: #a83; color: #fff; }
 .gear-act-unequip { background: #777; color: #fff; }
 .clickable-row { display: flex; align-items: center; gap: 2px; cursor: pointer; user-select: none; }
 .xp-bar-track { height: 8px; background: #333; border-radius: 3px; margin-top: 2px; overflow: hidden; }

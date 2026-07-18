@@ -2,7 +2,7 @@
   {
     "id": "pugilism_jab",
     "name": "Jab",
-    "description": "A quick fist jab that softens up an unarmed opponent.",
+    "description": "Deals weapon damage to one foe with your fists.",
     "skillId": "skill_melee_pugilism",
     "unlockSkillLevelMin": 0,
     "mpCostBase": 3,
@@ -18,7 +18,7 @@
   {
     "id": "uppercut",
     "name": "Uppercut",
-    "description": "A rising fist strike that deals solid damage.",
+    "description": "Deals weapon damage to one foe with your fists.",
     "skillId": "skill_melee_pugilism",
     "unlockSkillLevelMin": 2,
     "mpCostBase": 4,
@@ -34,7 +34,7 @@
   {
     "id": "suplex",
     "name": "Suplex",
-    "description": "A devastating grapple throw that deals heavy damage.",
+    "description": "Deals weapon damage to one foe with your fists.",
     "skillId": "skill_melee_pugilism",
     "unlockSkillLevelMin": 5,
     "mpCostBase": 5,

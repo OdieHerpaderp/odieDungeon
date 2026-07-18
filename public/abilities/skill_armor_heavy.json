@@ -2,7 +2,7 @@
   {
     "id": "armor_heavy_iron_stance",
     "name": "Iron Stance",
-    "description": "Plant yourself in an immovable iron stance that greatly reduces incoming damage.",
+    "description": "Raises your defense for a short time.",
     "skillId": "skill_armor_heavy",
     "unlockSkillLevelMin": 5,
     "mpCostBase": 1,

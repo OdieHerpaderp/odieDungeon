@@ -2,7 +2,7 @@
   {
     "id": "bash",
     "name": "Bash",
-    "description": "A powerful melee attack.",
+    "description": "Deals weapon damage to one foe with a blunt weapon.",
     "skillId": "skill_melee_blunt",
     "unlockSkillLevelMin": 0,
     "mpCostBase": 4,
@@ -18,7 +18,7 @@
   {
     "id": "wallop",
     "name": "Wallop",
-    "description": "A smashing melee attack.",
+    "description": "Deals weapon damage to one foe with a blunt weapon.",
     "skillId": "skill_melee_blunt",
     "unlockSkillLevelMin": 2,
     "mpCostBase": 5,
@@ -34,7 +34,7 @@
   {
     "id": "sweep",
     "name": "Sweep",
-    "description": "A sweeping melee attack that hits multiple enemies.",
+    "description": "Deals weapon damage to multiple foes with a blunt weapon.",
     "skillId": "skill_melee_blunt",
     "unlockSkillLevelMin": 4,
     "mpCostBase": 7,
@@ -50,7 +50,7 @@
   {
     "id": "blunt_slam",
     "name": "Concussive Slam",
-    "description": "A heavy blunt strike that leaves a bruise dealing damage over time.",
+    "description": "Deals weapon damage to one foe with a blunt weapon and deals damage over time.",
     "skillId": "skill_melee_blunt",
     "unlockSkillLevelMin": 6,
     "mpCostBase": 8,

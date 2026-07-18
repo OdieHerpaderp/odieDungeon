@@ -2,7 +2,7 @@
   {
     "id": "shortblade_quick_jab",
     "name": "Quick Jab",
-    "description": "A rapid dagger jab that finds gaps in enemy guard.",
+    "description": "Deals weapon damage to one foe with a short blade.",
     "skillId": "skill_melee_shortBlade",
     "unlockSkillLevelMin": 0,
     "mpCostBase": 3,
@@ -18,7 +18,7 @@
   {
     "id": "shortblade_backstab",
     "name": "Backstab",
-    "description": "A swift dagger thrust that strikes from the shadows for heavy damage using your weapon's damage.",
+    "description": "Deals weapon damage to one foe with a short blade.",
     "skillId": "skill_melee_shortBlade",
     "unlockSkillLevelMin": 4,
     "mpCostBase": 6,
@@ -33,7 +33,7 @@
   {
     "id": "shortblade_flurry",
     "name": "Blade Flurry",
-    "description": "A flurry of quick dagger slashes that strikes multiple nearby foes.",
+    "description": "Deals weapon damage to multiple foes with a short blade.",
     "skillId": "skill_melee_shortBlade",
     "unlockSkillLevelMin": 6,
     "mpCostBase": 8,

@@ -2,7 +2,7 @@
   {
     "id": "armor_medium_brace",
     "name": "Brace",
-    "description": "Brace behind your armor, hardening yourself against incoming blows.",
+    "description": "Raises your defense for a short time.",
     "skillId": "skill_armor_medium",
     "unlockSkillLevelMin": 5,
     "mpCostBase": 1,

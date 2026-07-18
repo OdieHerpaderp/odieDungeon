@@ -2,7 +2,7 @@
   {
     "id": "longblade_quick_slash",
     "name": "Quick Slash",
-    "description": "A swift slash that opens a long blade duel.",
+    "description": "Deals weapon damage to one foe with a long blade.",
     "skillId": "skill_melee_longBlade",
     "unlockSkillLevelMin": 0,
     "mpCostBase": 3,
@@ -18,7 +18,7 @@
   {
     "id": "cleave",
     "name": "Cleave",
-    "description": "A powerful melee swing that hits hard.",
+    "description": "Deals weapon damage to multiple foes with a long blade.",
     "skillId": "skill_melee_longBlade",
     "unlockSkillLevelMin": 3,
     "mpCostBase": 5,
@@ -33,7 +33,7 @@
   {
     "id": "longblade_sever",
     "name": "Severing Strike",
-    "description": "A precise long blade cut that inflicts a deep bleeding wound.",
+    "description": "Deals weapon damage to one foe with a long blade and deals damage over time.",
     "skillId": "skill_melee_longBlade",
     "unlockSkillLevelMin": 5,
     "mpCostBase": 7,

@@ -2,7 +2,7 @@
   {
     "id": "witch_minor_hex",
     "name": "Minor Hex",
-    "description": "A minor hex that deals damage over time.",
+    "description": "Deals damage to one foe and deals damage over time.",
     "skillId": "skill_witchcraft",
     "unlockSkillLevelMin": 0,
     "mpCostBase": 5,
@@ -17,7 +17,7 @@
   {
     "id": "witch_curse",
     "name": "Witch's Curse",
-    "description": "A creeping curse that deals damage over time and weakens the target's attacks.",
+    "description": "Deals damage to one foe, weakens them, and deals damage over time.",
     "skillId": "skill_witchcraft",
     "unlockSkillLevelMin": 2,
     "mpCostBase": 6,
@@ -34,7 +34,7 @@
   {
     "id": "vulnerability_hex",
     "name": "Vulnerability Hex",
-    "description": "A hex that deals damage over time and makes the target take increased damage from all sources.",
+    "description": "Deals damage to one foe, makes them vulnerable, and deals damage over time.",
     "skillId": "skill_witchcraft",
     "unlockSkillLevelMin": 4,
     "mpCostBase": 9,
@@ -51,7 +51,7 @@
   {
     "id": "withering_blight",
     "name": "Withering Blight",
-    "description": "A rotting blight that deals damage over time and strips away the target's defenses.",
+    "description": "Deals damage to one foe, lowers their defense, and deals damage over time.",
     "skillId": "skill_witchcraft",
     "unlockSkillLevelMin": 8,
     "mpCostBase": 12,

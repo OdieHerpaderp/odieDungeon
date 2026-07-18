@@ -2,7 +2,7 @@
   {
     "id": "magic_spark",
     "name": "Arcane Spark",
-    "description": "Looses a small spark of arcane energy from your rod or staff.",
+    "description": "Deals damage to one foe with a rod or staff.",
     "skillId": "skill_magic",
     "unlockSkillLevelMin": 0,
     "mpCostBase": 4,
@@ -17,7 +17,7 @@
   {
     "id": "magic_lance",
     "name": "Arcane Lance",
-    "description": "Fires a focused lance of arcane energy from your rod or staff.",
+    "description": "Deals damage to one foe with a rod or staff.",
     "skillId": "skill_magic",
     "unlockSkillLevelMin": 4,
     "mpCostBase": 7,
@@ -33,7 +33,7 @@
   {
     "id": "magic_burst",
     "name": "Mystic Burst",
-    "description": "An explosive burst of mystic energy that burns all enemies in an area.",
+    "description": "Deals damage to multiple foes with a rod or staff and deals damage over time.",
     "skillId": "skill_magic",
     "unlockSkillLevelMin": 6,
     "mpCostBase": 10,

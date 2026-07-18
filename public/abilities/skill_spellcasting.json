@@ -2,7 +2,7 @@
   {
     "id": "spell_minor_spark",
     "name": "Minor Spark",
-    "description": "A minor spark that scales from your spellcasting skill.",
+    "description": "Deals weapon damage to one foe.",
     "skillId": "skill_spellcasting",
     "unlockSkillLevelMin": 2,
     "mpCostBase": 4,
@@ -17,7 +17,7 @@
   {
     "id": "arcane_bolt",
     "name": "Arcane Bolt",
-    "description": "A quick magic bolt that scales from your spellcasting skill.",
+    "description": "Deals weapon damage to one foe.",
     "skillId": "skill_spellcasting",
     "unlockSkillLevelMin": 0,
     "mpCostBase": 4,
@@ -31,7 +31,7 @@
   {
     "id": "poison_strike",
     "name": "Poison Strike",
-    "description": "A toxic attack that deals initial damage and applies a damage over time effect.",
+    "description": "Deals weapon damage to one foe with a magic weapon and deals damage over time.",
     "skillId": "skill_spellcasting",
     "unlockSkillLevelMin": 3,
     "mpCostBase": 8,
@@ -47,7 +47,7 @@
   {
     "id": "entangling_vines",
     "name": "Entangling Vines",
-    "description": "Magical vines that slow enemies' action bar fill rate and deal damage over time.",
+    "description": "Deals weapon damage to one foe with a magic weapon, slows them, and deals damage over time.",
     "skillId": "skill_spellcasting",
     "unlockSkillLevelMin": 6,
     "mpCostBase": 10,
@@ -65,7 +65,7 @@
   {
     "id": "fireball",
     "name": "Fireball",
-    "description": "Launches a fiery orb that explodes, damaging multiple enemies.",
+    "description": "Deals weapon damage to multiple foes with a magic weapon.",
     "skillId": "skill_spellcasting",
     "unlockSkillLevelMin": 9,
     "mpCostBase": 14,

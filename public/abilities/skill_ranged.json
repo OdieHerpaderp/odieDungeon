@@ -2,7 +2,7 @@
   {
     "id": "ranged_quick_shot",
     "name": "Quick Shot",
-    "description": "A fast ranged shot fired with little wind-up.",
+    "description": "Deals weapon damage to one foe with a ranged weapon.",
     "skillId": "skill_ranged",
     "unlockSkillLevelMin": 2,
     "mpCostBase": 4,
@@ -17,7 +17,7 @@
   {
     "id": "snare_shot",
     "name": "Snare Shot",
-    "description": "A ranged trap that slows enemies.",
+    "description": "Deals weapon damage to one foe with a ranged weapon.",
     "skillId": "skill_ranged",
     "unlockSkillLevelMin": 0,
     "mpCostBase": 3,
@@ -32,7 +32,7 @@
   {
     "id": "poison_dart",
     "name": "Poison Dart",
-    "description": "A toxic attack that deals initial damage and applies a damage over time effect.",
+    "description": "Deals weapon damage to one foe with a ranged weapon and deals damage over time.",
     "skillId": "skill_ranged",
     "unlockSkillLevelMin": 3,
     "mpCostBase": 7,
@@ -49,7 +49,7 @@
   {
     "id": "ranged_volley",
     "name": "Piercing Volley",
-    "description": "Looses a cone of arrows that pierces through several enemies.",
+    "description": "Deals weapon damage to multiple foes with a bow.",
     "skillId": "skill_ranged",
     "unlockSkillLevelMin": 6,
     "mpCostBase": 11,
