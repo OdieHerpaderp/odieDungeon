@@ -1,0 +1,16 @@
+[
+  {
+    "id": "armor_light_evasion",
+    "name": "Evasive Footing",
+    "description": "Adopt a light, evasive stance that reduces incoming damage to yourself.",
+    "skillId": "skill_armor_light",
+    "unlockSkillLevelMin": 5,
+    "mpCostBase": 1,
+    "cooldownMsBase": 5000,
+    "defenseUpAmount": 0.10,
+    "defenseUpDuration": 7,
+    "maxTargets": 1,
+    "requiresWeaponEquipped": false,
+    "abilityType": "buff"
+  }
+]

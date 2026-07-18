@@ -1,0 +1,50 @@
+[
+  {
+    "id": "pugilism_jab",
+    "name": "Jab",
+    "description": "A quick fist jab that softens up an unarmed opponent.",
+    "skillId": "skill_melee_pugilism",
+    "unlockSkillLevelMin": 0,
+    "mpCostBase": 3,
+    "cooldownMsBase": 2000,
+    "damageBase": 8,
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["melee"],
+    "requiredWeaponSubTypes": ["pugilism"],
+    "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
+    "attributeDamageScale": {"STR": 0.8, "DEX": 0.5, "VIT": 0.1}
+  },
+  {
+    "id": "uppercut",
+    "name": "Uppercut",
+    "description": "A rising fist strike that deals solid damage.",
+    "skillId": "skill_melee_pugilism",
+    "unlockSkillLevelMin": 2,
+    "mpCostBase": 4,
+    "cooldownMsBase": 2200,
+    "damageBase": 11,
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["melee"],
+    "requiredWeaponSubTypes": ["pugilism"],
+    "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
+    "attributeDamageScale": {"STR": 0.8, "DEX": 0.5, "VIT": 0.1}
+  },
+  {
+    "id": "suplex",
+    "name": "Suplex",
+    "description": "A devastating grapple throw that deals heavy damage.",
+    "skillId": "skill_melee_pugilism",
+    "unlockSkillLevelMin": 5,
+    "mpCostBase": 5,
+    "cooldownMsBase": 3500,
+    "damageBase": 18,
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["melee"],
+    "requiredWeaponSubTypes": ["pugilism"],
+    "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
+    "attributeDamageScale": {"STR": 0.8, "DEX": 0.5, "VIT": 0.1}
+  }
+]

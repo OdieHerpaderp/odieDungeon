@@ -1,0 +1,148 @@
+[
+  {
+    "id": "sandals",
+    "name": "Sandals",
+    "type": "light",
+    "defense": 2,
+    "magicResist": 1,
+    "bonuses": {
+      "AGI": 3,
+      "DEX": 2
+    },
+    "range": 1,
+    "value": 30,
+    "description": "Simple travel boots for light armor."
+  },
+  {
+    "id": "travelBoots",
+    "name": "Travel Boots",
+    "type": "light",
+    "defense": 3,
+    "magicResist": 3,
+    "bonuses": {
+      "AGI": 6,
+      "DEX": 4
+    },
+    "range": 1,
+    "value": 40,
+    "description": "Simple travel boots for light armor."
+  },
+  {
+    "id": "wizardBoots",
+    "name": "Wizard's Boots",
+    "type": "light",
+    "defense": 4,
+    "magicResist": 3,
+    "bonuses": {
+      "INT": 6,
+      "CNC": 4
+    },
+    "range": 1,
+    "value": 40,
+    "description": "Simple travel boots for light armor."
+  },
+  {
+    "id": "clericBoots",
+    "name": "Cleric's Boots",
+    "type": "light",
+    "defense": 4,
+    "magicResist": 3,
+    "bonuses": {
+      "CNC": 8,
+      "INT": 2
+    },
+    "range": 1,
+    "value": 40,
+    "description": "Simple travel boots blessed for the faithful."
+  },
+  {
+    "id": "chitinBoots",
+    "name": "Chitin Boots",
+    "type": "medium",
+    "defense": 5,
+    "magicResist": 2,
+    "bonuses": {
+      "STR": 3,
+      "DEX": 3,
+      "AGI": 3
+    },
+    "range": 1,
+    "value": 40,
+    "description": "Medium boots of chitin that spring with every step."
+  },
+  {
+    "id": "chainBoots",
+    "name": "Chain Boots",
+    "type": "medium",
+    "defense": 6,
+    "magicResist": 2,
+    "bonuses": {
+      "STR": 5,
+      "AGI": 3,
+      "HP": 8
+    },
+    "range": 1,
+    "value": 50,
+    "description": "Medium boots reinforced with interlinked metal rings."
+  },
+  {
+    "id": "plateGreaves",
+    "name": "Plate Greaves",
+    "type": "heavy",
+    "defense": 8,
+    "magicResist": 1,
+    "bonuses": {
+      "VIT": 6,
+      "STR": 5,
+      "HP": 14
+    },
+    "range": 1,
+    "value": 70,
+    "description": "Heavy greaves forged from solid metal plates."
+  },
+  {
+    "id": "assassinBoots",
+    "name": "Assassin Boots",
+    "type": "light",
+    "defense": 4,
+    "magicResist": 2,
+    "bonuses": {
+      "AGI": 5,
+      "DEX": 4,
+      "STR": 2
+    },
+    "range": 1,
+    "value": 45,
+    "description": "Padded boots designed for quiet, rapid movement."
+  },
+  {
+    "id": "ironGreaves",
+    "name": "Iron Greaves",
+    "type": "heavy",
+    "defense": 7,
+    "magicResist": 1,
+    "bonuses": {
+      "STR": 6,
+      "VIT": 4,
+      "HP": 12
+    },
+    "range": 1,
+    "value": 65,
+    "description": "Heavy greaves crafted from solid iron for unwavering defense."
+  },
+  {
+    "id": "leatherBoots",
+    "name": "Leather Boots",
+    "type": "light",
+    "defense": 3,
+    "magicResist": 1,
+    "bonuses": {
+      "AGI": 3,
+      "DEX": 3,
+      "HP": 4
+    },
+    "range": 1,
+    "value": 40,
+    "description": "Light boots of cured hide, offering quiet tread and agile movement."
+  }
+]

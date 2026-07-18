@@ -1,0 +1,80 @@
+[
+  {
+    "id": "skill_melee_blunt",
+    "name": "Blunt Weapons",
+    "description": "Improves blunt melee weapon attacks.",
+    "group": "Weapon Proficiencies"
+  },
+  {
+    "id": "skill_melee_longBlade",
+    "name": "Long Blades",
+    "description": "Improves long blade melee weapon attacks.",
+    "group": "Weapon Proficiencies"
+  },
+  {
+    "id": "skill_melee_shortBlade",
+    "name": "Short Blades",
+    "description": "Improves short blade melee weapon attacks.",
+    "group": "Weapon Proficiencies"
+  },
+  {
+    "id": "skill_melee_polearms",
+    "name": "Polearms",
+    "description": "Improves polearm melee weapon attacks.",
+    "group": "Weapon Proficiencies"
+  },
+  {
+    "id": "skill_melee_pugilism",
+    "name": "Pugilism",
+    "description": "Improves fist weapon and unarmed attacks.",
+    "group": "Weapon Proficiencies"
+  },
+  {
+    "id": "skill_ranged",
+    "name": "Ranged",
+    "description": "Improves ranged weapon attacks.",
+    "group": "Weapon Proficiencies"
+  },
+  {
+    "id": "skill_magic",
+    "name": "Magic",
+    "description": "Improves magic weapon attacks.",
+    "group": "Weapon Proficiencies"
+  },
+  {
+    "id": "skill_armor_light",
+    "name": "Light Armor",
+    "description": "Improves defense in light armor. Gains XP from damage mitigated.",
+    "group": "Armor Proficiencies"
+  },
+  {
+    "id": "skill_armor_medium",
+    "name": "Medium Armor",
+    "description": "Improves defense in medium armor. Gains XP from damage mitigated.",
+    "group": "Armor Proficiencies"
+  },
+  {
+    "id": "skill_armor_heavy",
+    "name": "Heavy Armor",
+    "description": "Improves defense in heavy armor. Gains XP from damage mitigated.",
+    "group": "Armor Proficiencies"
+  },
+  {
+    "id": "skill_spellcasting",
+    "name": "Spellcasting",
+    "description": "Improves spell abilities.",
+    "group": "Magic"
+  },
+  {
+    "id": "skill_healing",
+    "name": "Healing",
+    "description": "Improves healing abilities.",
+    "group": "Magic"
+  },
+  {
+    "id": "skill_witchcraft",
+    "name": "Witchcraft",
+    "description": "Curses and damage-over-time magic that weakens and debilitates foes.",
+    "group": "Magic"
+  }
+]

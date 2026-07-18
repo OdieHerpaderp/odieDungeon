@@ -1,0 +1,62 @@
+[
+  {
+    "id": "slingshot",
+    "name": "Slingshot",
+    "type": "ranged",
+    "subType": "slings",
+    "damage": 7,
+    "spellPower": 2,
+    "attackSpeed": 1.1,
+    "bonuses": {
+      "DEX": 8,
+      "AGI": 5
+    },
+    "damageModifiers": {
+      "STR": 0.3,
+      "DEX": 0.7
+    },
+    "range": 24,
+    "value": 50,
+    "description": "A ranged weapon that shoots arrows with moderate damage."
+  },
+  {
+    "id": "shortbow",
+    "name": "Short Bow",
+    "type": "ranged",
+    "subType": "bows",
+    "damage": 9,
+    "spellPower": 2,
+    "attackSpeed": 1.1,
+    "bonuses": {
+      "DEX": 8,
+      "AGI": 5
+    },
+    "damageModifiers": {
+      "STR": 0.3,
+      "DEX": 0.7
+    },
+    "range": 24,
+    "value": 55,
+    "description": "A ranged weapon that shoots arrows with moderate damage."
+  },
+  {
+    "id": "longbow",
+    "name": "Long Bow",
+    "type": "ranged",
+    "subType": "bows",
+    "damage": 13,
+    "spellPower": 2,
+    "attackSpeed": 0.9,
+    "bonuses": {
+      "DEX": 9,
+      "AGI": 6
+    },
+    "damageModifiers": {
+      "STR": 0.3,
+      "DEX": 0.7
+    },
+    "range": 24,
+    "value": 70,
+    "description": "A ranged weapon that shoots arrows with moderate damage."
+  }
+]

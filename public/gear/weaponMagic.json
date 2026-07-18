@@ -1,0 +1,42 @@
+[
+  {
+    "id": "magicRod",
+    "name": "Magic Rod",
+    "type": "magic",
+    "subType": "rods",
+    "damage": 8,
+    "spellPower": 9,
+    "attackSpeed": 0.8,
+    "bonuses": {
+      "CNC": 12,
+      "INT": 10
+    },
+    "damageModifiers": {
+      "CNC": 0.7,
+      "INT": 0.3
+    },
+    "range": 16,
+    "value": 100,
+    "description": "A powerful magic rod that casts spells with high damage."
+  },
+  {
+    "id": "magicStaff",
+    "name": "Magic Staff",
+    "type": "magic",
+    "subType": "staves",
+    "damage": 9,
+    "spellPower": 9,
+    "attackSpeed": 0.7,
+    "bonuses": {
+      "INT": 15,
+      "CNC": 10
+    },
+    "damageModifiers": {
+      "CNC": 0.3,
+      "INT": 0.7
+    },
+    "range": 1,
+    "value": 110,
+    "description": "A small and fast melee weapon for quick strikes."
+  }
+]

@@ -1,0 +1,51 @@
+[
+  {
+    "id": "magic_spark",
+    "name": "Arcane Spark",
+    "description": "Looses a small spark of arcane energy from your rod or staff.",
+    "skillId": "skill_magic",
+    "unlockSkillLevelMin": 0,
+    "mpCostBase": 4,
+    "cooldownMsBase": 2000,
+    "damageBase": 12,
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["magic"],
+    "requiredWeaponSubTypes": ["rods", "staves"],
+    "requiresWeaponEquipped": true,
+    "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
+  },
+  {
+    "id": "magic_lance",
+    "name": "Arcane Lance",
+    "description": "Fires a focused lance of arcane energy from your rod or staff.",
+    "skillId": "skill_magic",
+    "unlockSkillLevelMin": 4,
+    "mpCostBase": 7,
+    "cooldownMsBase": 2600,
+    "damageBase": 22,
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["magic"],
+    "requiredWeaponSubTypes": ["rods", "staves"],
+    "requiresWeaponEquipped": true,
+    "abilityType": "damage",
+    "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
+  },
+  {
+    "id": "magic_burst",
+    "name": "Mystic Burst",
+    "description": "An explosive burst of mystic energy that burns all enemies in an area.",
+    "skillId": "skill_magic",
+    "unlockSkillLevelMin": 6,
+    "mpCostBase": 10,
+    "cooldownMsBase": 3200,
+    "damageBase": 16,
+    "dotDamagePerTick": 4,
+    "dotDuration": 3,
+    "maxTargets": 3,
+    "allowedWeaponClasses": ["magic"],
+    "requiredWeaponSubTypes": ["rods", "staves"],
+    "requiresWeaponEquipped": true,
+    "abilityType": "aoe",
+    "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
+  }
+]

@@ -1,0 +1,52 @@
+[
+  {
+    "id": "longblade_quick_slash",
+    "name": "Quick Slash",
+    "description": "A swift slash that opens a long blade duel.",
+    "skillId": "skill_melee_longBlade",
+    "unlockSkillLevelMin": 0,
+    "mpCostBase": 3,
+    "cooldownMsBase": 2000,
+    "damageBase": 7,
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["melee"],
+    "requiredWeaponSubTypes": ["longBlade"],
+    "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
+    "attributeDamageScale": {"STR": 0.9, "VIT": 0.1}
+  },
+  {
+    "id": "cleave",
+    "name": "Cleave",
+    "description": "A powerful melee swing that hits hard.",
+    "skillId": "skill_melee_longBlade",
+    "unlockSkillLevelMin": 3,
+    "mpCostBase": 5,
+    "cooldownMsBase": 2400,
+    "maxTargets": 3,
+    "allowedWeaponClasses": ["melee"],
+    "requiredWeaponSubTypes": ["longBlade"],
+    "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
+    "attributeDamageScale": {"STR": 0.9, "VIT": 0.1}
+  },
+  {
+    "id": "longblade_sever",
+    "name": "Severing Strike",
+    "description": "A precise long blade cut that inflicts a deep bleeding wound.",
+    "skillId": "skill_melee_longBlade",
+    "unlockSkillLevelMin": 5,
+    "mpCostBase": 7,
+    "cooldownMsBase": 2800,
+    "damageBase": 24,
+    "dotDamagePerTick": 6,
+    "dotDuration": 5,
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["melee"],
+    "requiredWeaponSubTypes": ["longBlade"],
+    "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
+    "abilityType": "damage",
+    "attributeDamageScale": {"STR": 0.9, "VIT": 0.1}
+  }
+]

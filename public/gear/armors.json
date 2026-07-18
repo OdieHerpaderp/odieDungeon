@@ -1,0 +1,133 @@
+[
+  {
+    "id": "rags",
+    "name": "Rags",
+    "type": "light",
+    "defense": 6,
+    "magicResist": 4,
+    "bonuses": {
+      "AGI": 1,
+      "HP": 1
+    },
+    "range": 1,
+    "value": 35,
+    "description": "Light protective armor made from animal hide."
+  },
+  {
+    "id": "wizardRobe",
+    "name": "Wizard Robe",
+    "type": "light",
+    "defense": 7,
+    "magicResist": 5,
+    "bonuses": {
+      "INT": 4,
+      "CNC": 4
+    },
+    "range": 1,
+    "value": 50,
+    "description": "A light robe woven for spellcasters, shielding the mind more than the body."
+  },
+  {
+    "id": "clericRobe",
+    "name": "Cleric Robe",
+    "type": "light",
+    "defense": 7,
+    "magicResist": 5,
+    "bonuses": {
+      "CNC": 6,
+      "INT": 2
+    },
+    "range": 1,
+    "value": 50,
+    "description": "A light robe woven for devout casters, shielding the spirit more than the body."
+  },
+  {
+    "id": "leatherArmor",
+    "name": "Leather Armor",
+    "type": "light",
+    "defense": 9,
+    "magicResist": 2,
+    "bonuses": {
+      "AGI": 3,
+      "DEX": 3
+    },
+    "range": 1,
+    "value": 50,
+    "description": "Light protective armor made from animal hide."
+  },
+  {
+    "id": "chitinArmor",
+    "name": "Chitin Armor",
+    "type": "medium",
+    "defense": 11,
+    "magicResist": 2,
+    "bonuses": {
+      "STR": 4,
+      "DEX": 5,
+      "AGI": 5
+    },
+    "range": 1,
+    "value": 70,
+    "description": "Medium armor formed from layered chitin, balancing mobility and guard."
+  },
+  {
+    "id": "chainMail",
+    "name": "Chain Mail",
+    "type": "medium",
+    "defense": 13,
+    "magicResist": 1,
+    "bonuses": {
+      "STR": 5,
+      "VIT": 3,
+      "HP": 12
+    },
+    "range": 1,
+    "value": 80,
+    "description": "Medium armor made of interlinked metal rings."
+  },
+  {
+    "id": "plateArmor",
+    "name": "Plate Armor",
+    "type": "heavy",
+    "defense": 16,
+    "magicResist": 1,
+    "bonuses": {
+      "STR": 8,
+      "VIT": 4,
+      "HP": 20
+    },
+    "range": 1,
+    "value": 105,
+    "description": "Heavy protective armor made of metal plates."
+  },
+  {
+    "id": "assassinArmor",
+    "name": "Assassin VestL",
+    "type": "light",
+    "defense": 10,
+    "magicResist": 1,
+    "bonuses": {
+      "AGI": 5,
+      "DEX": 5,
+      "STR": 3
+    },
+    "range": 1,
+    "value": 65,
+    "description": "Light armor tailored for silent strikes and swift escapes."
+  },
+  {
+    "id": "ironArmor",
+    "name": "Iron Armor",
+    "type": "heavy",
+    "defense": 14,
+    "magicResist": 1,
+    "bonuses": {
+      "STR": 7,
+      "VIT": 4,
+      "HP": 18
+    },
+    "range": 1,
+    "value": 95,
+    "description": "Heavy armor forged from iron plates, balancing weight and protection."
+  }
+]

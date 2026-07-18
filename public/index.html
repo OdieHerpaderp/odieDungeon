@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>odieDungeon</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="lobby">
+        <input id="playerName" placeholder="Enter your name" maxlength="14" autocomplete="off" />
+        <input id="partyId" placeholder="Party ID" maxlength="8" autocomplete="off" />
+        <button onclick="joinParty()">Join/Create Party</button>
+        <p>using the 'test' partyID will join Bob the NPC's party<br>Leaving the party ID blank will enable "solo mode"</p>
+        <p>Skills & Abilities:
+            <br> - Weapon hits train the matching weapon skill.
+            <br> - Successful abilities train their owning skill and consume MP.
+            <br> - Equip unique weapons and armor from the gear panel to change your combat style.
+        </p>
+        <p><strong>🗡️ Skills & Abilities Update</strong><br>
+        <em>The old venture progression has been replaced with a skill-based system backed by unique gear and abilities.</em></p>
+        <p>Credits:
+            <br> - Game Design & Coding: odie
+            <br> - TCP Networking & socket.io implementation: odie and Socket.IO
+            <br> - UDP Networking & WebRTC implementation: Xline (AI Assistant) and https://github.com/techweber/node-js-udp
+        </p>
+        <p>Contact me(discord): https://discord.gg/KyyFkWpa</p>
+    </div>
+<div id="combatLog"></div>
+
+<!-- DoT Effects Display -->
+<div id="dotEffects" class="dot-effects panel-bg" style="margin-top: 10px; padding: 10px; display: none;">
+    <h4 class="panel-h4" style="margin: 0 0 1px 0; color: #ff6b6b;">Damage Over Time Effects</h4>
+    <div id="dotList" class="dot-list"></div>
+</div>
+
+<div id="classSelect">
+    <h1 class="no-margin">⚔️ odieDungeon</h1>
+    <h3 class="no-margin">Fallen warriors lose their equipped gear permanently!</h3><br>
+    <div id="ownPlayer"></div>
+      <div class="stats-intro">   
+        <p>STR: Melee Damage+++, MonkDam++, HP+</p>
+        <p>DEX: Melee Hit+++, Ranged Dam+++</p>
+        <p>AGI: Dodge+++, ASPD+, Ranged Hit+, Monk Hit/Dam+</p>
+        <p>VIT: HP+++, MonkDam++, Defense+</p>
+        <p>INT: Magic Damage+++, MonkHit++ MP++</p>
+        <p>CNC: Magic Hit+++,Monk/Ranged Hit+, MP+, Thief Hit/Dam++</p>
+      </div>
+</div>
+
+
+    <div id="gameArea">
+        <div class="status-grid status-grid-margin">
+            <!-- Party members and enemies will now be in separate JSFrames -->
+        </div>
+
+        <div class="text-center">
+            <button onclick="leaveParty()">Leave Party</button>
+        </div>
+
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsframe.js/lib/jsframe.min.js"></script>
+<script src="gear/itemGenerator.js"></script>
+<script src="clientNetwork.js"></script>
+<script src="skills/skillUI.js"></script>
+<script src="index.js"></script>
+
+</body>
+</html>
