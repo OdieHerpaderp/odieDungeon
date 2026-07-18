@@ -894,12 +894,13 @@ class ClientNetwork {
                     ['inventory', 'equipment', 'gold'].forEach(f => {
                         if (u[f] !== undefined) { cur[f] = u[f]; last[f] = u[f]; }
                     });
-                    if (u.inventory !== undefined || u.equipment !== undefined) {
-                        setTimeout(() => { if (window.renderEquipmentPanel) window.renderEquipmentPanel(cur); }, 0);
-                    }
                 },
                 skipDisplay: true
             });
+            // Render via the live, authoritative currentState below. Do NOT capture `cur`
+            // and re-render it from a setTimeout: a full-state sync arriving before that
+            // timer fires replaces the player objects, leaving the captured `cur` stale and
+            // painting a wrong-category flicker that self-corrects on the next update.
             this.uiCallbacks.updatePartyDisplay(this.currentState);
         }
         
@@ -955,7 +956,6 @@ class ClientNetwork {
             this._applyEntityUpdates(data.playerUpdates, {
                 currentArr: this.currentState.players, lastMap: this.lastKnownState.players, isPlayer: true, inTown,
                 applyFn: (cur, last, u) => {
-                    const hadEquipmentOrInventoryChange = u.equipment !== undefined || u.inventory !== undefined;
                     const statsUpdates = {}, otherUpdates = {};
                     Object.keys(u).forEach(field => {
                         if (STAT_FIELDS.includes(field)) statsUpdates[field] = u[field];
@@ -963,10 +963,10 @@ class ClientNetwork {
                     });
                     if (Object.keys(statsUpdates).length > 0) this._updatePlayerStats(cur, last, statsUpdates);
                     Object.keys(otherUpdates).forEach(f => { cur[f] = otherUpdates[f]; last[f] = otherUpdates[f]; });
-                    // If equipment or inventory changed, force immediate UI refresh for equipment panel
-                    if (hadEquipmentOrInventoryChange) {
-                        setTimeout(() => { if (window.renderEquipmentPanel) window.renderEquipmentPanel(cur); }, 0);
-                    }
+                    // The synchronous updatePartyDisplay below re-renders the live
+                    // currentState. No captured-closure setTimeout here: a full-state
+                    // sync before the timer fires would leave `cur` stale (a wrong-category
+                    // flicker that self-corrects on the next update).
                 },
                 onNew: (u) => {
                     (this.currentState.players || (this.currentState.players = [])).push(u);

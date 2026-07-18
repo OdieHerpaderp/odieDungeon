@@ -8,7 +8,7 @@ const dungeons = require('./public/dungeons.json');
  */
 function generateEnemies(party) {
     const livePlayers = Array.from(party.players.values()).filter(p => p.hp > 0);
-    const enemyBonus = livePlayers.length - 0.25;
+    const enemyBonus = livePlayers.length - 0.3;
 
     // Get dungeon data for scaling
     const dungeonData = party.dungeon ? dungeons[party.dungeon] : null;
@@ -55,16 +55,16 @@ function generateEnemies(party) {
             id: `enemy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
             name: enemyName,
             level: floorBonus.toFixed(2),
-            gold: floorBonus * 0.0035 + calcHp * 0.0025 + 0.08,
+            gold: floorBonus * 0.003 + calcHp * 0.002 + 0.08,
             hp: calcHp,
             maxHp: calcHp,
             ap: enemyAp,
             maxAp: enemyAp,
             mp: Math.floor(8 + floorBonus * 1.1),
             maxMp: Math.floor(8 + floorBonus * 1.1),
-            str: Math.floor((1 + floorBonus * 14) + Math.random() * (2.8 + floorBonus / 2.1)) / 10,
-            dex: Math.floor((1 + floorBonus * 12) + Math.random() * (3.2 + floorBonus / 1.8)) / 10,
-            agi: Math.floor((1 + floorBonus * 12) + Math.random() * (3.2 + floorBonus / 1.8)) / 10,
+            str: Math.floor((1 + floorBonus * 14) + Math.random() * (1.8 + floorBonus / 2.1)) / 10,
+            dex: Math.floor((1 + floorBonus * 12) + Math.random() * (2.2 + floorBonus / 1.8)) / 10,
+            agi: Math.floor((1 + floorBonus * 12) + Math.random() * (2.2 + floorBonus / 1.8)) / 10,
             vit: calcVit,
             int: 3, cnc: 3, wis: 3, luk: 3, for:3, pie:3,
             armour: ((0.1 + floorBonus / 31) + Math.random() * (0.3 + floorBonus / 47)),

@@ -881,27 +881,18 @@ function flashClass(el, cls) {
   }
 
   let lastEquipmentSnapshot = null;
-  const _sidePanelThrottle = { equipment: 0, shop: 0, skill: 0 };
-  function _sidePanelThrottled(key, force, interval = 200) {
-    const now = Date.now();
-    if (force || now - _sidePanelThrottle[key] >= interval) {
-      _sidePanelThrottle[key] = now;
-      return false;
-    }
-    return true;
-  }
   function renderEquipmentPanel(player, force = false) {
     if (!player) return;
-    if (_sidePanelThrottled('equipment', force)) return;
     const inventoryContainer = equipmentFrame?.$('#equipmentColumns');
     if (!inventoryContainer) return;
 
     const equipment = player.equipment || {};
     const inventory = Array.isArray(player.inventory) ? player.inventory : [];
 
-    // Only rebuild the panel when the equipment/inventory contents actually changed.
-    // Re-rendering on every party-state tick destroys/recreates the DOM and discards
-    // any transient UI (hover, scroll position) for no benefit.
+    // Change-detection is the only guard here (no time throttle): only rebuild the
+    // panel when the equipment/inventory contents actually changed. Re-rendering on
+    // every party-state tick destroys/recreates the DOM and discards any transient UI
+    // (hover, scroll position) for no benefit.
     const snapshot = JSON.stringify({ equipment, inventory });
     if (!force && snapshot === lastEquipmentSnapshot && inventoryContainer.innerHTML) {
       return;
@@ -998,10 +989,9 @@ function renderShopStock(shopStock, force = false) {
   // undefined payload clear a populated shop.
   if (shopStock === undefined) return;
 
-  if (_sidePanelThrottled('shop', force)) return;
-
-  // Only rebuild the panel when the shop stock actually changed, so party-state
-  // ticks that don't touch the shop don't waste work rebuilding the DOM.
+  // Change-detection is the only guard here (no time throttle): only rebuild the
+  // panel when the shop stock actually changed, so party-state ticks that don't touch
+  // the shop don't waste work rebuilding the DOM.
   const snapshot = JSON.stringify(shopStock);
   if (!force && snapshot === lastShopSnapshot && container.innerHTML) {
     return;
@@ -1503,25 +1493,15 @@ window.updatePartyDisplay = updatePartyDisplay;
   };
 
   window.buyGear = function(type) {
-        clientNetwork.buyGear(type).then(() => {
-          // Force local UI update immediately after the network request is sent,
-          // assuming state change locally for better responsiveness.
-          updatePartyDisplay(currentState);
-        });
+        clientNetwork.buyGear(type);
     };
 
   window.equipInventoryItem = function(itemId, slot) {
-      clientNetwork.equipItem(slot, itemId).then(() => {
-        // Force local UI update immediately after the network request is sent,
-        // assuming state change locally for better responsiveness.
-        updatePartyDisplay(currentState);
-      });
+      clientNetwork.equipItem(slot, itemId);
   };
 
   window.sellInventoryItem = function(itemId) {
-      clientNetwork.sellItem(itemId).then(() => {
-        updatePartyDisplay(currentState);
-      });
+      clientNetwork.sellItem(itemId);
   };
 
   window.donate = function() {

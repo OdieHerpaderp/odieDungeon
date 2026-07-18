@@ -3,21 +3,21 @@
     "id": "strawHat",
     "name": "Straw Hat",
     "type": "light",
-    "defense": 2,
+    "defense": 3,
     "magicResist": 2,
     "bonuses": {
       "AGI": 3,
       "DEX": 2
     },
     "range": 1,
-    "value": 30,
+    "value": 35,
     "description": "A basic hat for light armor."
   },
   {
     "id": "leatherCap",
     "name": "Leather Cap",
     "type": "light",
-    "defense": 4,
+    "defense": 5,
     "magicResist": 1,
     "bonuses": {
       "AGI": 4,
@@ -32,7 +32,7 @@
     "id": "chitinHelmet",
     "name": "Chitin Helmet",
     "type": "medium",
-    "defense": 6,
+    "defense": 7,
     "magicResist": 3,
     "bonuses": {
       "STR": 4,
@@ -47,7 +47,7 @@
     "id": "chainCoif",
     "name": "Chain Coif",
     "type": "medium",
-    "defense": 7,
+    "defense": 8,
     "magicResist": 3,
     "bonuses": {
       "STR": 6,
@@ -107,28 +107,28 @@
     "id": "wizardHat",
     "name": "Wizard Hat",
     "type": "light",
-    "defense": 2,
+    "defense": 4,
     "magicResist": 4,
     "bonuses": {
       "INT": 4,
       "CNC": 4
     },
     "range": 1,
-    "value": 35,
+    "value": 40,
     "description": "A pointed light hat that hums faintly with arcane focus."
   },
   {
     "id": "clericHat",
     "name": "Cleric Hat",
     "type": "light",
-    "defense": 2,
+    "defense": 4,
     "magicResist": 4,
     "bonuses": {
       "CNC": 6,
       "INT": 2
     },
     "range": 1,
-    "value": 35,
+    "value": 40,
     "description": "A humble light hat that glows softly with divine focus."
   },
   {
