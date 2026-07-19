@@ -76,7 +76,7 @@ function tickAbilityCooldowns() {
   el.querySelectorAll('[data-cd-slot]').forEach(node => {
     const assignedId = node.dataset.cdId || '';
     const cooldownText = formatCooldownText(lastOwnPlayerForCooldowns, assignedId);
-    const color = cooldownText === 'Ready' ? '#8fe28b' : '#ffd166';
+    const color = cooldownText === 'OK' ? '#8fe28b' : '#ffd166';
     if (node.textContent !== cooldownText) node.textContent = cooldownText;
     if (node.style.color !== color) node.style.color = color;
   });
@@ -128,9 +128,9 @@ function formatDisplayLabel(id) {
 
 function formatCooldownText(player, abilityId) {
   const cooldownEnd = player?.abilityCooldowns?.[abilityId];
-  if (!cooldownEnd) return 'Ready';
+  if (!cooldownEnd) return 'OK';
   const remainingMs = Math.max(0, cooldownEnd - Date.now());
-  if (remainingMs <= 0) return 'Ready';
+  if (remainingMs <= 0) return 'OK';
   return `${(remainingMs / 1000).toFixed(1)}s`;
 }
 
@@ -372,15 +372,15 @@ function buildAbilitySlotsColumn(player) {
     const skillLabel = ability ? formatDisplayLabel(ability.skillId) : '-';
     const isSelected = index === selectedSlotIndex;
     const highlightStyle = isSelected ? 'background:#4caf50;' : 'background:#2a2a2a;';
-    const clearButton = assignedId ? `<button onclick="event.stopPropagation(); window.unequipAbilitySlot(${index})" class="btn-sm">✕ Clear</button>` : '';
+    const clearButton = assignedId ? `<button onclick="event.stopPropagation(); window.unequipAbilitySlot(${index})" class="btn-sm">🗑️</button>` : '';
     const cooldownText = formatCooldownText(player, assignedId);
     const cooldownColor = cooldownText === 'Ready' ? '#8fe28b' : '#ffd166';
 
     return `
       <div class="ability-slot-row">
-        <div data-cd-slot="${index}" data-cd-id="${assignedId}" class="ability-cd-text" style="color:${cooldownColor}; min-width:38px; font-size:11px; text-align:center;">${cooldownText}</div>
+        <div data-cd-slot="${index}" data-cd-id="${assignedId}" class="ability-cd-text" style="color:${cooldownColor}; min-width:26px; font-size:11px; text-align:center;">${cooldownText}</div>
         <div onclick="window.selectAbilitySlot(${index})" class="ability-card" style="${highlightStyle} border-radius:3px;">
-          <div class="text-info-bold" style="min-width:30px;">S${index + 1}</div>
+          <div class="text-info-bold" style="min-width:18px;">S${index + 1}</div>
           <div class="flex-col">
             <div class="text-truncate">${name}</div>
             <div class="text-dim ability-meta">MP:${mpCost} • ${skillLabel}</div>
@@ -505,7 +505,7 @@ function buildAbilitySlotsPanel(player) {
     <div class="panel-text" style="display:flex; flex-direction:column; height:100%; box-sizing:border-box;">
       <div class="flex-between" style="margin-bottom:4px;">
         <div class="text-info-bold">Slots</div>
-        <div style="display:flex; align-items:center; gap:8px;">
+        <div style="display:flex; align-items:center; gap:2px;">
           <span class="text-info-bold">Abilities</span>
           <label class="ability-filter-label" style="display:flex; align-items:center; gap:4px; font-size:11px; color:#ccc; cursor:pointer;">
             <input type="checkbox" id="availableOnlyFilter" onchange="window.toggleAvailableFilter(this.checked)" ${showAvailableOnly ? 'checked' : ''}>
@@ -513,7 +513,7 @@ function buildAbilitySlotsPanel(player) {
           </label>
         </div>
       </div>
-      <div style="display:flex; gap:8px; flex:1; min-height:0;">
+      <div style="display:flex; gap:2px; flex:1; min-height:0;">
         ${buildAbilitySlotsColumn(player)}
         ${buildAbilityList(player, showAvailableOnly)}
       </div>

@@ -282,7 +282,7 @@ button { color: #eee; background-color: #494; border: none; border-radius: 4px; 
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.2s ease;
-  min-width: 32px;
+  min-width: 24px;
   max-width: 48px;
   text-align: center;
   line-height: 0.6;
@@ -387,8 +387,8 @@ button { color: #eee; background-color: #494; border: none; border-radius: 4px; 
 .panel-text { font-size: 12px; color: #eee; line-height: 0.95; }
 .font-bold { font-weight: 600; }
 .ability-indent { padding: 3px 0 4px 16px; border-left: 1px solid #444; margin-left: 6px; }
-.ability-desc { font-size: 11px; line-height: 0.9; margin-top: 0px; }
-.ability-meta { font-size: 11px; line-height: 0.9; margin-top: 1px; }
+.ability-desc { font-size: 10px; line-height: 0.9; margin-top: 0px; }
+.ability-meta { font-size: 10px; line-height: 0.9; margin-top: 1px; }
 .dot-item { margin-bottom: 2px; padding: 2px; background: rgba(255,255,255,0.1); border-radius: 3px; }
 .gear-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .frame-pad { padding: 6px; color: white; font-size: 12px; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; }

@@ -180,9 +180,9 @@ function broadcastCriticalGearUpdate(partyId, party) {
         );
         if (!resolved || typeof resolved.baseValue !== 'number') return null;
 
-        // List at full value (same formula as the dungeon restock), min 20g.
+        // List at full value (same formula as the dungeon restock), min 10g.
         resolved.price = Math.max(
-            20,
+            10,
             itemGenerator.calculateItemPrice(resolved.baseValue, resolved.level, resolved.rarity)
         );
         resolved.timestamp = Date.now();
@@ -214,7 +214,7 @@ function broadcastCriticalGearUpdate(partyId, party) {
             item = itemGenerator.generateRandomItem(category, { level, rarity });
             slot = category === 'weapon' ? 'weapon' : category === 'armor' ? 'armour' : category === 'shoes' ? 'shoes' : 'helmet';
             const calculatedValue = itemGenerator.calculateItemPrice(item.baseValue, item.level, item.rarity);
-            cost = Math.max(20, Number.isFinite(calculatedValue) ? calculatedValue : 20);
+            cost = Math.max(10, Number.isFinite(calculatedValue) ? calculatedValue : 10);
         } else if (gearType.startsWith('shop_')) {
             // Handle purchase from shop stock
             const index = parseInt(gearType.split('_')[1]);
@@ -1745,7 +1745,14 @@ function startActionBarSystem(partyId, party) {
 function selectTarget(actor, livePlayers, liveEnemies) {
     if (actor.isEnemy) {
         const targetChoice = Math.round(Math.random() * 17);
-        if (targetChoice < 15) return livePlayers.sort((b, a) => a.hp - b.hp)[0];
+        if (targetChoice < 15) {
+            const maxPlayerHp = Math.max(...livePlayers.map(p => p.maxHp), 1);
+            return livePlayers.sort((b, a) => {
+                const scoreA = 0.5 * a.hp + 0.5 * (a.hp / a.maxHp) * maxPlayerHp;
+                const scoreB = 0.5 * b.hp + 0.5 * (b.hp / b.maxHp) * maxPlayerHp;
+                return scoreA - scoreB;
+            })[0];
+        }
         return livePlayers.sort((a, b) => Math.random() * a.hp - Math.random() * b.hp)[0];
     }
     return liveEnemies.sort((a, b) => a.hp - b.hp)[0];

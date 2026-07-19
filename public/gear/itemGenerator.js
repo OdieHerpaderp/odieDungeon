@@ -120,7 +120,7 @@
     }
     const levelMult = Math.pow(0.7 + level * 1.1, 1.2);
     const rarityMult = Math.pow(0.7 + rarity * 1.6, 1.4);
-    return Math.round(Math.pow((baseValue * (0.7 + levelMult / 11) * (0.7 + rarityMult / 8)) * 2.1, 1.2)) / 10;
+    return Math.round(Math.pow((baseValue * (0.8 + levelMult / 11) * (0.8 + rarityMult / 8)) * 1.8, 1.2)) / 10;
   }
 
   // Calculate bonuses based on base bonuses, level, and rarity
