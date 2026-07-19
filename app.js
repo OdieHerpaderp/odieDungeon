@@ -37,12 +37,58 @@ const dungeons = require('./public/dungeons.json');
 // broadcastCriticalGearUpdate (single WebRTC-first emit).
 // ═══════════════════════════════════════════════════════════════════
 
-function broadcastToParty(partyId, eventType, packet) {
-    const sent = broadcastToPartyWebRTC(partyId, eventType, packet);
-    if (sent === 0) {
-        utils.trackSocketIoSent(eventType, packet);
-        io.to(partyId).emit(eventType, packet);
+// Socket.IO fallback batching: when WebRTC is unavailable (or disabled), the
+// per-tick gameDelta + per-hit combatEvent would otherwise each be a separate
+// TCP packet (~14-28 pkt/s in combat). Coalesce batchable event types into a
+// single `batchUpdate` envelope flushed on a ~50ms window, mirroring the
+// WebRTC path so the client handler is identical.
+const BATCHABLE_TYPES = new Set([
+    'gameDelta', 'combatEvent', 'eventLog', 'dungeonChange',
+    'combatStart', 'combatEnd', 'nextFloor', 'autoEmbark'
+]);
+const SOCKET_BATCH_INTERVAL = 50;
+const socketBatchQueues = new Map(); // partyId -> { messages: [{type,data}], timer }
+const socketBatchTimers = new Set();
+
+function flushSocketBatch(partyId) {
+    const q = socketBatchQueues.get(partyId);
+    socketBatchTimers.delete(q?.timer);
+    socketBatchQueues.delete(partyId);
+    if (!q || q.messages.length === 0) return;
+    const envelope = { priority: 'default', messages: q.messages };
+    utils.trackSocketIoSent('batchUpdate', envelope);
+    io.to(partyId).emit('batchUpdate', envelope);
+}
+
+function enqueueSocketBatch(partyId, eventType, packet) {
+    let q = socketBatchQueues.get(partyId);
+    if (!q) {
+        q = { messages: [], timer: null };
+        socketBatchQueues.set(partyId, q);
     }
+    q.messages.push({ type: eventType, data: packet });
+    if (!q.timer) {
+        q.timer = setTimeout(() => flushSocketBatch(partyId), SOCKET_BATCH_INTERVAL);
+        socketBatchTimers.add(q.timer);
+    }
+}
+
+function broadcastToParty(partyId, eventType, packet, options = {}) {
+    const sent = broadcastToPartyWebRTC(partyId, eventType, packet, null, options);
+    if (sent === 0) {
+        // Full-state syncs and explicitly no-batch one-shots must arrive
+        // immediately and reliably (not coalesced with other traffic).
+        if (eventType === 'partyUpdate' || options.noBatch) {
+            utils.trackSocketIoSent(eventType, packet);
+            io.to(partyId).emit(eventType, packet);
+        } else if (BATCHABLE_TYPES.has(eventType)) {
+            enqueueSocketBatch(partyId, eventType, packet);
+        } else {
+            utils.trackSocketIoSent(eventType, packet);
+            io.to(partyId).emit(eventType, packet);
+        }
+    }
+    // WebRTC delivered the message; nothing to fall back to on Socket.IO.
 }
 
 // Full-state packet used for reconnect / lifecycle syncs. Iterates
@@ -87,9 +133,10 @@ function broadcastCriticalUpdate(partyId, party, targetInfo = null) {
         return;
     }
 
-    // No explicit target: force an immediate critical flush via the
-    // consolidated emitter so HP/AP changes land right away.
-    emitPartyDeltas(partyId, party, now, { criticalInterval: 0, standardInterval: Infinity, backgroundInterval: Infinity });
+    // No explicit target: force an immediate flush via the consolidated emitter
+    // so HP/AP changes land right away (bypasses the 50ms coalescing gate).
+    lastGameDelta.delete(partyId);
+    emitPartyDeltas(partyId, party, now);
 }
 
 // Send shop stock + every player's inventory/equipment (+ recomputed stats) over the
@@ -110,7 +157,13 @@ function broadcastCriticalGearUpdate(partyId, party) {
             inventory: player.inventory, equipment: player.equipment
         };
     }
-    broadcastToParty(partyId, 'criticalUpdate', packet);
+    // Send immediately (noBatch) and NOT through the coalescing batch pool:
+    // `gameDelta` is in the WebRTC COALESCE_TYPES set, so a queued periodic
+    // stats delta would shallow-merge into this packet via Object.assign and
+    // overwrite playerUpdates, silently dropping the inventory/equipment/gold
+    // payload and leaving the frames unrefreshed. Gear changes are structural
+    // and low-frequency, so immediate delivery is correct and cheap.
+    broadcastToParty(partyId, 'gameDelta', packet, { noBatch: true });
 }
 
     // Rebuild a shop-stock-compatible item from a compact inventory entry so a
@@ -542,6 +595,7 @@ function broadcastCriticalGearUpdate(partyId, party) {
             autoEmbark: false,
             timestamp: Date.now()
         };
+        seedEnemyFullSent(party);
         broadcastToParty(partyId, 'dungeonChange', dungeonChangePacket);
         broadcastToParty(partyId, 'eventLog', { message: '🏠 Escaped to Town! Dungeon progress reset.', type: 'info' });
         broadcastFullState(partyId, party);
@@ -580,7 +634,7 @@ function broadcastCriticalGearUpdate(partyId, party) {
             autoEmbark: party.autoEmbark,
             timestamp: Date.now()
         };
-        broadcastToParty(partyId, 'standardUpdate', autoEmbarkPacket);
+        broadcastToParty(partyId, 'gameDelta', autoEmbarkPacket);
     }
 
     function handleChangeDungeon(socket, data) {
@@ -675,6 +729,7 @@ function broadcastCriticalGearUpdate(partyId, party) {
             timestamp: Date.now()
         };
 
+        seedEnemyFullSent(party);
         broadcastToParty(partyId, 'dungeonChange', dungeonChangePacket);
 
         // Also emit to event log
@@ -920,16 +975,15 @@ function broadcastCriticalGearUpdate(partyId, party) {
     }
 
 // Event-driven single-player sync. Forces an immediate flush through the
-// consolidated emitter (critical/standard/background/hpMpUpdate in one delta
-// computation) so discrete-action changes (donate, assign ability slot,
-// disconnect) land without waiting for the next periodic tick. Gear/inventory
-// structural changes go through broadcastCriticalGearUpdate instead.
+// consolidated emitter (single gameDelta) so discrete-action changes (donate,
+// assign ability slot, disconnect) land without waiting for the next periodic
+// tick. Gear/inventory structural changes go through broadcastCriticalGearUpdate instead.
 function broadcastPlayerUpdate(partyId, party, socketId) {
     const player = party.players.get(socketId);
     if (!player) return;
-    emitPartyDeltas(partyId, party, Date.now(), {
-        criticalInterval: 0, standardInterval: 0, backgroundInterval: 0
-    });
+    // Event-driven single-player sync: bypass the 50ms gate and flush a gameDelta now.
+    lastGameDelta.delete(partyId);
+    emitPartyDeltas(partyId, party, Date.now());
 }
 
 // Helper function to generate combat summary
@@ -1078,8 +1132,8 @@ webrtcServer.on('webrtcStateRestore', (socketId) => {
 });
 
 // Helper function to broadcast to party via WebRTC (delegated to webrtcServer)
-function broadcastToPartyWebRTC(partyId, type, data, excludeSocket = null) {
-    return webrtcServer.broadcastToPartyWebRTC(partyId, type, data, excludeSocket);
+function broadcastToPartyWebRTC(partyId, type, data, excludeSocket = null, options = {}) {
+    return webrtcServer.broadcastToPartyWebRTC(partyId, type, data, excludeSocket, options);
 }
 
 // Performance optimization: Client socket tracking
@@ -1095,7 +1149,20 @@ const playerLastState = new Map(); // socketId -> { hp, ap, maxHp, maxAp, action
 const enemyLastState = new Map(); // enemyId -> { hp, maxHp, ap, actionBar }
 
 // Track last sent party-level state
-const partyLastState = new Map(); // partyId -> { floor, combatActive, combatTurn, highestVisitedFloors }
+const partyLastState = new Map(); // partyId -> { floor, combatActive, combatTurn, highestVisitedFloors, dungeon, dungeonFloors, completedDungeons, autoEmbark }
+
+// Track enemies that have already received a full snapshot on the gameDelta
+// channel, so subsequent emits can ship partial (ENEMY_DELTA_FIELDS only) deltas.
+// Cleared on embark / combatStart / dungeon rebaseline so full snapshots resume.
+const enemyFullSent = new Set(); // enemyId
+
+// Mark enemies as already full-synced after a channel other than gameDelta has
+// shipped their complete object (dungeonChange / combatStart). Without this, the
+// next gameDelta would emit a partial (no name) and the client would skip it.
+function seedEnemyFullSent(party) {
+    if (!party.enemies) return;
+    for (const enemy of party.enemies) enemyFullSent.add(enemy.id);
+}
 // Fields tracked for per-player broadcast deltas (server-authoritative state).
 const PLAYER_DELTA_FIELDS = ['hp', 'ap', 'maxHp', 'maxAp', 'level', 'xp', 'xpToNext', 'gold', 'mp', 'maxMp',
     'pointsToAllocate', 'abilityCooldowns', 'str', 'dex', 'agi', 'vit', 'int', 'cnc', 'wis', 'for', 'luk', 'pie',
@@ -1181,6 +1248,7 @@ function startSpawnTimer(partyId, party) {
             party.combatActive = true;
             // Prefer WebRTC over TCP
             const combatPacket = { floor: party.floor, enemies: party.enemies };
+            seedEnemyFullSent(party);
             broadcastToParty(partyId, 'combatStart', combatPacket);
             startActionBarSystem(partyId, party);
         }
@@ -1241,6 +1309,9 @@ function resetPartyDeltaBaseline(partyId) {
             enemyLastState.set(enemy.id, { ...enemy });
         }
     }
+    // Re-baselining resets comparison points; also clear the "full snapshot sent"
+    // tracker so the freshly-synced enemies re-send full state on next gameDelta.
+    enemyFullSent.clear();
 }
 
 // Cast a single already-selected ability for a player. Spends MP and sets the cooldown via
@@ -1482,16 +1553,26 @@ function startActionBarSystem(partyId, party) {
                     if (!party.completedDungeons) party.completedDungeons = {};
                     if (party.completedDungeons[party.dungeon] !== true) {
                         party.completedDungeons[party.dungeon] = true;
-                        broadcastToParty(partyId, 'eventLog', { message: `🏁 ${party.dungeon} completed!`, type: 'success' });
                     }
 
-                    // Restock shop with items scaled to dungeon difficulty
+                    console.log(`🏁 ${party.dungeon} completed!`)
+
+                    // Broadcast the 🏁 completion line. These one-shot, critical
+                    // messages must reach the client reliably, so emit on Socket.IO
+                    // directly (TCP) AND over WebRTC without batching.
+                    const completionPacket = { message: `🏁 ${party.dungeon} completed!`, type: 'success' };
+                    io.to(partyId).emit('eventLog', completionPacket);
+                    broadcastToParty(partyId, 'eventLog', completionPacket, { noBatch: true });
+
+                    // Restock shop with items scaled to dungeon difficulty — runs on every boss clear
                     characters.restockShopWithDungeonScaling(party, party.dungeon, dungeonDataForCompletion);
 
                     // Reward every character with one scaled item or gold fallback for clearing the dungeon
                     const lootResults = characters.rewardPlayersOnDungeonClear(party, party.dungeon, dungeonDataForCompletion);
                     for (const result of lootResults) {
-                        broadcastToParty(partyId, 'eventLog', { message: result.message, type: result.type === 'item' ? 'success' : 'info' });
+                        const awardPacket = { message: result.message, type: result.type === 'item' ? 'success' : 'info' };
+                        io.to(partyId).emit('eventLog', awardPacket);
+                        broadcastToParty(partyId, 'eventLog', awardPacket, { noBatch: true });
                     }
 
                     // Return to town immediately after boss defeat so UI reflects completion
@@ -1504,7 +1585,9 @@ function startActionBarSystem(partyId, party) {
 
                     broadcastFullState(partyId, party);
 
-                    broadcastToParty(partyId, 'eventLog', { message: '🏠 Returned to Town!', type: 'info' });
+                    const returnPacket = { message: '🏠 Returned to Town!', type: 'info' };
+                    io.to(partyId).emit('eventLog', returnPacket);
+                    broadcastToParty(partyId, 'eventLog', returnPacket, { noBatch: true });
 
                     // 🔁 Auto-Embark: if enabled, immediately re-embark on the same dungeon
                     if (party.autoEmbark) {
@@ -1774,7 +1857,7 @@ function applyDamage(target, damage, partyId, party) {
             playerName: target.name, 
             message: deathMsg 
         };
-        broadcastToParty(partyId, 'criticalUpdate', deathPacket);
+        broadcastToParty(partyId, 'combatEvent', deathPacket);
         // Also send event log via WebRTC
         broadcastToParty(partyId, 'eventLog', { message: deathMsg, type: 'death' });
     }
@@ -1987,7 +2070,7 @@ function startRegenSystem() {
             live.forEach(p => {
                 // HP Regen (effective attributes include equipment bonuses)
                 let hpRegen = (inCombat ? 0.09 : 0.15) + characters.getEffectiveAttribute(p, 'vit') / 288 + characters.getEffectiveAttribute(p, 'str') / 344 + characters.getEffectiveAttribute(p, 'for') / 377 + characters.getEffectiveAttribute(p, 'pie') / 533 + (p.equipment?.shoes?.defense || 3) / 333;
-                p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 1.7 : 3.1));
+                p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 1.8 : 3.2));
 
                 // MP Regen (effective attributes include equipment bonuses)
                 let mpRegen = (inCombat ? 0.06 : 0.17) + characters.getEffectiveAttribute(p, 'int') / 422 + characters.getEffectiveAttribute(p, 'cnc') / 311 + characters.getEffectiveAttribute(p, 'wis') / 377 + characters.getEffectiveAttribute(p, 'pie') / 422 + (p.equipment?.shoes?.defense || 3) / 333;
@@ -2015,12 +2098,10 @@ function startBroadcastSystem() {
             if (!hasLive) continue;
 
             // Single consolidated emitter: computes each player's delta once and
-            // advances the baseline exactly once (fixes BUG 1 dropped-update race).
-            emitPartyDeltas(partyId, party, now, {
-                criticalInterval: isCombat(party) ? 150 : 200,
-                standardInterval: isCombat(party) ? 400 : 600,
-                backgroundInterval: isTown(party) ? 600 : 800
-            });
+            // emits a single coalesced gameDelta on the 50ms cadence below (the
+            // sole state channel). emitPartyDeltas also self-gates at 50ms so a
+            // faster caller would still coalesce; at 50ms it fires every tick.
+            emitPartyDeltas(partyId, party, now);
 
             // Update max action bar during combat (derived from live player count).
             if (isCombat(party)) {
@@ -2028,146 +2109,87 @@ function startBroadcastSystem() {
                 for (const p of live) p.maxActionBar = 105 + live.length;
             }
 
-            // Persist character data less frequently (~2.5s).
-            if (Math.random() < 0.2) {
+            // Persist character data less frequently (~2.5s). At the 50ms cadence
+            // this probability yields ~2.5s between saves (0.02 * 50ms = 1s avg,
+            // ~2.5s expected for the loop to land true per player).
+            if (Math.random() < 0.02) {
                 for (const p of party.players.values()) if (p.hp > 0) saveCharacter(p.name, p);
             }
         }
-    }, 500); // Check every 500ms
+    }, 70); // Coalescing cadence: produce a gameDelta every ~70ms
     return interval;
 }
 
+
 // ═══════════════════════════════════════════════════════════════════
 // SINGLE CONSOLIDATED DELTA EMITTER
-// Replaces the old priority-queue + HP/MP-flush + buildUpdatePacket paths.
-// For every player it computes ONE delta (via getPlayerDelta with no
-// consume), classifies each changed field into its priority bucket, then
-// advances the shared baseline exactly once by consuming the UNION of all
-// transmitted fields. This guarantees a field like maxHp/maxAp is never
-// swallowed by one pass and dropped from another (BUG 1). HP/MP/AP also
-// derive from the same delta, so they no longer need a separate timer.
-// Enemy deltas are computed here too (BUG 2: they had no periodic emitter
-// once buildUpdatePacket was removed).
-// Note: `combatEvent` (broadcastCriticalUpdate WITH targetInfo — carries the
-// per-hit actor/target/roll payload) and `criticalUpdate` (the priority-delta
-// channel emitted here / by a bare broadcastCriticalUpdate flush) are distinct
-// channels; do not conflate them.
-// ═══════════════════════════════════════════════════════════════════
-const _lastDeltaBroadcast = new Map(); // partyId -> { critical, standard, background }
+// Computes ONE delta per player/enemy and emits a single combined `gameDelta`
+// event (replacing the old critical/standard/background/hpMp split). The full
+// PLAYER_DELTA_FIELDS union is transmitted per changed player so nothing is
+// dropped between passes, and the shared baseline is advanced exactly once.
+// Enemy deltas are computed here too and carried on the same gameDelta.
+// `combatEvent` (per-hit actor/target flash) remains a distinct channel.
+// ═════════════════════════════════════════════════════════════════
+const lastGameDelta = new Map(); // partyId -> last coalesced emit timestamp (50ms gate)
 
-function emitPartyDeltas(partyId, party, now, intervals = {}) {
-    const {
-        criticalInterval = 200,
-        standardInterval = 600,
-        backgroundInterval = 800
-    } = intervals;
+function emitPartyDeltas(partyId, party, now) {
+    const GAME_DELTA_INTERVAL = 60;
+    const last = lastGameDelta.get(partyId) || 0;
+    if (now - last < GAME_DELTA_INTERVAL) return;
+    lastGameDelta.set(partyId, now);
 
-    const last = _lastDeltaBroadcast.get(partyId) || { critical: 0, standard: 0, background: 0 };
+    const delta = { partyId, timestamp: now, playerUpdates: {}, enemyUpdates: {} };
 
-    const critical = { partyId, timestamp: now, playerUpdates: {}, enemyUpdates: {} };
-    const standard = { partyId, timestamp: now, playerUpdates: {}, enemyUpdates: {}, combatActive: party.combatActive, combatTurn: party.combatTurn };
-    const background = { partyId, timestamp: now, playerUpdates: {}, enemyUpdates: {}, floor: party.floor,
-        dungeonFloors: party.dungeonFloors || {}, highestVisitedFloors: party.highestVisitedFloors || {} };
-    const hpMp = { partyId, timestamp: now, playerUpdates: {} };
-
-    const bgFields = ['xp', 'gold', 'str', 'dex', 'agi', 'vit', 'int', 'cnc', 'wis', 'for', 'luk', 'pie',
-        'pointsToAllocate', 'abilitySlots', 'abilityCooldowns', 'equipment', 'inventory'];
-    const stdFields = ['actionBar', 'maxActionBar', 'level', 'skillsState'];
-
-    // Per-bucket emit config: which event to send, which fields this bucket
-    // consumes from the shared baseline, and which throttle gate applies.
-    const BUCKETS = [
-        { key: 'critical',   event: 'criticalUpdate',   fields: ['hp', 'ap', 'maxHp', 'maxAp'],                 gate: 'critical' },
-        { key: 'standard',   event: 'standardUpdate',   fields: stdFields,                                    gate: 'standard' },
-        { key: 'background', event: 'backgroundUpdate', fields: bgFields,                                     gate: 'background' }
-    ];
-
-    for (const [socketId, player] of party.players) {
-        const delta = getPlayerDelta(socketId, player, null);
-        if (!delta) continue;
-
-        // Critical: HP/AP + derived HP/MP (maxHp/maxAp included so a max-change
-        // shows up on BOTH criticalUpdate and hpMpUpdate from this single emit).
-        if (delta.hp !== undefined || delta.ap !== undefined || delta.maxHp !== undefined || delta.maxAp !== undefined) {
-            const hpAp = { hp: player.hp, maxHp: player.maxHp, ap: player.ap, maxAp: player.maxAp, isDead: player.hp <= 0 };
-            critical.playerUpdates[socketId] = hpAp;
-            hpMp.playerUpdates[socketId] = { id: socketId, name: player.name, ...hpAp, mp: player.mp, maxMp: player.maxMp };
-        }
-
-        // Standard: action bars, level, skill progression.
-        if (stdFields.some(f => delta[f] !== undefined)) {
-            standard.playerUpdates[socketId] = {
-                id: socketId, name: player.name,
-                actionBar: player.actionBar, maxActionBar: player.maxActionBar,
-                level: player.level, isDead: player.hp <= 0, skillsState: player.skillsState
-            };
-        }
-
-        // Background: stats, gear, gold, XP.
-        const bgDelta = {};
-        let hasBg = false;
-        for (const f of bgFields) {
-            if (delta[f] !== undefined) { bgDelta[f] = delta[f]; hasBg = true; }
-        }
-        if (hasBg) {
-            bgDelta.id = socketId; bgDelta.name = player.name;
-            background.playerUpdates[socketId] = bgDelta;
-        }
+    // Party-level fields: only include a field when it differs from the last
+    // sent value. Advances the baseline per field so unchanged fields are not
+    // re-shipped every tick (the three map fields are large and change rarely).
+    const PARTY_DELTA_FIELDS = ['combatActive', 'combatTurn', 'floor', 'dungeon',
+        'dungeonFloors', 'highestVisitedFloors', 'completedDungeons', 'autoEmbark'];
+    const partyPrev = partyLastState.get(partyId) || {};
+    const partyNext = {};
+    let partyDirty = false;
+    for (const f of PARTY_DELTA_FIELDS) {
+        const cur = party[f] !== undefined ? party[f] : (f === 'dungeonFloors' || f === 'highestVisitedFloors' || f === 'completedDungeons' ? {} : undefined);
+        const prev = partyPrev[f] !== undefined ? partyPrev[f] : (f === 'dungeonFloors' || f === 'highestVisitedFloors' || f === 'completedDungeons' ? {} : undefined);
+        partyNext[f] = cur;
+        if (utils.deepEqual(cur, prev)) continue;
+        delta[f] = cur;
+        partyDirty = true;
     }
 
-    // Enemy deltas (BUG 2): emitted on the periodic path every tick so enemy
-    // HP/AP and deaths are always tracked. Send the COMPLETE enemy snapshot
-    // (not a partial field subset) in a single bucket: if a periodic enemyUpdate
-    // reaches the client before the full-enemy embark/combatStart packet, the
-    // client creates the enemy from this entry and must have every attribute it
-    // renders (name, level, str/dex/agi/vit, hp/maxHp, ap/maxAp, ...). Routing
-    // enemies only through the standard bucket also prevents the same enemy from
-    // being created twice with divergent partial entries across buckets.
+    // Per-player: snapshot the union of all changed PLAYER_DELTA_FIELDS.
+    for (const [socketId, player] of party.players) {
+        const playerDelta = getPlayerDelta(socketId, player, PLAYER_DELTA_FIELDS);
+        if (!playerDelta) continue;
+        delta.playerUpdates[socketId] = {
+            id: socketId, name: player.name, isDead: player.hp <= 0, ...playerDelta
+        };
+    }
+
+    // Enemy deltas: full snapshot only the first time an enemy is seen on this
+    // channel, partial (changed ENEMY_DELTA_FIELDS + id + isDead) thereafter.
     if (party.enemies?.length) {
         for (const enemy of party.enemies) {
-            const delta = getEnemyDelta(enemy.id, enemy);
-            if (!delta) continue;
-            standard.enemyUpdates[enemy.id] = { ...enemy, id: enemy.id, isDead: enemy.hp <= 0 };
+            const enemyDelta = getEnemyDelta(enemy.id, enemy);
+            if (!enemyDelta) continue;
+            if (enemyFullSent.has(enemy.id)) {
+                delta.enemyUpdates[enemy.id] = { id: enemy.id, isDead: enemy.hp <= 0, ...enemyDelta };
+            } else {
+                delta.enemyUpdates[enemy.id] = { ...enemy, id: enemy.id, isDead: enemy.hp <= 0 };
+                enemyFullSent.add(enemy.id);
+            }
         }
     }
 
-    // Emit each bucket when due, then advance the shared baseline exactly once
-    // for the fields that bucket transmitted (BUG 1: no field dropped between passes).
-    // The standard bucket also carries enemyUpdates, so it emits on enemy changes too.
-    const bucketHasChanges = (key) => {
-        const b = { critical, standard, background }[key];
-        return Object.keys(b.playerUpdates).length > 0 ||
-            (key === 'standard' && Object.keys(b.enemyUpdates).length > 0);
-    };
-    for (const { key, event, fields, gate } of BUCKETS) {
-        if (!bucketHasChanges(key)) continue;
-        if (now - last[gate] < (key === 'critical' ? criticalInterval : key === 'standard' ? standardInterval : backgroundInterval)) continue;
-        const bucket = { critical, standard, background }[key];
-        broadcastToParty(partyId, event, bucket);
-        last[gate] = now;
-        advancePlayerBaseline(party, bucket.playerUpdates, fields);
+    // Skip the entire packet when nothing changed for any player/enemy/party field.
+    if (!partyDirty && Object.keys(delta.playerUpdates).length === 0 && Object.keys(delta.enemyUpdates).length === 0) {
+        return;
     }
 
-    // HP/MP shares the critical cadence so bars refresh at ≤150ms (no separate baseline advance).
-    if (Object.keys(hpMp.playerUpdates).length > 0 && now - last.critical >= criticalInterval) {
-        broadcastToParty(partyId, 'hpMpUpdate', hpMp);
-    }
+    // Advance the party-level baseline for every field we tracked.
+    partyLastState.set(partyId, partyNext);
 
-    _lastDeltaBroadcast.set(partyId, last);
-}
-
-// Advance the shared player baseline for the fields a given emitted bucket
-// actually transmitted, so a field consumed by one pass is not discarded for
-// another (the original BUG 1). `updates` maps socketId -> emitted update.
-function advancePlayerBaseline(party, updates, fields) {
-    for (const socketId of Object.keys(updates)) {
-        const player = party.players.get(socketId);
-        if (!player) continue;
-        const lastState = playerLastState.get(socketId) || {};
-        const merged = { ...lastState };
-        for (const f of fields) merged[f] = player[f];
-        playerLastState.set(socketId, merged);
-    }
+    broadcastToParty(partyId, 'gameDelta', delta);
 }
 
 // ⚑ Embark Dungeon helper (starts at relative floor 1 and only runs floor-by-floor)
@@ -2234,6 +2256,7 @@ function embarkParty(partyId, party, dungeon) {
         timestamp: Date.now()
     };
 
+    seedEnemyFullSent(party);
     broadcastToParty(partyId, 'dungeonChange', embarkPacket);
     broadcastToParty(partyId, 'eventLog', { message: `🚀 Embarked on ${dungeon} (Floor 1)!`, type: 'success' });
     return true;

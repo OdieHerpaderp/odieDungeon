@@ -5,17 +5,14 @@ const { deepEqual } = require('./utils.js');
 const { buildSnapshot } = require('./utilities/deltaTracker');
 
 
-// Batching configuration - optimized for low-latency UDP-like behavior
-const DEFAULT_BATCH_CONFIG = { 
-    critical: { interval: 100, maxBatchSize: 6 }, 
-    standard: { interval: 200, maxBatchSize: 8 }, 
-    background: { interval: 300, maxBatchSize: 10 }, 
-    immediate: { interval: 50, maxBatchSize: 4 } };
-const BATCH_INTERVAL_LIMITS = { 
-    critical: { min: 100, max: 150 }, 
-    standard: { min: 200, max: 250 }, 
-    background: { min: 300, max: 350 }, 
-    immediate: { min: 50, max: 100 } };
+// Batching configuration - a single coalescing pool for all periodic state.
+// maxBatchSize only bounds memory; flushes are driven by the time interval
+// (see flushBatchQueue), NOT by reaching this limit. A low limit previously
+// forced an immediate flush whenever enough messages piled up in one window
+// (e.g. many combatEvents with several players), which made the received
+// packet rate scale with player count. Keeping it high decouples packet count
+// from traffic volume — only batch SIZE scales with players, not packet count.
+const DEFAULT_BATCH_CONFIG = { interval: 70, maxBatchSize: 1024 };
 
 // ═══════════════════════════════════════════════════════════════════
 // PACKET TRACKING CLASS - For tracking sent/received packet counts and sizes
@@ -101,30 +98,39 @@ class BatchAccumulator {
 
     add(message) {
         const fingerprint = this.createFingerprint(message);
-        
+
         // Skip duplicate messages within suppression window
         if (this.lastFingerprints.has(fingerprint)) {
             const lastSent = this.lastFingerprints.get(fingerprint);
             if (Date.now() - lastSent < 1000) return false; // 1 second suppression
         }
-        
-        const existing = this.messages.find(m => m.type === message.type);
-        if (existing && message.data && existing.data) {
-            Object.assign(existing.data, message.data);
-            this.count++; // Track merged messages toward batch size limit
-        } else {
-            this.messages.push(message);
-            this.count++;
+
+        // State-snapshot types (e.g. gameDelta) coalesce: only the latest matters
+        // within a batch window, so merge into the existing entry. Event types
+        // (e.g. combatEvent) are distinct occurrences and must each be preserved.
+        const COALESCE_TYPES = new Set(['gameDelta', 'partyUpdate', 'dungeonChange', 'autoEmbark']);
+        if (COALESCE_TYPES.has(message.type)) {
+            const existing = this.messages.find(m => m.type === message.type);
+            if (existing && message.data && existing.data) {
+                Object.assign(existing.data, message.data);
+                this.count++; // Track merged messages toward batch size limit
+                this.lastFingerprints.set(fingerprint, Date.now());
+                this.cleanupOldFingerprints();
+                return true;
+            }
         }
-        
+
+        this.messages.push(message);
+        this.count++;
+
         this.lastFingerprints.set(fingerprint, Date.now());
         this.cleanupOldFingerprints();
-        
+
         return true; // Message was successfully added
     }
 
     isFull() {
-        return this.count >= DEFAULT_BATCH_CONFIG[this.priority].maxBatchSize;
+        return this.count >= DEFAULT_BATCH_CONFIG.maxBatchSize;
     }
 
     createFingerprint(message) {
@@ -163,23 +169,14 @@ class WebRTCServer extends EventEmitter {
         this.parties = null;
         this.batchQueues = new Map();
         this.batchTimers = {
-    critical: null,         // ← Unused after refactor
-    standard: null,         // ← Kept for compatibility with legacy stats
-    background: null,       // ← Kept for compatibility with legacy stats
-    immediate: null         // ← NEW: Combat packets use this
+    default: null           // Single coalescing batch timer (50ms)
 };
         this.packetTracker = new PacketTracker();
         
-        this.priorityFields = {
-            critical: new Set(['hp', 'ap', 'maxHp', 'maxAp']),
-            standard: new Set(['actionBar', 'maxActionBar', 'level']),
-            background: new Set(['xp', 'gold', 'str', 'dex', 'agi', 'vit', 'int', 'cnc', 'wis', 'for', 'luk', 'pie', 'armour', 'weapon', 'weaponMelee', 'weaponRanged', 'weaponMagic', 'shoes', 'helmet', 'pointsToAllocate', 'skillsState', 'abilitySlots', 'abilityCooldowns', 'equipment', 'inventory'])
-        };
-        
         this.clientBatchPreferences = new Map();
-        this.defaultBatchSizeMs = 150;
-        this.maxAllowedBatchSizeMs = 300;
-        this.minAllowedBatchSizeMs = 75;
+        this.defaultBatchSizeMs = 60;
+        this.maxAllowedBatchSizeMs = 100;
+        this.minAllowedBatchSizeMs = 60;
         
         // ═══════════════════════════════════════════════════════════
         // CONNECTION HEALTH TRACKING
@@ -377,34 +374,24 @@ class WebRTCServer extends EventEmitter {
         this.restartBatchTimerForSocket(socketId);
     }
     
-    getBatchIntervalForClient(socketId, priority) {
+    getBatchIntervalForClient(socketId) {
         const preference = this.clientBatchPreferences.get(socketId);
-        if (!preference) return DEFAULT_BATCH_CONFIG[priority].interval;
-        
-        const scalingFactor = preference.batchSizeMs / this.defaultBatchSizeMs;
-        const adjustedInterval = Math.round(DEFAULT_BATCH_CONFIG[priority].interval * scalingFactor);
-        const limits = BATCH_INTERVAL_LIMITS[priority];
-        return Math.max(limits.min, Math.min(limits.max, adjustedInterval));
+        if (!preference) return DEFAULT_BATCH_CONFIG.interval;
+        return Math.max(this.minAllowedBatchSizeMs, Math.min(this.maxAllowedBatchSizeMs, preference.batchSizeMs));
     }
     
     restartBatchTimerForSocket() {
         this.stopBatchTimers();
-        ['critical', 'standard', 'background', 'immediate'].forEach(p => this.startBatchTimer(p));
+        this.startBatchTimer();
     }
     
     getBatchStats() {
         const stats = { totalQueues: this.batchQueues.size, clientsWithPreferences: this.clientBatchPreferences.size,
             timerStatus: {
-                critical: !!this.batchTimers.critical,
-                standard: !!this.batchTimers.standard,
-                background: !!this.batchTimers.background,
-                immediate: !!this.batchTimers.immediate      // NEW
+                default: !!this.batchTimers.default
             },
             queuedMessages: {
-                critical: 0,
-                standard: 0,
-                background: 0,
-                immediate: 0                                 // NEW
+                default: 0
             }
         };
         this.batchQueues.forEach(accumulators => {
@@ -416,93 +403,66 @@ class WebRTCServer extends EventEmitter {
     // ═══════════════════════════════════════════════════════════════
     // BATCH MANAGEMENT
     // ═══════════════════════════════════════════════════════════════
-    getBatchAccumulator(socketId, priority) {
+    getBatchAccumulator(socketId) {
         if (!this.batchQueues.has(socketId)) {
             this.batchQueues.set(socketId, {
-                critical: new BatchAccumulator(socketId, 'critical'),
-                standard: new BatchAccumulator(socketId, 'standard'),
-                background: new BatchAccumulator(socketId, 'background'),
-                immediate: new BatchAccumulator(socketId, 'immediate')  // NEW
+                default: new BatchAccumulator(socketId, 'default')
             });
         }
-        return this.batchQueues.get(socketId)[priority];
-    }
-    
-    determineImmediatePriority(packet) {
-        // Determine batch priority based on how frequently packet sends and urgency
-        if (!packet || !packet.type) return 'immediate';  // Default for invalid data
-
-        // Combat-urgent packets: batch with 50ms/3 to capture combat frame events
-        const combatPackets = ['combatEvent', 'criticalUpdate', 'combatStart', 'combatEnd', 'death', 'levelUp'];
-        for (const type of combatPackets) {
-            if (packet.type === type) return 'immediate';  // Combat frame batching
-        }
-
-        // Standard updates: batch with 200ms/15
-        // Background updates: batch with 300ms/20
-        return 'immediate';  // Default: all WebRTC messages batch (20ms/3 default fallback)
-    }
-    
-    determinePriority(data) {
-        if (!data) return 'standard';
-        const hasField = (fields) => [...fields].some(f => data[f] !== undefined || (data.playerUpdates && data.playerUpdates[f] !== undefined));
-        if (hasField(this.priorityFields.critical)) return 'critical';
-        if (hasField(this.priorityFields.standard)) return 'standard';
-        return 'background';
+        return this.batchQueues.get(socketId).default;
     }
 
-    queueForBatch(socketId, type, data, priority) {
-        if (!priority) priority = this.determinePriority(data);
-        const accumulator = this.getBatchAccumulator(socketId, priority);
+    queueForBatch(socketId, type, data) {
+        const accumulator = this.getBatchAccumulator(socketId);
         const message = { id: uuidv4(), timestamp: Date.now(), type, data, _batched: true };
         const added = accumulator.add(message);
-        if (!this.batchTimers[priority]) this.startBatchTimer(priority);
-        if (added && accumulator.isFull()) {
-            console.log(`[WebRTC Batch] Flushing full batch for socket=${socketId} priority=${priority} count=${accumulator.count} triggeredBy=${type}`);
-            this.flushBatchQueue(priority);
-        }
+        if (!this.batchTimers.default) this.startBatchTimer();
+        // NOTE: flushes are driven solely by the time interval in flushBatchQueue.
+        // We intentionally do NOT flush early when the batch reaches maxBatchSize,
+        // because that would couple the received packet rate to traffic volume
+        // (and thus to player count). See DEFAULT_BATCH_CONFIG.maxBatchSize.
         return added;
     }
     
-    _buildBatchMessage(accumulator, priority, now) {
+    _buildBatchMessage(accumulator, now) {
         const messages = accumulator.getMessages().map(m => ({ type: m.type, data: m.data }));
-        return { id: uuidv4(), timestamp: now, type: 'batchUpdate', data: { priority, messages } };
+        return { id: uuidv4(), timestamp: now, type: 'batchUpdate', data: { priority: 'default', messages } };
     }
 
-    startBatchTimer(priority) {
-        if (this.batchTimers[priority]) return;
-        const interval = DEFAULT_BATCH_CONFIG[priority].interval;
-        this.batchTimers[priority] = setInterval(() => this.flushBatchQueue(priority), interval);
+    startBatchTimer() {
+        if (this.batchTimers.default) return;
+        const interval = DEFAULT_BATCH_CONFIG.interval;
+        this.batchTimers.default = setInterval(() => this.flushBatchQueue(), interval);
     }
     
-    flushBatchQueue(priority) {
+    flushBatchQueue() {
         const now = Date.now();
         let totalMessages = 0, flushedPeers = 0;
         
     this.batchQueues.forEach((accumulators, socketId) => {
-        const accumulator = accumulators[priority];
+        const accumulator = accumulators.default;
         // FIX: Always clear empty queues to prevent memory leak
         if (accumulator.count === 0) {
             accumulator.clear();
             return;
         }
             
-            const clientInterval = this.getBatchIntervalForClient(socketId, priority);
+            const clientInterval = this.getBatchIntervalForClient(socketId);
             const timeSinceLastFlush = now - accumulator.lastFlush;
-            if (timeSinceLastFlush < clientInterval && accumulator.count < DEFAULT_BATCH_CONFIG[priority].maxBatchSize) return;
+            if (timeSinceLastFlush < clientInterval && accumulator.count < DEFAULT_BATCH_CONFIG.maxBatchSize) return;
             
             const peerData = this.peers.get(socketId);
             if (!peerData?.connected || !peerData.dataChannel) { accumulator.clear(); return; }
             
             try {
-                const batchMessage = this._buildBatchMessage(accumulator, priority, now);
+                const batchMessage = this._buildBatchMessage(accumulator, now);
                 peerData.dataChannel.send(JSON.stringify(batchMessage));
                 totalMessages += accumulator.count;
                 flushedPeers++;
                 this.packetTracker.trackSent('batchUpdate', batchMessage);
                 accumulator.clear();
             } catch (error) {
-                console.error(`[WebRTC Batch] Flush error for ${socketId} (${priority}):`, 
+                console.error(`[WebRTC Batch] Flush error for ${socketId}:`, 
                               error.message, 
                               `(${accumulator.count} pending messages cleared)`);
 
@@ -517,23 +477,21 @@ class WebRTCServer extends EventEmitter {
         if (!accumulators) return;
         
         const now = Date.now();
-        ['critical', 'standard', 'background', 'immediate'].forEach(priority => {
-            const accumulator = accumulators[priority];
-            if (accumulator.count === 0) return;
-            
-            const peerData = this.peers.get(socketId);
-            if (!peerData?.connected || !peerData.dataChannel) { accumulator.clear(); return; }
-            
-            try {
-                const batchMessage = this._buildBatchMessage(accumulator, priority, now);
-                peerData.dataChannel.send(JSON.stringify(batchMessage));
-                this.packetTracker.trackSent('batchUpdate', batchMessage);
-                accumulator.clear();
-            } catch (error) {
-                console.error(`Failed to flush batch to ${socketId}:`, error);
-                accumulator.clear();
-            }
-        });
+        const accumulator = accumulators.default;
+        if (accumulator.count === 0) return;
+        
+        const peerData = this.peers.get(socketId);
+        if (!peerData?.connected || !peerData.dataChannel) { accumulator.clear(); return; }
+        
+        try {
+            const batchMessage = this._buildBatchMessage(accumulator, now);
+            peerData.dataChannel.send(JSON.stringify(batchMessage));
+            this.packetTracker.trackSent('batchUpdate', batchMessage);
+            accumulator.clear();
+        } catch (error) {
+            console.error(`Failed to flush batch to ${socketId}:`, error);
+            accumulator.clear();
+        }
     }
     
     stopBatchTimers() {
@@ -542,15 +500,10 @@ class WebRTCServer extends EventEmitter {
 
     // FIX: Stop per-socket batch timers before cleanup to prevent orphaned intervals
     stopBatchTimersForSocket(socketId) {
-        const accumulators = this.batchQueues.get(socketId);
-        if (!accumulators) return;
-
-        ['critical', 'standard', 'background', 'immediate'].forEach(p => {
-            if (this.batchTimers[p]) {
-                clearInterval(this.batchTimers[p]);
-                this.batchTimers[p] = null;
-            }
-        });
+        if (this.batchTimers.default) {
+            clearInterval(this.batchTimers.default);
+            this.batchTimers.default = null;
+        }
     }
 
     clearAllBatches() {
@@ -619,10 +572,8 @@ class WebRTCServer extends EventEmitter {
         }
         
 
-        // Determine batching priority based on packet type and content
-        const combatPackets = ['combatEvent', 'criticalUpdate', 'combatStart', 'combatEnd', 'death', 'levelUp'];
-        const priority = combatPackets.includes(type) ? 'immediate' : this.determinePriority(data);
-        return this.queueForBatch(socketId, type, data, priority);
+        // All non-ping, non-noBatch messages coalesce into the single batch pool.
+        return this.queueForBatch(socketId, type, data);
     }
     
     broadcastToParty(partyId, type, data, excludeSocket = null, options = {}) {
@@ -640,7 +591,7 @@ class WebRTCServer extends EventEmitter {
     // ═══════════════════════════════════════════════════════════════
     // BROADCAST TO PARTY VIA WEBRTC - Enhanced with connection health checks
     // ═══════════════════════════════════════════════════════════════
-    broadcastToPartyWebRTC(partyId, type, data, excludeSocket = null) {
+    broadcastToPartyWebRTC(partyId, type, data, excludeSocket = null, options = {}) {
         if (!this.parties) return 0;
         const party = this.parties.get(partyId);
         if (!party) return 0;
@@ -663,7 +614,7 @@ class WebRTCServer extends EventEmitter {
             }
             
             // Try to send the message
-            if (this.sendMessage(socketId, type, data)) {
+            if (this.sendMessage(socketId, type, data, options)) {
                 sentCount++;
             } else {
                 failedCount++;
@@ -748,10 +699,7 @@ class WebRTCServer extends EventEmitter {
             batchSizeMs,
             timestamp: Date.now(),
             effectiveIntervals: {
-                critical: this.getBatchIntervalForClient(socketId, 'critical'),
-                standard: this.getBatchIntervalForClient(socketId, 'standard'),
-                background: this.getBatchIntervalForClient(socketId, 'background'),
-                immediate: this.getBatchIntervalForClient(socketId, 'immediate')  // NEW
+                default: this.getBatchIntervalForClient(socketId)
             }
         };
         
@@ -1010,7 +958,7 @@ class WebRTCServer extends EventEmitter {
         
         switch (message.type) {
             case 'test': case 'ping': case 'testResponse': case 'combatAction': case 'playerMove':
-            case 'deltaUpdate': case 'criticalUpdate': case 'standardUpdate': case 'backgroundUpdate': case 'hpMpUpdate':
+            case 'deltaUpdate': case 'gameDelta':
             case 'nextFloor': case 'teleportToTown': case 'teleportToFloor': case 'moveFloor':
             case 'leaveParty': case 'combatStart': case 'combatEnd': case 'eventLog':
                 this.emit(message.type, socketId, message.data);
@@ -1049,15 +997,9 @@ class WebRTCServer extends EventEmitter {
     
     getPeerStats() {
         const stats = { totalPeers: this.peers.size, connectedPeers: 0, batchStats: { totalQueues: this.batchQueues.size, timersRunning: {
-                critical: !!this.batchTimers.critical,
-                standard: !!this.batchTimers.standard,
-                background: !!this.batchTimers.background,
-                immediate: !!this.batchTimers.immediate      // NEW
+                default: !!this.batchTimers.default
             }, queuedMessages: {
-                critical: 0,
-                standard: 0,
-                background: 0,
-                immediate: 0                                 // NEW
+                default: 0
             } }, peers: [] };
         
         this.batchQueues.forEach(accumulators => {
@@ -1068,10 +1010,7 @@ class WebRTCServer extends EventEmitter {
             if (peerData.connected) stats.connectedPeers++;
             const batchQueue = this.batchQueues.get(socketId);
             const queuedByPriority = batchQueue ? {
-                critical: batchQueue.critical.count,
-                standard: batchQueue.standard.count,
-                background: batchQueue.background.count,
-                immediate: batchQueue.immediate.count      // NEW
+                default: batchQueue.default.count
             } : {};
             stats.peers.push({ socketId, connected: peerData.connected, connectionState: peerData.pc?.connectionState || 'unknown', dataChannelState: peerData.dataChannel?.readyState || 'unknown', createdAt: peerData.createdAt, messageCount: peerData.messages.length, batchQueued: queuedByPriority });
         });
@@ -1085,7 +1024,7 @@ class WebRTCServer extends EventEmitter {
             totalQueues: this.batchQueues.size,
             totalAccumulators: 0,
             totalMessagesPending: 0,
-            byPriority: { critical: 0, standard: 0, background: 0, immediate: 0 },
+            byPriority: { default: 0 },
             bySocket: []
         };
 

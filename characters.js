@@ -317,7 +317,7 @@ function calcMaxHp(player) {
   calcMiscStats(player);
 
   // Get base HP from core stats
-  let baseHP = 130 + player.level * 7 + (player.vit + getEquipmentBonus(player, 'vit')) * 7 + (player.str + getEquipmentBonus(player, 'str')) * 3 + player.for * 0.5 + player.wis * 0.1;
+  let baseHP = 160 + player.level * 7 + (player.vit + getEquipmentBonus(player, 'vit')) * 7 + (player.str + getEquipmentBonus(player, 'str')) * 3 + player.for * 0.5 + player.wis * 0.1;
   baseHP += ((player.level / 9 + 35) * (0.8 + (player.vit + getEquipmentBonus(player, 'vit')) / 2 + (player.str + getEquipmentBonus(player, 'str')) / 9 + player.for / 11)) / 17;
   // Add HP equipment bonuses from every slot (weapon/armour/helmet/shoes)
   baseHP += getEquipmentBonus(player, 'hp');

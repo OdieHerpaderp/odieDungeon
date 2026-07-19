@@ -216,10 +216,7 @@ function handleWebRTCMessage(type, data) {
     // same actor/target shape the browser routes through the critical handler,
     // so reuse onCriticalUpdate to keep player/enemy HP in sync.
     case 'combatEvent': return onCriticalUpdate(data);
-    case 'criticalUpdate': return onCriticalUpdate(data);
-    case 'standardUpdate': return onStandardUpdate(data);
-    case 'backgroundUpdate': return onBackgroundUpdate(data);
-    case 'hpMpUpdate': return onHpMpUpdate(data);
+    case 'gameDelta': return onGameDelta(data);
     case 'fullState':
     case 'partyUpdate': return onFullState(data);
     case 'eventLog': return onEventLog(data);
@@ -325,6 +322,30 @@ socket.on('pingUpdate', (ms) => {
 socket.on('partyUpdate', (d) => { onServerPacket(d); resolvePendingCommands((e) => e === 'partyUpdate'); onFullState(d); });
 socket.on('fullState', (d) => { onServerPacket(d); resolvePendingCommands((e) => e === 'fullState'); onFullState(d); });
 
+socket.on('gameDelta', (d) => onGameDelta(d));
+function onGameDelta(d) {
+  markPacketArrival();
+  if (d.combatActive !== undefined) state.combatActive = d.combatActive;
+  if (d.floor !== undefined) state.floor = d.floor;
+  if (d.dungeon !== undefined) state.dungeon = d.dungeon;
+  if (d.combatTurn !== undefined) state.combatTurn = d.combatTurn;
+  if (d.autoEmbark !== undefined) state.autoEmbark = d.autoEmbark;
+  if (d.enemyUpdates) {
+    // Partial enemy deltas (id + ENEMY_FIELDS + isDead) merge onto existing
+    // enemies; a full snapshot carries all fields. Tolerates either shape.
+    for (const [id, u] of Object.entries(d.enemyUpdates)) {
+      const e = state.enemies?.find(x => x.id === id);
+      if (e) Object.assign(e, u);
+    }
+  }
+  if (d.playerUpdates) {
+    for (const [id, u] of Object.entries(d.playerUpdates)) {
+      const p = state.players.get(id) || (u.name && [...state.players.values()].find(x => x.name === u.name));
+      if (p) Object.assign(p, u);
+    }
+  }
+}
+
 function onFullState(d) {
   state.partyId = d.partyId || state.partyId;
   if (Array.isArray(d.players)) {
@@ -366,46 +387,6 @@ socket.on('combatEnd', (d) => onCombatEnd(d));
 function onCombatEnd(d) {
   state.combatActive = false;
   log(`combat ended: ${d.message || ''}`);
-}
-
-socket.on('criticalUpdate', (d) => onCriticalUpdate(d));
-function onCriticalUpdate(d) {
-  markPacketArrival();
-  if (Array.isArray(d.shopStock)) state.shopStock = d.shopStock;
-  if (d.playerUpdates) {
-    for (const [id, u] of Object.entries(d.playerUpdates)) {
-      const p = state.players.get(id) || (u.name && [...state.players.values()].find(x => x.name === u.name));
-      if (p) Object.assign(p, u);
-    }
-  }
-}
-
-socket.on('standardUpdate', (d) => onStandardUpdate(d));
-function onStandardUpdate(d) {
-  markPacketArrival();
-  resolvePendingCommands((e) => e === 'standardUpdate');
-  if (d.combatActive !== undefined) state.combatActive = d.combatActive;
-  if (d.floor !== undefined) state.floor = d.floor;
-  if (d.enemyUpdates) state.enemies = d.enemies || state.enemies;
-}
-
-socket.on('backgroundUpdate', (d) => onBackgroundUpdate(d));
-function onBackgroundUpdate(d) {
-  markPacketArrival();
-  if (d.floor !== undefined) state.floor = d.floor;
-  if (d.dungeon !== undefined) state.dungeon = d.dungeon;
-  if (d.dungeonFloors !== undefined) state.floor = d.floor ?? state.floor;
-}
-
-socket.on('hpMpUpdate', (d) => onHpMpUpdate(d));
-function onHpMpUpdate(d) {
-  markPacketArrival();
-  if (d.playerUpdates) {
-    for (const [id, u] of Object.entries(d.playerUpdates)) {
-      const p = state.players.get(id) || (u.name && [...state.players.values()].find(x => x.name === u.name));
-      if (p && u) Object.assign(p, { hp: u.hp, maxHp: u.maxHp, mp: u.mp, maxMp: u.maxMp, ap: u.ap, maxAp: u.maxAp });
-    }
-  }
 }
 
 socket.on('nextFloor', () => onNextFloor());
@@ -476,7 +457,7 @@ rl.on('line', (line) => {
       break;
     case 'auto':
       if (!args[0]) { log('usage: auto [on|off]'); break; }
-      sendTimed('toggleAutoEmbark', { partyId: PARTY, enabled: args[0].toLowerCase() === 'on' }, 'standardUpdate', `auto ${args[0]}`);
+      sendTimed('toggleAutoEmbark', { partyId: PARTY, enabled: args[0].toLowerCase() === 'on' }, 'gameDelta', `auto ${args[0]}`);
       log(`requested auto-embark ${args[0]}`);
       break;
     case 'allocate': {

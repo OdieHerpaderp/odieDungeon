@@ -1,12 +1,12 @@
-// BUG 2 regression guard: enemies must be emitted on the periodic path even
-// though `buildUpdatePacket` was removed. Before the refactor, enemies were
-// only sent via `buildUpdatePacket('standard'/'critical')`; the periodic
-// `processPriorityUpdates` iterated only party.players, so once buildUpdatePacket
-// was deleted, enemies would have had NO emitter.
+// BUG 2 regression guard: enemies must be emitted on the periodic path inside
+// the single `gameDelta` event. Before the refactor, enemies were only sent via
+// `buildUpdatePacket('standard'/'critical')`; the periodic `processPriorityUpdates`
+// iterated only party.players, so once buildUpdatePacket was deleted, enemies
+// would have had NO emitter.
 //
 // This test mirrors the consolidated emitter's enemy handling and asserts that
 // an enemy whose `hp` changes after a full-state sync (baseline established)
-// still produces an `enemyUpdates` entry on the periodic standard path.
+// still produces a `gameDelta.enemyUpdates[enemy.id]` entry on the periodic path.
 
 const assert = require('assert');
 const { extractDelta } = require('../utilities/deltaTracker');
@@ -26,15 +26,15 @@ function getEnemyDelta(enemyLastState, enemyId, enemy) {
 }
 
 // Replicates app.js emitPartyDeltas enemy branch (attaches a COMPLETE snapshot
-// to the standard bucket only).
-function collectEnemyUpdates(enemyLastState, enemies) {
-    const enemyUpdates = {};
+// to the single gameDelta.enemyUpdates).
+function collectGameDelta(enemyLastState, enemies) {
+    const gameDelta = { enemyUpdates: {} };
     for (const enemy of enemies) {
         const delta = getEnemyDelta(enemyLastState, enemy.id, enemy);
         if (!delta) continue;
-        enemyUpdates[enemy.id] = { ...enemy, id: enemy.id, isDead: enemy.hp <= 0 };
+        gameDelta.enemyUpdates[enemy.id] = { ...enemy, id: enemy.id, isDead: enemy.hp <= 0 };
     }
-    return enemyUpdates;
+    return gameDelta;
 }
 
 const enemyLastState = new Map();
@@ -44,19 +44,20 @@ const enemy = { id: 'enemy_1', name: '🧫Slime', level: 1, hp: 50, maxHp: 50, a
 enemyLastState.set(enemy.id, { ...enemy });
 
 // No change yet -> no enemyUpdate (BUG 3: no spurious emit on no change).
-let updates = collectEnemyUpdates(enemyLastState, [enemy]);
-assert.strictEqual(Object.keys(updates).length, 0, 'no enemyUpdate when nothing changed');
+let gameDelta = collectGameDelta(enemyLastState, [enemy]);
+assert.strictEqual(Object.keys(gameDelta.enemyUpdates).length, 0, 'no enemyUpdate when nothing changed');
 
 // Enemy takes damage on the periodic path.
 enemy.hp = 30;
-updates = collectEnemyUpdates(enemyLastState, [enemy]);
-assert.strictEqual(Object.keys(updates).length, 1, 'enemy hp change must surface on periodic path');
-assert.strictEqual(updates[enemy.id].hp, 30, 'periodic enemyUpdate must carry current hp');
-assert.strictEqual(updates[enemy.id].name, '🧫Slime', 'periodic enemyUpdate must carry name (full snapshot)');
-assert.strictEqual(updates[enemy.id].str, 5, 'periodic enemyUpdate must carry attributes (no undefined)');
+gameDelta = collectGameDelta(enemyLastState, [enemy]);
+assert.strictEqual(Object.keys(gameDelta.enemyUpdates).length, 1, 'enemy hp change must surface on periodic path');
+const entry = gameDelta.enemyUpdates[enemy.id];
+assert.strictEqual(entry.hp, 30, 'gameDelta enemyUpdate must carry current hp');
+assert.strictEqual(entry.name, '🧫Slime', 'gameDelta enemyUpdate must carry name (full snapshot)');
+assert.strictEqual(entry.str, 5, 'gameDelta enemyUpdate must carry attributes (no undefined)');
 
 // Baseline advanced; a second identical state emits nothing.
-updates = collectEnemyUpdates(enemyLastState, [enemy]);
-assert.strictEqual(Object.keys(updates).length, 0, 'baseline advanced: no duplicate enemy emit');
+gameDelta = collectGameDelta(enemyLastState, [enemy]);
+assert.strictEqual(Object.keys(gameDelta.enemyUpdates).length, 0, 'baseline advanced: no duplicate enemy emit');
 
-console.log('PASS test_enemyDeltaEmitted: BUG 2 (enemy on periodic path) fixed');
+console.log('PASS test_enemyDeltaEmitted: BUG 2 (enemy on periodic path) fixed — carried in gameDelta.enemyUpdates');

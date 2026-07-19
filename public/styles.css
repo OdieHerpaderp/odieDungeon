@@ -349,6 +349,8 @@ button { color: #eee; background-color: #494; border: none; border-radius: 4px; 
 .gear-tabs { display: flex; gap: 2px; margin-bottom: 4px; }
 .gear-tab { flex: 1; font-size: 10px; padding: 3px 1px; background: #2a2a2a; border: 1px solid #444; color: #ccc; cursor: pointer; border-radius: 3px 3px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gear-tab.active { background: #444; color: #fff; border-bottom-color: #444; }
+.gear-tab.new-items { background: #5a4f1a; color: #ffd; border-color: #aa0; font-weight: bold; }
+.gear-tab.new-items.active { background: #6b5c1f; color: #ffe; }
 .gear-tab-body { display: none; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .gear-tab-body.active { display: block; }
 .gear-sticky-head { position: sticky; top: 0; z-index: 2; border-radius: 4px; padding: 3px; margin-bottom: 4px; }

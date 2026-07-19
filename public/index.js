@@ -409,6 +409,15 @@ function generateEquipmentHtml() {
 let _activeEquipCat = EQUIPMENT_CATEGORIES[0].label;
 let _activeShopCat = EQUIPMENT_CATEGORIES[0].label;
 
+// Categories that currently have un-seen (newly added) items, highlighted yellow
+// in the tab bar until the user clicks that tab.
+const _newEquipCats = new Set();
+const _newShopCats = new Set();
+
+// Previous per-category group-key sets, used to detect *new* items (added keys only).
+let _prevEquipKeys = {};
+let _prevShopKeys = {};
+
 function buildGearTabsHtml(prefix) {
   const active = prefix === 'equip' ? _activeEquipCat : _activeShopCat;
   return `<div class="gear-tabs">${EQUIPMENT_CATEGORIES.map(c =>
@@ -418,11 +427,14 @@ function buildGearTabsHtml(prefix) {
 
 window.selectGearTab = function(prefix, label) {
   if (prefix === 'equip') _activeEquipCat = label; else _activeShopCat = label;
+  if (prefix === 'equip') _newEquipCats.delete(label); else _newShopCats.delete(label);
   const active = prefix === 'equip' ? _activeEquipCat : _activeShopCat;
   const frame = prefix === 'equip' ? equipmentFrame : shopFrame;
   const tabs = frame?.$('.gear-tabs');
-  if (tabs) tabs.querySelectorAll('.gear-tab').forEach((tab, i) =>
-    tab.classList.toggle('active', EQUIPMENT_CATEGORIES[i].label === active));
+  if (tabs) tabs.querySelectorAll('.gear-tab').forEach((tab, i) => {
+    tab.classList.toggle('active', EQUIPMENT_CATEGORIES[i].label === active);
+    if (EQUIPMENT_CATEGORIES[i].label === label) tab.classList.remove('new-items');
+  });
   const bodies = frame?.$('.gear-scroll');
   if (bodies) bodies.querySelectorAll('.gear-tab-body').forEach(b =>
     b.classList.toggle('active', b.dataset.label === active));
@@ -1035,6 +1047,10 @@ function flashClass(el, cls) {
 
       const groups = groupItems(inventory.filter(i => i && i.id != null && category.slots.includes(i.slot)),
         i => `${i.baseItem || i.id}|${i.level ?? 1}|${i.rarity ?? 1}`);
+      const cur = new Set(groups.map(g => `${g[0].baseItem || g[0].id}|${g[0].level ?? 1}|${g[0].rarity ?? 1}`));
+      const prev = _prevEquipKeys[category.label] || new Set();
+      for (const k of cur) if (!prev.has(k)) _newEquipCats.add(category.label);
+      _prevEquipKeys[category.label] = cur;
       const rows = groups.map(group => {
         const rep = group[0];
         const calc = getCalculatedItem(rep, category.equippedKey);
@@ -1045,6 +1061,12 @@ function flashClass(el, cls) {
       });
       return buildGearCategoryBody('equip', category, header, rows);
     }).join('');
+
+    const equipTabs = equipmentFrame?.$('.gear-tabs');
+    if (equipTabs) equipTabs.querySelectorAll('.gear-tab').forEach((tab, i) => {
+      const label = EQUIPMENT_CATEGORIES[i].label;
+      tab.classList.toggle('new-items', label !== _activeEquipCat && _newEquipCats.has(label));
+    });
   }
 
 // Render shop stock items
@@ -1094,6 +1116,13 @@ function renderShopStock(shopStock, force = false) {
 
   container.innerHTML = EQUIPMENT_CATEGORIES.map(category => {
     const catGroups = groups.filter(g => category.slots.includes(g[0].item.slot));
+    const cur = new Set(catGroups.map(g => {
+      const it = g[0].item;
+      return `${it.baseItem || it.id}|${it.level ?? 1}|${it.rarity ?? 1}`;
+    }));
+    const prev = _prevShopKeys[category.label] || new Set();
+    for (const k of cur) if (!prev.has(k)) _newShopCats.add(category.label);
+    _prevShopKeys[category.label] = cur;
     const rows = catGroups.map(group => {
       const { item, index } = group[0];
       const price = priceByKey.get(`${item.baseItem || item.id}|${item.level ?? 1}|${item.rarity ?? 1}`);
@@ -1103,6 +1132,12 @@ function renderShopStock(shopStock, force = false) {
     });
     return buildGearCategoryBody('shop', category, '', rows);
   }).join('');
+
+  const shopTabs = shopFrame?.$('.gear-tabs');
+  if (shopTabs) shopTabs.querySelectorAll('.gear-tab').forEach((tab, i) => {
+    const label = EQUIPMENT_CATEGORIES[i].label;
+    tab.classList.toggle('new-items', label !== _activeShopCat && _newShopCats.has(label));
+  });
   }
 
 // Make functions available globally for clientNetwork access

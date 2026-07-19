@@ -370,14 +370,11 @@ class ClientNetwork {
 },
         combatUpdate: (s, d) => s._handleWebRTCUpdate('combat', d),
         playerPosition: (s, d) => s._handleWebRTCUpdate('playerPosition', d),
-        hpMpUpdate: (s, d) => s.handleHPMpUpdate(d),
-        combatEvent: (s, d) => s.handleCriticalUpdate(d), // Combat events go through critical handler
-        criticalUpdate: (s, d) => s.handleCriticalUpdate(d),
+        gameDelta: (s, d) => s.handleGameDelta(d),
+        combatEvent: (s, d) => s.handleCombatEvent(d), // Combat events go through combat-event handler
         combatStart: (s, d) => s.handleCombatStart(d),
         combatEnd: (s, d) => s.handleCombatEnd(d),
         dungeonChange: (s, d) => s.handleDungeonChange(d),
-        standardUpdate: (s, d) => s.handleStandardUpdate(d),
-        backgroundUpdate: (s, d) => s.handleBackgroundUpdate(d),
         fullState: (s, d) => s.handleFullStateUpdate(d),
         partyUpdate: (s, d) => s.handleFullStateUpdate(d),
         batchUpdate: (s, d) => s.handleBatchUpdate(d),
@@ -386,7 +383,6 @@ class ClientNetwork {
     };
 
     handleWebRTCMessage(msg) {
-        this.trackPacket(this.udpStats, false);
         this.udpStats.connected = this.webrtcConnected;
         // testResponse reads the timestamp from the envelope, not the payload.
         if (msg.type === 'testResponse') {
@@ -525,11 +521,9 @@ class ClientNetwork {
         if (track) this.trackPacket(this.tcpStats, false);
         this[handler](d);
       });
-      regHandler('hpMpUpdate', 'handleHPMpUpdate', true);
-      regHandler('criticalUpdate', 'handleCriticalUpdate', true);
-      regHandler('standardUpdate', 'handleStandardUpdate', true);
-      regHandler('backgroundUpdate', 'handleBackgroundUpdate', true);
+      regHandler('gameDelta', 'handleGameDelta', true);
       regHandler('partyUpdate', 'handleFullStateUpdate', true);
+      regHandler('batchUpdate', 'handleBatchUpdate', true);
     }
 
     initPartyHandlers() {
@@ -599,7 +593,7 @@ class ClientNetwork {
       });
 
       this.socket.on('batchPreferenceAck', (data) => {
-        this.uiCallbacks.addToEventLog(`Batch size: ${data.batchSizeMs}ms (C:${data.effectiveIntervals.critical}/S:${data.effectiveIntervals.standard}/B:${data.effectiveIntervals.background}ms)`, 'info');
+        this.uiCallbacks.addToEventLog(`Batch size: ${data.batchSizeMs}ms`, 'info');
       });
     }
 
@@ -628,28 +622,6 @@ class ClientNetwork {
             completedDungeons: { ...completedDungeons }
         };
         this.currentState = { ...fullState, completedDungeons };
-    }
-
-    // Handle immediate HP/MP updates (high-frequency updates)
-    handleHPMpUpdate(data) {
-        const { playerUpdates, timestamp } = data;
-        
-        if (!playerUpdates) return;
-        
-        Object.entries(playerUpdates).forEach(([id, updates]) => {
-            // Skip metadata entries
-            if (id === 'id' || id === 'name') return;
-            
-            const current = this.currentState.players?.find(p => p.id === id || p.name === id);
-            const last = this.lastKnownState.players.get(id);
-            
-            if (current && last) {
-                // Apply HP/MP/AP changes using unified handler
-                this._updatePlayerStats(current, last, updates);
-            }
-        });
-        
-        this.uiCallbacks.updatePartyDisplay(this.currentState);
     }
 
     // Handle combat start event via WebRTC
@@ -725,13 +697,7 @@ class ClientNetwork {
         }
     }
 
-    handleCriticalUpdate(data) {
-        // Apply shop stock delivered on the critical path (gear updates).
-        if (data.shopStock !== undefined) {
-            this.currentState.shopStock = data.shopStock;
-            this.uiCallbacks.updateShopStock?.(data.shopStock);
-        }
-
+    handleCombatEvent(data) {
         // Handle combat events (new targeted format)
         if (data.actor || data.target || data.hit !== undefined || data.leveledUp) {
             // Extract attacker ID for the onAttack callback
@@ -838,143 +804,79 @@ class ClientNetwork {
             this.uiCallbacks.updatePartyDisplay(this.currentState);
             return;
         }
-        
-        // Handle legacy format (playerUpdates object)
-        if (data.playerUpdates) {
-            this._applyEntityUpdates(data.playerUpdates, {
-                currentArr: this.currentState.players, lastMap: this.lastKnownState.players, isPlayer: true,
-                applyFn: (cur, last, u) => {
-                    this._updatePlayerStats(cur, last, u);
-                    // Gear/inventory delivered on the critical path: copy and refresh the panel.
-                    ['inventory', 'equipment', 'gold'].forEach(f => {
-                        if (u[f] !== undefined) { cur[f] = u[f]; last[f] = u[f]; }
-                    });
-                },
-                skipDisplay: true
-            });
-            // Render via the live, authoritative currentState below. Do NOT capture `cur`
-            // and re-render it from a setTimeout: a full-state sync arriving before that
-            // timer fires replaces the player objects, leaving the captured `cur` stale and
-            // painting a wrong-category flicker that self-corrects on the next update.
-            this.uiCallbacks.updatePartyDisplay(this.currentState);
-        }
-        
-        // Handle enemy updates - remove dead enemies, add new ones
-        if (data.enemyUpdates) {
-            this._applyEntityUpdates(data.enemyUpdates, {
-                currentArr: this.currentState.enemies, lastMap: this.lastKnownState.enemies, isPlayer: false,
-                applyFn: (cur, last, u) => this._applyFieldUpdates(cur, last, u, ['hp', 'maxHp', 'ap', 'maxAp', 'isDead']),
-                onNew: (u) => this._upsertEnemy({ ...u }),
-                skipDisplay: true
-            });
-            this.uiCallbacks.updatePartyDisplay(this.currentState);
-        }
 
-        // Combat just ended on the critical path: clear stale enemies so live-enemy
-        // computations (e.g. the escape button) use fresh state immediately.
-        if (data.combatActive === false && this.currentState.combatActive === true) {
-            this.currentState.enemies = [];
-            this.lastKnownState.enemies.clear();
-            this.currentState.combatActive = false;
-            this.lastKnownState.party.combatActive = false;
-            this.uiCallbacks.updatePartyDisplay(this.currentState);
-        }
+        // Gear/inventory payloads are dispatched to handleGameDelta (the server
+        // emits them as `gameDelta` with `gear: true`), so nothing gear-related
+        // is handled here.
     }
 
-    handleStandardUpdate(data) {
-        const eFields = ['hp', 'maxHp', 'ap', 'maxAp', 'actionBar', 'maxActionBar', 'isDead', 'name'];
+    handleGameDelta(data) {
+        const prevCombatActive = this.currentState.combatActive;
         const inTown = this.currentState.floor === 0 && !this.currentState.combatActive;
+        const ENEMY_FIELDS = ['hp', 'maxHp', 'ap', 'maxAp', 'mp', 'maxMp', 'isDead'];
+
+        // Gear/inventory payload (broadcastCriticalGearUpdate): refresh equipment,
+        // inventory and shop frames. The server emits this as a `gameDelta` with
+        // `gear: true`, so it lands here rather than in handleCombatEvent.
+        if (data.gear) {
+            if (data.shopStock !== undefined) {
+                this.currentState.shopStock = data.shopStock;
+                this.uiCallbacks.updateShopStock?.(data.shopStock);
+            }
+            if (data.playerUpdates) {
+                this._applyEntityUpdates(data.playerUpdates, {
+                    currentArr: this.currentState.players, lastMap: this.lastKnownState.players, isPlayer: true,
+                    applyFn: (cur, last, u) => {
+                        this._updatePlayerStats(cur, last, u);
+                        ['inventory', 'equipment', 'gold'].forEach(f => {
+                            if (u[f] !== undefined) { cur[f] = u[f]; last[f] = u[f]; }
+                        });
+                    },
+                    skipDisplay: true
+                });
+                this.uiCallbacks.updatePartyDisplay(this.currentState);
+            }
+            return;
+        }
 
         if (data.playerUpdates) {
             this._applyEntityUpdates(data.playerUpdates, {
-                currentArr: this.currentState.players, lastMap: this.lastKnownState.players, isPlayer: true, inTown,
+                currentArr: this.currentState.players, lastMap: this.lastKnownState.players,
+                isPlayer: true, inTown,
                 applyFn: (cur, last, u) => this._updatePlayerStats(cur, last, u)
             });
         }
-        this.uiCallbacks.updatePartyDisplay(this.currentState);
+
         if (data.enemyUpdates) {
             this._applyEntityUpdates(data.enemyUpdates, {
                 currentArr: this.currentState.enemies, lastMap: this.lastKnownState.enemies, isPlayer: false, inTown,
-                applyFn: (cur, last, u) => this._applyFieldUpdates(cur, last, u, eFields),
-                onNew: (u) => this._upsertEnemy({ ...u })
+                applyFn: (cur, last, u) => this._applyFieldUpdates(cur, last, u, ENEMY_FIELDS),
+                onNew: u => this._upsertEnemy({ ...u })
             });
         }
-        this.uiCallbacks.updatePartyDisplay(this.currentState);
-        if (data.combatActive !== undefined) {
-            const prevCombatActive = this.currentState.combatActive;
-            this.currentState.combatActive = data.combatActive;
-            this.lastKnownState.party.combatActive = data.combatActive;
-            // Combat just ended: clear stale enemies so the escape button and
-            // other live-enemy computations use fresh state immediately.
-            if (data.combatActive === false && prevCombatActive === true) {
-                this.currentState.enemies = [];
-                this.lastKnownState.enemies.clear();
+
+        // Party-level fields (all in one place, no per-field guards).
+        let partyFieldChanged = false;
+        for (const f of ['combatActive', 'combatTurn', 'floor', 'dungeon', 'dungeonFloors', 'highestVisitedFloors', 'completedDungeons', 'autoEmbark']) {
+            if (data[f] !== undefined) {
+                this.currentState[f] = data[f];
+                this.lastKnownState.party[f] = data[f];
+                partyFieldChanged = true;
             }
-            this.uiCallbacks.updatePartyDisplay(this.currentState);
         }
-        if (data.combatTurn !== undefined) this.currentState.combatTurn = data.combatTurn;
-        if (data.floor !== undefined) { this.currentState.floor = data.floor; this.uiCallbacks.updatePartyDisplay(this.currentState); }
-        if (data.autoEmbark !== undefined) {
-            this.currentState.autoEmbark = data.autoEmbark;
-            this.lastKnownState.party.autoEmbark = data.autoEmbark;
-            this.uiCallbacks.updatePartyDisplay(this.currentState);
-        }
-        if (data.enemies?.length) {
-            data.enemies.forEach(e => {
-                const c = this.currentState.enemies?.find(x => x.id === e.id), l = this.lastKnownState.enemies.get(e.id);
-                if (c && l) Object.assign(c, e, l);
-                else if (e.id && e.name) { (this.currentState.enemies || (this.currentState.enemies = [])).push(e); this.lastKnownState.enemies.set(e.id, { ...e }); }
-            });
-            this.uiCallbacks.updatePartyDisplay(this.currentState);
-        }
-    }
 
-    handleBackgroundUpdate(data) {
-        const STAT_FIELDS = ['hp', 'maxHp', 'mp', 'maxMp', 'ap', 'maxAp', 'isDead'];
-        const inTown = this.currentState.floor === 0 && !this.currentState.combatActive;
+        // Combat just ended this tick: clear stale enemies so live-enemy
+        // computations (e.g. the escape button) use fresh state immediately.
+        if (data.combatActive === false && prevCombatActive === true) {
+            this.currentState.enemies = [];
+            this.lastKnownState.enemies.clear();
+        }
 
-        if (data.playerUpdates) {
-            this._applyEntityUpdates(data.playerUpdates, {
-                currentArr: this.currentState.players, lastMap: this.lastKnownState.players, isPlayer: true, inTown,
-                applyFn: (cur, last, u) => {
-                    const statsUpdates = {}, otherUpdates = {};
-                    Object.keys(u).forEach(field => {
-                        if (STAT_FIELDS.includes(field)) statsUpdates[field] = u[field];
-                        else otherUpdates[field] = u[field];
-                    });
-                    if (Object.keys(statsUpdates).length > 0) this._updatePlayerStats(cur, last, statsUpdates);
-                    Object.keys(otherUpdates).forEach(f => { cur[f] = otherUpdates[f]; last[f] = otherUpdates[f]; });
-                    // The synchronous updatePartyDisplay below re-renders the live
-                    // currentState. No captured-closure setTimeout here: a full-state
-                    // sync before the timer fires would leave `cur` stale (a wrong-category
-                    // flicker that self-corrects on the next update).
-                },
-                onNew: (u) => {
-                    (this.currentState.players || (this.currentState.players = [])).push(u);
-                    this.lastKnownState.players.set(u.id, { ...u });
-                }
-            });
-        }
-        if (data.floor !== undefined) {
-            this.currentState.floor = data.floor;
-            this.uiCallbacks.updatePartyDisplay(this.currentState);
-        } else {
-            this.uiCallbacks.updatePartyDisplay(this.currentState);
-        }
-        // Periodic background payload carries the same dungeon-progress fields as
-        // a full state sync; keep the client's dungeon UI in lockstep.
-        if (data.dungeon !== undefined) {
-            this.currentState.dungeon = data.dungeon;
-            this.lastKnownState.party.dungeon = data.dungeon;
-        }
-        if (data.dungeonFloors !== undefined) {
-            this.currentState.dungeonFloors = data.dungeonFloors;
-            this.lastKnownState.party.dungeonFloors = { ...data.dungeonFloors };
-        }
-        if (data.highestVisitedFloors !== undefined) {
-            this.currentState.highestVisitedFloors = data.highestVisitedFloors;
-            this.lastKnownState.party.highestVisitedFloors = { ...data.highestVisitedFloors };
-        }
+        const changed = partyFieldChanged
+            || (data.playerUpdates && Object.keys(data.playerUpdates).length > 0)
+            || (data.enemyUpdates && Object.keys(data.enemyUpdates).length > 0)
+            || (data.combatActive === false && prevCombatActive === true);
+        if (changed) this.uiCallbacks.updatePartyDisplay(this.currentState);
     }
 
     handleFullStateUpdate(data) {

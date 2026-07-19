@@ -9,7 +9,8 @@
 //   3. floor + combatTurn + dungeon fields are applied.
 //   4. A normal combat-active gameDelta does NOT wipe enemies.
 //   5. enemyUpdates (full snapshot) are adopted via _upsertEnemy.
-//   6. updatePartyDisplay is invoked on every gameDelta.
+//   6. updatePartyDisplay is invoked when a real change is present.
+//   7. An empty gameDelta (no player/enemy/party field) does NOT call updatePartyDisplay.
 
 const assert = require('assert');
 const fs = require('fs');
@@ -133,12 +134,22 @@ function createClient() {
     assert.strictEqual(client.currentState.enemies[2].id, 'e3', 'adopted enemy should be the new one');
 }
 
-// --- Test 6: updatePartyDisplay is invoked on every gameDelta ------------------
+// --- Test 6: updatePartyDisplay is invoked when a real change is present -------
 {
     const { client, calls } = createClient();
     const before = calls.updatePartyDisplay;
     client.handleGameDelta({ autoEmbark: true });
-    assert.ok(calls.updatePartyDisplay > before, 'updatePartyDisplay should be called by handleGameDelta');
+    assert.ok(calls.updatePartyDisplay > before, 'updatePartyDisplay should be called by handleGameDelta on change');
+}
+
+// --- Test 7: empty gameDelta does NOT call updatePartyDisplay ------------------
+{
+    const { client, calls } = createClient();
+    const before = calls.updatePartyDisplay;
+    // A gameDelta with the no-op guard would never be emitted, but if it were
+    // (empty player/enemy updates, no party fields), the client must not re-render.
+    client.handleGameDelta({ partyId: 'P1', timestamp: Date.now(), playerUpdates: {}, enemyUpdates: {} });
+    assert.strictEqual(calls.updatePartyDisplay, before, 'empty gameDelta must not call updatePartyDisplay');
 }
 
 console.log('handleGameDelta checks passed');
