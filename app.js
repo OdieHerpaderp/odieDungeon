@@ -1,6 +1,6 @@
 // odieDungeon
 // Global tuning: multiplier applied to all damage dealt BY enemies (1.0 = unchanged, 0.5 = -50%)
-const ENEMY_DAMAGE_MULTIPLIER = 0.8;
+const ENEMY_DAMAGE_MULTIPLIER = 0.75;
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -17,9 +17,18 @@ const weaponMelee = require('./public/gear/weaponMelee.json');
 const weaponRanged = require('./public/gear/weaponRanged.json');
 const weaponMagic = require('./public/gear/weaponMagic.json');
 const weapons = [...weaponMelee, ...weaponRanged, ...weaponMagic];
-const armors = require('./public/gear/armors.json');
-const headgear = require('./public/gear/headgear.json');
-const feetWear = require('./public/gear/feetWear.json');
+const armorLight = require('./public/gear/armorLight.json');
+const armorMedium = require('./public/gear/armorMedium.json');
+const armorHeavy = require('./public/gear/armorHeavy.json');
+const armors = [...armorLight, ...armorMedium, ...armorHeavy];
+const headgearLight = require('./public/gear/headgearLight.json');
+const headgearMedium = require('./public/gear/headgearMedium.json');
+const headgearHeavy = require('./public/gear/headgearHeavy.json');
+const headgear = [...headgearLight, ...headgearMedium, ...headgearHeavy];
+const feetWearLight = require('./public/gear/feetWearLight.json');
+const feetWearMedium = require('./public/gear/feetWearMedium.json');
+const feetWearHeavy = require('./public/gear/feetWearHeavy.json');
+const feetWear = [...feetWearLight, ...feetWearMedium, ...feetWearHeavy];
 const itemGenerator = require('./public/gear/itemGenerator');
 
 function assert(condition, message) {
@@ -2076,12 +2085,12 @@ function startRegenSystem() {
             
             live.forEach(p => {
                 // HP Regen (effective attributes include equipment bonuses)
-                let hpRegen = (inCombat ? 0.09 : 0.15) + characters.getEffectiveAttribute(p, 'vit') / 288 + characters.getEffectiveAttribute(p, 'str') / 344 + characters.getEffectiveAttribute(p, 'for') / 377 + characters.getEffectiveAttribute(p, 'pie') / 533 + (p.equipment?.shoes?.defense || 3) / 333;
-                p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 1.8 : 3.2));
+                let hpRegen = (inCombat ? 0.11 : 0.17) + characters.getEffectiveAttribute(p, 'vit') / 288 + characters.getEffectiveAttribute(p, 'str') / 344 + characters.getEffectiveAttribute(p, 'for') / 377 + characters.getEffectiveAttribute(p, 'pie') / 533;
+                p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 2.2 : 3.6));
 
                 // MP Regen (effective attributes include equipment bonuses)
-                let mpRegen = (inCombat ? 0.06 : 0.17) + characters.getEffectiveAttribute(p, 'int') / 422 + characters.getEffectiveAttribute(p, 'cnc') / 311 + characters.getEffectiveAttribute(p, 'wis') / 377 + characters.getEffectiveAttribute(p, 'pie') / 422 + (p.equipment?.shoes?.defense || 3) / 333;
-                p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 0.8 : 1.7));
+                let mpRegen = (inCombat ? 0.07 : 0.17) + characters.getEffectiveAttribute(p, 'int') / 422 + characters.getEffectiveAttribute(p, 'cnc') / 311 + characters.getEffectiveAttribute(p, 'wis') / 377 + characters.getEffectiveAttribute(p, 'pie') / 422;
+                p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 0.9 : 1.8));
                 
                 // HP/MP changes are emitted by the consolidated delta broadcaster
                 // on the critical cadence (≤200ms), so no extra queueing here.

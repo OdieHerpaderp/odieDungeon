@@ -1,0 +1,74 @@
+[
+  {
+    "id": "strawHat",
+    "name": "Straw Hat",
+    "type": "light",
+    "defense": 3,
+    "magicResist": 2,
+    "bonuses": {
+      "AGI": 3,
+      "DEX": 2
+    },
+    "range": 1,
+    "value": 40,
+    "description": "A basic hat for light armor."
+  },
+  {
+    "id": "leatherCap",
+    "name": "Leather Cap",
+    "type": "light",
+    "defense": 5,
+    "magicResist": 1,
+    "bonuses": {
+      "AGI": 4,
+      "DEX": 3,
+      "HP": 5
+    },
+    "range": 1,
+    "value": 52,
+    "description": "Light protective headwear made from animal hide."
+  },
+  {
+    "id": "wizardHat",
+    "name": "Wizard Hat",
+    "type": "light",
+    "defense": 4,
+    "magicResist": 4,
+    "bonuses": {
+      "INT": 4,
+      "CNC": 4
+    },
+    "range": 1,
+    "value": 46,
+    "description": "A pointed light hat that hums faintly with arcane focus."
+  },
+  {
+    "id": "clericHat",
+    "name": "Cleric Hat",
+    "type": "light",
+    "defense": 4,
+    "magicResist": 4,
+    "bonuses": {
+      "CNC": 6,
+      "INT": 2
+    },
+    "range": 1,
+    "value": 46,
+    "description": "A humble light hat that glows softly with divine focus."
+  },
+  {
+    "id": "assassinMask",
+    "name": "Assassin Mask",
+    "type": "light",
+    "defense": 5,
+    "magicResist": 1,
+    "bonuses": {
+      "AGI": 6,
+      "DEX": 5,
+      "STR": 2
+    },
+    "range": 1,
+    "value": 58,
+    "description": "A dark mask that conceals identity and sharpens reflexes."
+  }
+]

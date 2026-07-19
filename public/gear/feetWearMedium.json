@@ -1,0 +1,32 @@
+[
+  {
+    "id": "chitinBoots",
+    "name": "Chitin Boots",
+    "type": "medium",
+    "defense": 5,
+    "magicResist": 2,
+    "bonuses": {
+      "STR": 3,
+      "DEX": 3,
+      "AGI": 3
+    },
+    "range": 1,
+    "value": 46,
+    "description": "Medium boots of chitin that spring with every step."
+  },
+  {
+    "id": "chainBoots",
+    "name": "Chain Boots",
+    "type": "medium",
+    "defense": 6,
+    "magicResist": 2,
+    "bonuses": {
+      "STR": 5,
+      "AGI": 3,
+      "HP": 8
+    },
+    "range": 1,
+    "value": 56,
+    "description": "Medium boots reinforced with interlinked metal rings."
+  }
+]

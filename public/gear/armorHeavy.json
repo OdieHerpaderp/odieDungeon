@@ -1,0 +1,32 @@
+[
+  {
+    "id": "plateArmor",
+    "name": "Plate Armor",
+    "type": "heavy",
+    "defense": 16,
+    "magicResist": 1,
+    "bonuses": {
+      "STR": 6,
+      "VIT": 5,
+      "HP": 20
+    },
+    "range": 1,
+    "value": 110,
+    "description": "Heavy protective armor made of metal plates."
+  },
+  {
+    "id": "ironArmor",
+    "name": "Iron Armor",
+    "type": "heavy",
+    "defense": 14,
+    "magicResist": 1,
+    "bonuses": {
+      "STR": 6,
+      "VIT": 4,
+      "HP": 18
+    },
+    "range": 1,
+    "value": 100,
+    "description": "Heavy armor forged from iron plates, balancing weight and protection."
+  }
+]

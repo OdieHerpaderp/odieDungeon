@@ -1,0 +1,32 @@
+[
+  {
+    "id": "chitinArmor",
+    "name": "Chitin Armor",
+    "type": "medium",
+    "defense": 11,
+    "magicResist": 2,
+    "bonuses": {
+      "STR": 4,
+      "DEX": 5,
+      "AGI": 5
+    },
+    "range": 1,
+    "value": 74,
+    "description": "Medium armor formed from layered chitin, balancing mobility and guard."
+  },
+  {
+    "id": "chainMail",
+    "name": "Chain Mail",
+    "type": "medium",
+    "defense": 13,
+    "magicResist": 1,
+    "bonuses": {
+      "STR": 5,
+      "VIT": 3,
+      "HP": 12
+    },
+    "range": 1,
+    "value": 86,
+    "description": "Medium armor made of interlinked metal rings."
+  }
+]

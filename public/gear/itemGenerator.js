@@ -21,7 +21,7 @@
       weapon: [],
       headgear: [],
       armor: [],
-      // Populated from feetWear.json (Node) or via updateCatalogs (browser)
+      // Populated from feetWear*.json (Node) or via updateCatalogs (browser)
       shoes: []
     };
 
@@ -41,13 +41,19 @@
       var weaponMelee = require('./weaponMelee.json');
       var weaponRanged = require('./weaponRanged.json');
       var weaponMagic = require('./weaponMagic.json');
-      var headgear = require('./headgear.json');
-      var armors = require('./armors.json');
-      var feetWear = require('./feetWear.json');
+      var headgearLight = require('./headgearLight.json');
+      var headgearMedium = require('./headgearMedium.json');
+      var headgearHeavy = require('./headgearHeavy.json');
+      var armorLight = require('./armorLight.json');
+      var armorMedium = require('./armorMedium.json');
+      var armorHeavy = require('./armorHeavy.json');
+      var feetWearLight = require('./feetWearLight.json');
+      var feetWearMedium = require('./feetWearMedium.json');
+      var feetWearHeavy = require('./feetWearHeavy.json');
       defaultCatalog.weapon = [...weaponMelee, ...weaponRanged, ...weaponMagic];
-      defaultCatalog.headgear = headgear;
-      defaultCatalog.armor = armors;
-      defaultCatalog.shoes = feetWear;
+      defaultCatalog.headgear = [...headgearLight, ...headgearMedium, ...headgearHeavy];
+      defaultCatalog.armor = [...armorLight, ...armorMedium, ...armorHeavy];
+      defaultCatalog.shoes = [...feetWearLight, ...feetWearMedium, ...feetWearHeavy];
     } else {
       // Browser environment - we'll load the data asynchronously later
       // Initialize with empty arrays and provide a function to update the catalogs
@@ -98,8 +104,8 @@
       return baseValue; // Return as-is if not a number
     }
 
-    var levelMultiplier = 0.9 + level / 21;
-    var rarityMultiplier = 0.8 + rarity / 12;
+    var levelMultiplier = 0.8 + level / 24;
+    var rarityMultiplier = 0.7 + rarity / 13;
     var calculatedValue =
       Math.round(baseValue * levelMultiplier * rarityMultiplier * 100) / 100;
     return Math.max(0.01, calculatedValue); // Ensure minimum value of 0.01 for defensive stats
@@ -109,7 +115,7 @@
      if (!item) return null;
      var level = Number.isFinite(item.level) ? item.level : 1;
      var rarity = Number.isFinite(item.rarity) ? item.rarity : 1;
-     return (calculateItemStat(30, level, rarity) - 23) / 2.2;
+     return (calculateItemStat(37, level, rarity) - 22.2) / 2.05;
    }
 
    // Calculate the item's gold price (buy/sell base) using the POW formula.

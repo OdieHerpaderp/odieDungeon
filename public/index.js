@@ -7,12 +7,21 @@ Promise.all([
   fetch('/gear/weaponMelee.json').then(response => response.json()),
   fetch('/gear/weaponRanged.json').then(response => response.json()),
   fetch('/gear/weaponMagic.json').then(response => response.json()),
-  fetch('/gear/headgear.json').then(response => response.json()),
-  fetch('/gear/armors.json').then(response => response.json()),
-  fetch('/gear/feetWear.json').then(response => response.json())
+  fetch('/gear/headgearLight.json').then(response => response.json()),
+  fetch('/gear/headgearMedium.json').then(response => response.json()),
+  fetch('/gear/headgearHeavy.json').then(response => response.json()),
+  fetch('/gear/armorLight.json').then(response => response.json()),
+  fetch('/gear/armorMedium.json').then(response => response.json()),
+  fetch('/gear/armorHeavy.json').then(response => response.json()),
+  fetch('/gear/feetWearLight.json').then(response => response.json()),
+  fetch('/gear/feetWearMedium.json').then(response => response.json()),
+  fetch('/gear/feetWearHeavy.json').then(response => response.json())
 ])
-.then(([weaponMelee, weaponRanged, weaponMagic, headgear, armors, feetWear]) => {
+.then(([weaponMelee, weaponRanged, weaponMagic, hgL, hgM, hgH, arL, arM, arH, ftL, ftM, ftH]) => {
   // Update the itemGenerator with loaded data
+  const headgear = [...hgL, ...hgM, ...hgH];
+  const armors = [...arL, ...arM, ...arH];
+  const feetWear = [...ftL, ...ftM, ...ftH];
   if (window.itemGenerator && typeof window.itemGenerator.updateCatalogs === 'function') {
     window.itemGenerator.updateCatalogs(weaponMelee, weaponRanged, weaponMagic, headgear, armors, feetWear);
     console.log('Gear catalogs loaded and updated in itemGenerator');

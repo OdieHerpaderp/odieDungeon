@@ -1,0 +1,32 @@
+[
+  {
+    "id": "plateGreaves",
+    "name": "Plate Greaves",
+    "type": "heavy",
+    "defense": 8,
+    "magicResist": 1,
+    "bonuses": {
+      "VIT": 6,
+      "STR": 5,
+      "HP": 14
+    },
+    "range": 1,
+    "value": 78,
+    "description": "Heavy greaves forged from solid metal plates."
+  },
+  {
+    "id": "ironGreaves",
+    "name": "Iron Greaves",
+    "type": "heavy",
+    "defense": 7,
+    "magicResist": 1,
+    "bonuses": {
+      "STR": 6,
+      "VIT": 4,
+      "HP": 12
+    },
+    "range": 1,
+    "value": 70,
+    "description": "Heavy greaves crafted from solid iron for unwavering defense."
+  }
+]

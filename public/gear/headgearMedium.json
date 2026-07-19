@@ -1,0 +1,32 @@
+[
+  {
+    "id": "chitinHelmet",
+    "name": "Chitin Helmet",
+    "type": "medium",
+    "defense": 7,
+    "magicResist": 3,
+    "bonuses": {
+      "STR": 4,
+      "DEX": 4,
+      "AGI": 4
+    },
+    "range": 1,
+    "value": 58,
+    "description": "Medium helm carved from chitinous plates, light yet resilient."
+  },
+  {
+    "id": "chainCoif",
+    "name": "Chain Coif",
+    "type": "medium",
+    "defense": 8,
+    "magicResist": 3,
+    "bonuses": {
+      "STR": 6,
+      "DEX": 4,
+      "HP": 9
+    },
+    "range": 1,
+    "value": 68,
+    "description": "Medium headwear made of interlinked metal rings."
+  }
+]

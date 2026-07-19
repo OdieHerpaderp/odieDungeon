@@ -1,0 +1,47 @@
+[
+  {
+    "id": "ironHelm",
+    "name": "Iron Helm",
+    "type": "heavy",
+    "defense": 9,
+    "magicResist": 4,
+    "bonuses": {
+      "STR": 4,
+      "VIT": 3,
+      "HP": 12
+    },
+    "range": 1,
+    "value": 70,
+    "description": "A sturdy iron helm offering reliable protection."
+  },
+  {
+    "id": "plateHelmet",
+    "name": "Plate Helmet",
+    "type": "heavy",
+    "defense": 11,
+    "magicResist": 5,
+    "bonuses": {
+      "STR": 4,
+      "VIT": 5,
+      "HP": 14
+    },
+    "range": 1,
+    "value": 82,
+    "description": "Heavy protective helmet made of metal plates."
+  },
+  {
+    "id": "greatHelm",
+    "name": "Great Helm",
+    "type": "heavy",
+    "defense": 13,
+    "magicResist": 6,
+    "bonuses": {
+      "VIT": 6,
+      "STR": 5,
+      "HP": 16
+    },
+    "range": 1,
+    "value": 92,
+    "description": "A towering full helm forged for the heaviest of battles."
+  }
+]

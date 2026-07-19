@@ -4,9 +4,15 @@ const path = require('path');
 const GEAR_DIR = path.join(__dirname, '..', 'public', 'gear');
 
 const FILES = {
-  armors: { file: 'armors.json', kind: 'defensive', slot: 'armor' },
-  feetWear: { file: 'feetWear.json', kind: 'defensive', slot: 'shoes' },
-  headgear: { file: 'headgear.json', kind: 'defensive', slot: 'helmet' },
+  armorsLight: { file: 'armorLight.json', kind: 'defensive', slot: 'armor' },
+  armorsMedium: { file: 'armorMedium.json', kind: 'defensive', slot: 'armor' },
+  armorsHeavy: { file: 'armorHeavy.json', kind: 'defensive', slot: 'armor' },
+  feetWearLight: { file: 'feetWearLight.json', kind: 'defensive', slot: 'shoes' },
+  feetWearMedium: { file: 'feetWearMedium.json', kind: 'defensive', slot: 'shoes' },
+  feetWearHeavy: { file: 'feetWearHeavy.json', kind: 'defensive', slot: 'shoes' },
+  headgearLight: { file: 'headgearLight.json', kind: 'defensive', slot: 'helmet' },
+  headgearMedium: { file: 'headgearMedium.json', kind: 'defensive', slot: 'helmet' },
+  headgearHeavy: { file: 'headgearHeavy.json', kind: 'defensive', slot: 'helmet' },
   weaponMelee: { file: 'weaponMelee.json', kind: 'weapon', slot: 'weapon' },
   weaponRanged: { file: 'weaponRanged.json', kind: 'weapon', slot: 'weapon' },
   weaponMagic: { file: 'weaponMagic.json', kind: 'weapon', slot: 'weapon' },
