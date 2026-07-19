@@ -7,7 +7,7 @@ const backupPath = path.join(__dirname, 'public', 'dungeonsOld.json');
 const firstDungeonStats = {
   floorBase: 0.684,
   floorMult: 0.084,
-  floorAmount: 8
+  floorAmount: 7
 };
 
 const dungeonList = [
