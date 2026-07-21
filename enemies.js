@@ -8,7 +8,7 @@ const dungeons = require('./public/dungeons.json');
  */
 function generateEnemies(party) {
     const livePlayers = Array.from(party.players.values()).filter(p => p.hp > 0);
-    const enemyBonus = livePlayers.length - 0.3;
+    const enemyBonus = livePlayers.length - 0.35;
 
     // Get dungeon data for scaling
     const dungeonData = party.dungeon ? dungeons[party.dungeon] : null;
@@ -25,7 +25,7 @@ function generateEnemies(party) {
     const effectiveFloor = dungeonFloor * floorMult + floorBase;
 
     let boss = dungeonFloor === dungeonFloorMax;
-    let enemyCount = Math.ceil(Math.random() * (0.3 + effectiveFloor / 21)) + enemyBonus * 1.4 + effectiveFloor / 22 + (enemyBonus * 0.9 + 0.3) * (0.28 + effectiveFloor / 24);
+    let enemyCount = Math.ceil(Math.random() * (0.3 + effectiveFloor / 21)) + enemyBonus * 1.5 + effectiveFloor / 22 + (enemyBonus * 1.1 - 0.3) * (0.28 + effectiveFloor / 24);
 
     // Last floor boss: force a single boss unit
     if (boss) {
@@ -38,16 +38,16 @@ function generateEnemies(party) {
         // Use effectiveFloor for tier selection
         const enemyData = getRandomEnemy(party.floor, effectiveFloor);
         let enemyName = enemyData.name;
-        let floorBonus = Math.pow((enemyBonus * 0.8 + effectiveFloor * 1.1) / (0.8 + enemyCount / 22) + Math.random() * (0.1 + effectiveFloor / 44), 1.23) * 0.25 + 0.1;
+        let floorBonus = Math.pow((enemyBonus * 0.8 + enemyBonus * effectiveFloor * 1.1) / (0.8 + enemyCount / 22) + Math.random() * (0.1 + effectiveFloor / 44), 1.23) * 0.25 + 0.1;
         let calcVit = Math.floor((2 + floorBonus / 1.3) + Math.random() * (0.5 + floorBonus / 9));
         let calcHp = Math.floor(Math.pow(floorBonus * 0.08 * (0.03 + calcVit * 0.03) + calcVit * 7 + floorBonus * 4 + effectiveFloor * 5 + 36 + Math.random() * (calcVit * 0.07 + 0.02 + floorBonus / 33) , 1.03));
         calcHp = Math.round(1.1 * calcHp / (1.1 + enemyCount / 14) * (0.65 + enemyBonus / 1.7));
         let enemyAp = Math.floor(calcHp * 0.05 + floorBonus + Math.random() * (floorBonus + calcHp * 0.1));
         if(boss) {
             // Last-floor boss: single boss unit + stronger stats
-            floorBonus += 1.1;
-            floorBonus *= (2.1 + enemyBonus * 1.1);
-            calcHp = Math.round(calcHp * (3.1 + enemyBonus * 1.4));
+            floorBonus += 0.5 + enemyBonus * 1.2;
+            floorBonus *= (1.1 + enemyBonus * 1.3);
+            calcHp = Math.round(calcHp * (2.8 + enemyBonus * 1.4));
             calcVit += 10;
             enemyAp = Math.floor((20 + enemyAp) * 2.5);
         }
@@ -55,14 +55,14 @@ function generateEnemies(party) {
             id: `enemy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
             name: enemyName,
             level: floorBonus.toFixed(2),
-            gold: floorBonus * 0.003 + calcHp * 0.002 + 0.08,
+            gold: floorBonus * 0.0016 + calcHp * 0.00052 + 0.18,
             hp: calcHp,
             maxHp: calcHp,
             ap: enemyAp,
             maxAp: enemyAp,
             mp: Math.floor(8 + floorBonus * 1.1),
             maxMp: Math.floor(8 + floorBonus * 1.1),
-            str: Math.floor((1 + floorBonus * 14) + Math.random() * (1.8 + floorBonus / 2.1)) / 10,
+            str: Math.floor(((0.5 + enemyBonus) * floorBonus * 14) + Math.random() * (1.8 + floorBonus / 2.1)) / 10,
             dex: Math.floor((1 + floorBonus * 12) + Math.random() * (2.2 + floorBonus / 1.8)) / 10,
             agi: Math.floor((1 + floorBonus * 12) + Math.random() * (2.2 + floorBonus / 1.8)) / 10,
             vit: calcVit,
@@ -72,7 +72,7 @@ function generateEnemies(party) {
             weaponRanged: ((0.3 + floorBonus / 15) + Math.random() * (0.2 + floorBonus / 48)),
             weaponMagic: ((0.3 + floorBonus / 15) + Math.random() * (0.2 + floorBonus / 48)),
             shoes: Math.floor((1.1 + floorBonus / 6) + Math.random() * (1 + floorBonus / 5)),
-            xpValue: Math.pow(calcHp / 27 + 0.4 + floorBonus / 11 + calcVit / 17, 1.14) / 1.5,
+            xpValue: Math.pow(calcHp / 27 + 0.4 + floorBonus / 11 + calcVit / 17, 1.06) / 1.7,
             isEnemy: true,
             isBoss: boss,
             actionBar: 10,

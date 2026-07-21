@@ -6,7 +6,7 @@
     "subType": "slings",
     "damage": 7,
     "spellPower": 2,
-    "attackSpeed": 1.1,
+    "attackSpeed": 1,
     "bonuses": {
       "DEX": 7,
       "CNC": 4
@@ -16,7 +16,7 @@
       "CNC": 0.7
     },
     "range": 24,
-    "value": 44,
+    "value": 24,
     "description": "A ranged weapon that shoots arrows with moderate damage."
   },
   {
@@ -32,11 +32,11 @@
       "CNC": 5
     },
     "damageModifiers": {
-      "STR": 0.3,
-      "DEX": 0.7
+      "DEX": 0.4,
+      "CNC": 0.6
     },
     "range": 24,
-    "value": 58,
+    "value": 26,
     "description": "A ranged weapon that shoots arrows with moderate damage."
   },
   {
@@ -49,14 +49,15 @@
     "attackSpeed": 0.9,
     "bonuses": {
       "DEX": 9,
-      "AGI": 6
+      "CNC": 6
     },
     "damageModifiers": {
-      "STR": 0.3,
-      "DEX": 0.7
+      "STR": 0.2,
+      "DEX": 0.3,
+      "CNC": 0.5
     },
     "range": 24,
-    "value": 72,
+    "value": 30,
     "description": "A ranged weapon that shoots arrows with moderate damage."
   }
 ]

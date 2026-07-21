@@ -337,6 +337,8 @@ function broadcastCriticalGearUpdate(partyId, party) {
         player.equipment[normalizedSlot] = calculatedItem;
 
         characters.calcMiscStats(player);
+        characters.logGearBonuses(player, 'equipItem');
+
         const oldMax = { ap: player.maxAp, hp: player.maxHp, mp: player.maxMp };
         player.maxAp = characters.calcMaxAp(player);
         player.ap = Math.min(player.maxAp, player.ap + (player.maxAp - oldMax.ap));
@@ -436,6 +438,8 @@ function broadcastCriticalGearUpdate(partyId, party) {
         delete player.equipment[normalizedSlot];
 
         characters.calcMiscStats(player);
+        characters.logGearBonuses(player, 'unequipItem');
+
         const oldMax = { ap: player.maxAp, hp: player.maxHp, mp: player.maxMp };
         player.maxAp = characters.calcMaxAp(player);
         player.ap = Math.min(player.maxAp, player.ap + (player.maxAp - oldMax.ap));
@@ -671,7 +675,7 @@ function broadcastCriticalGearUpdate(partyId, party) {
 
         // Check if dungeon is unlocked
         if (!characters.isDungeonUnlocked(party, dungeon)) {
-            const dungeonOrder = ['field', 'forest', 'cave'];
+            const dungeonOrder = Object.keys(require('./public/dungeons.json'));
             const idx = dungeonOrder.indexOf(dungeon);
             if (idx > 0) {
                 const prevDungeon = dungeonOrder[idx - 1];
@@ -1378,9 +1382,9 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
 
         if (ability.castUsesWeaponDamageModel) {
             // Use the same damage calculation as regular attacks
-            const { mod, modD } = calculateAttackMods(combatant);
+            const { accuracyMod, damageMod } = calculateAttackMods(combatant);
             const baseRoll = 50; // Base roll for abilities - adjust as needed
-            baseDamage = calculateDamage(combatant, modD, baseRoll);
+            baseDamage = calculateDamage(combatant, damageMod, baseRoll);
 
             const attributeMultiplier = skillEngine.calculateAttributeScaling(combatant, ability.attributeDamageScale);
             baseDamage *= attributeMultiplier;
@@ -1771,29 +1775,40 @@ function calculateAttackMods(actor) {
     const activeWeapon = characters.getActiveWeapon(actor);
     const weaponClass = characters.getActiveWeaponClass(actor);
     const effectiveWeapon = activeWeapon?.damage || activeWeapon?.level || 0;
-    const mod = 2 + effectiveWeapon;
-    const modD = 0.1 + effectiveWeapon * 0.7 + effectiveWeapon * (1.3 + Math.random() / 3);
-    return { mod, modD, weaponClass };
+    const damageMod = 0.1 + effectiveWeapon * 0.7 + effectiveWeapon * (1.3 + Math.random() / 3);
+
+    let accuracyMod = 2;
+    const classWeights = {
+      melee:  { primary: 'dex',  secondary: 'agi',  pWeight: 0.8, sWeight: 0.2 },
+      ranged: { primary: 'dex',  secondary: 'cnc',  pWeight: 0.8, sWeight: 0.2 },
+      magic:  { primary: 'cnc',  secondary: 'dex',  pWeight: 0.8, sWeight: 0.2 }
+    };
+    const weights = classWeights[weaponClass] || classWeights.melee;
+    const primary = characters.getEffectiveAttribute(actor, weights.primary);
+    const secondary = characters.getEffectiveAttribute(actor, weights.secondary);
+    accuracyMod += primary * weights.pWeight + secondary * weights.sWeight;
+
+    return { accuracyMod, damageMod, weaponClass };
 }
 
-function calculateRoll(actor, target, mod, party, partyId) {
+function calculateRoll(actor, target, accuracyMod, party, partyId) {
     const luk = characters.getEffectiveAttribute(actor, 'luk');
-    let roll = Math.floor(Math.random() * (80 + mod / 2 + luk * 2) + 1 + mod / 6 + luk * Math.random() * 0.3);
+    let roll = Math.floor(Math.random() * (80 + accuracyMod / 2 + luk * 2) + 1 + accuracyMod / 6 + luk * Math.random() * 0.3);
     roll = roll * (0.2 + Math.random() * 3);
     roll -= Math.floor(target.agi / 9 + target.agi * Math.random() * 1.4);
     roll = roll > 70 ? Math.round(Math.pow(roll, 0.9)) : Math.round(roll);
     return roll || 0;
 }
 
-function calculateDamage(actor, modD, roll) {
+function calculateDamage(actor, damageMod, roll) {
     const weaponClass = characters.getActiveWeaponClass(actor);
     const activeWeapon = characters.getActiveWeapon(actor);
     const resolvedWeapon = activeWeapon?.id
         ? itemGenerator.resolveItem('weapon', activeWeapon.id, activeWeapon.level || 1, activeWeapon.rarity || 1)
         : null;
     const effectiveDamage = resolvedWeapon?.damage || 3;
-    const damMod = modD / 1.1 + effectiveDamage / 1.1;
-    let damage = Math.random() * (0.5 + modD * 0.3) + damMod * 1.2 + modD * 1.2;
+    const damMod = damageMod / 1.1 + effectiveDamage / 1.1;
+    let damage = Math.random() * (0.5 + damageMod * 0.3) + damMod * 1.2 + damageMod * 1.2;
     const weaponData = weapons.find(w => w.id === activeWeapon?.id) || activeWeapon;
     damage *= characters.getAttributeDamageModifier(actor, weaponData);
     if (actor.isEnemy) damage *= ENEMY_DAMAGE_MULTIPLIER;
@@ -1884,8 +1899,8 @@ function performActionBarAttack(actor, partyId, party) {
     const target = selectTarget(actor, livePlayers(party), liveEnemies(party));
     if (!target) return;
 
-    const { mod, modD } = calculateAttackMods(actor);
-    let roll = calculateRoll(actor, target, mod, party, partyId);
+    const { accuracyMod, damageMod } = calculateAttackMods(actor);
+    let roll = calculateRoll(actor, target, accuracyMod, party, partyId);
     const hit = roll > 0, crit = roll > 99;
     
     updateCombatStats(actor, party, hit, crit, 0, roll);
@@ -1893,7 +1908,7 @@ function performActionBarAttack(actor, partyId, party) {
     let damage = 1;
     if (hit) {
         roll += Math.round(0.5 * actor.luk + Math.random() * actor.luk * 1.2);
-        damage = calculateDamage(actor, modD, roll);
+        damage = calculateDamage(actor, damageMod, roll);
 
         // Weaken debuff: the attacker's outgoing damage is reduced
         const weaken = skillEngine.sumDebuffAmount(actor.weakenEffects, 0.9);
@@ -1959,7 +1974,7 @@ function awardXP(partyId, party) {
                 while (player.xp >= player.xpToNext) {
                     player.xp -= player.xpToNext;
                     player.level++;
-                    player.xpToNext = Math.floor((player.xpToNext + 8) * 1.08);
+                    player.xpToNext = Math.floor((player.xpToNext + 16) * 1.08);
                     player.pointsToAllocate += Math.floor(3);
 
                     // 🩸 Level-up HP gain scales with vitality
@@ -2086,11 +2101,15 @@ function startRegenSystem() {
             live.forEach(p => {
                 // HP Regen (effective attributes include equipment bonuses)
                 let hpRegen = (inCombat ? 0.11 : 0.17) + characters.getEffectiveAttribute(p, 'vit') / 288 + characters.getEffectiveAttribute(p, 'str') / 344 + characters.getEffectiveAttribute(p, 'for') / 377 + characters.getEffectiveAttribute(p, 'pie') / 533;
-                p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 2.2 : 3.6));
+                p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 2.2 : 4.2));
 
                 // MP Regen (effective attributes include equipment bonuses)
                 let mpRegen = (inCombat ? 0.07 : 0.17) + characters.getEffectiveAttribute(p, 'int') / 422 + characters.getEffectiveAttribute(p, 'cnc') / 311 + characters.getEffectiveAttribute(p, 'wis') / 377 + characters.getEffectiveAttribute(p, 'pie') / 422;
                 p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 0.9 : 1.8));
+
+                // AP Regen (effective attributes include equipment bonuses)
+                let apRegen = (inCombat ? 0.01 : 0.27) + characters.getEffectiveAttribute(p, 'int') / 422 + characters.getEffectiveAttribute(p, 'cnc') / 311 + characters.getEffectiveAttribute(p, 'wis') / 377 + characters.getEffectiveAttribute(p, 'pie') / 422;
+                p.ap = Math.min(p.maxAp, p.ap + apRegen * (inCombat ? 0.01 : 1.8));
                 
                 // HP/MP changes are emitted by the consolidated delta broadcaster
                 // on the critical cadence (≤200ms), so no extra queueing here.

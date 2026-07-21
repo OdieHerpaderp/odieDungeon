@@ -16,7 +16,7 @@
       "INT": 0.3
     },
     "range": 16,
-    "value": 100,
+    "value": 38,
     "description": "A powerful magic rod that casts spells with high damage."
   },
   {
@@ -36,7 +36,7 @@
       "INT": 0.7
     },
     "range": 1,
-    "value": 110,
+    "value": 40,
     "description": "A small and fast melee weapon for quick strikes."
   }
 ]

@@ -849,10 +849,38 @@ function flashClass(el, cls) {
     return total;
   }
 
+  function logGearBonuses(player) {
+    const equip = player?.equipment || {};
+    const bonusList = [
+      { stat: 'STR', val: getEquipmentStatBonus(player, 'str') },
+      { stat: 'DEX', val: getEquipmentStatBonus(player, 'dex') },
+      { stat: 'AGI', val: getEquipmentStatBonus(player, 'agi') },
+      { stat: 'VIT', val: getEquipmentStatBonus(player, 'vit') },
+      { stat: 'INT', val: getEquipmentStatBonus(player, 'int') },
+      { stat: 'CNC', val: getEquipmentStatBonus(player, 'cnc') },
+      { stat: 'HP',  val: getEquipmentStatBonus(player, 'hp') },
+      { stat: 'MP',  val: getEquipmentStatBonus(player, 'mp') }
+    ];
+    
+    const withSign = bonusList.map(b => `${b.stat}: ${b.val >= 0 ? '+' : ''}${b.val}`).join(', ');
+    console.log(`[CLIENT] ${player?.name || 'Unknown'} gear bonuses: [${withSign}]`);
+  }
+
+  function getGearStatFullName(statKey) {
+    const statUpper = String(statKey).toUpperCase();
+    const mapping = {
+      'STR': 'STR', 'DEX': 'DEX', 'AGI': 'AGI', 'VIT': 'VIT',
+      'INT': 'INT', 'CNC': 'CNC', 'HP': 'HP', 'MP': 'MP'
+    };
+    return mapping[statUpper] || statUpper;
+  }
+
   function statBonusHtml(player, stat) {
     const b = getEquipmentStatBonus(player, stat);
-    const text = b ? `+${Math.round(b)}` : '';
-    return `<span class="gear-bonus ${stat}-bonus">${text}</span>`;
+    const rounded = Math.round(b);
+    const text = `${rounded >= 0 ? '+' : ''}${rounded}`;
+    const sign = rounded >= 0 ? 'positive' : 'negative';
+    return `<span class="gear-bonus gear-bonus-${sign} ${stat}-bonus">${text}</span>`;
   }
 
   function getAverageItemTier(player) {
@@ -883,15 +911,18 @@ function flashClass(el, cls) {
     if (calculatedItem.defense) def.push(span(`DEF: ${calculatedItem.defense}`, '#4db6ac'));
     if (calculatedItem.magicResist) def.push(span(`MR: ${calculatedItem.magicResist}`, '#9575cd'));
     if (def.length) parts.push(row(def.join(' ')));
+    if (calculatedItem.attackSpeed) parts.push(row(span(`ASPD: ${calculatedItem.attackSpeed}`, '#ffd54f')));
     if (calculatedItem.damageModifiers) {
       const mods = Object.entries(calculatedItem.damageModifiers)
         .map(([stat, weight]) => `${stat} x${Number(weight).toFixed(2)}`).join(', ');
       parts.push(row(span(`MODS: ${mods}`, '#ff6b6b')));
     }
-    if (calculatedItem.attackSpeed) parts.push(row(span(`ASPD: ${calculatedItem.attackSpeed}`, '#ffd54f')));
     if (calculatedItem.bonuses) {
       for (const [stat, value] of Object.entries(calculatedItem.bonuses)) {
-        parts.push(row(span(`+${value} ${stat}`, '#ffb74d')));
+        if (value === 0) continue;
+        const sign = value >= 0 ? '+' : '-';
+        const color = value >= 0 ? '#81c784' : '#ff8a65';
+        parts.push(row(span(`${sign}${Math.abs(value).toFixed(2)} ${stat}`, color)));
       }
     }
     return parts.join('');
@@ -949,7 +980,9 @@ function flashClass(el, cls) {
     if (calculatedItem.attackSpeed) tooltip += `Attack Speed: ${calculatedItem.attackSpeed}\n`;
     if (calculatedItem.bonuses) {
       for (const [stat, value] of Object.entries(calculatedItem.bonuses)) {
-        tooltip += `${stat}: +${value}\n`;
+        if (value === 0) continue;
+        const sign = value >= 0 ? '+' : '';
+        tooltip += `${stat}: ${sign}${value.toFixed(2)}\n`;
       }
     }
     return tooltip;
@@ -968,15 +1001,18 @@ function flashClass(el, cls) {
     if (calculatedItem.defense) def.push(span(`DEF:${calculatedItem.defense}`, '#4db6ac'));
     if (calculatedItem.magicResist) def.push(span(`MR:${calculatedItem.magicResist}`, '#9575cd'));
     if (def.length) parts.push(def.join(' '));
+    if (calculatedItem.attackSpeed) parts.push(span(`ASPD:${calculatedItem.attackSpeed}`, '#ffd54f'));
     if (calculatedItem.damageModifiers) {
       const mods = Object.entries(calculatedItem.damageModifiers)
         .map(([stat, weight]) => `${stat}x${Number(weight).toFixed(2)}`).join(',');
       parts.push(span(`MODS:${mods}`, '#ff6b6b'));
     }
-    if (calculatedItem.attackSpeed) parts.push(span(`ASPD:${calculatedItem.attackSpeed}`, '#ffd54f'));
     if (calculatedItem.bonuses) {
       for (const [stat, value] of Object.entries(calculatedItem.bonuses)) {
-        parts.push(span(`+${value}${stat}`, '#ffb74d'));
+        if (value === 0) continue;
+        const sign = value >= 0 ? '+' : '-';
+        const color = value >= 0 ? '#81c784' : '#ff8a65';
+        parts.push(span(`${sign}${Math.abs(value).toFixed(2)}${stat}`, color));
       }
     }
     return parts.join(' ');
@@ -1116,7 +1152,7 @@ function renderShopStock(shopStock, force = false) {
   for (const g of groups) {
     const { item } = g[0];
     const calc = window.itemGenerator?.calculateItemStats?.(item) || item;
-    const price = Math.max(20,
+    const price = Math.max(1,
       typeof calc?.baseValue === 'number'
         ? (window.itemGenerator?.calculateItemPrice?.(calc.baseValue, calc.level, calc.rarity) ?? calc.price ?? 40)
         : (calc?.price ?? 40));
@@ -1286,7 +1322,10 @@ function renderActiveEnemies(data) {
 }
 
 function refreshSidePanels(data, ownPlayerDataTemp) {
-  if (window.renderEquipmentPanel && ownPlayerDataTemp) window.renderEquipmentPanel(ownPlayerDataTemp);
+  if (window.renderEquipmentPanel && ownPlayerDataTemp) {
+    window.renderEquipmentPanel(ownPlayerDataTemp);
+    logGearBonuses(ownPlayerDataTemp);
+  }
   if (window.renderShopStock) window.renderShopStock(data.shopStock);
   if (window.renderSkillPanel) window.renderSkillPanel(ownPlayerDataTemp);
   refreshDungeonListIfChanged(currentState);
@@ -1611,11 +1650,11 @@ window.updatePartyDisplay = updatePartyDisplay;
   };
 
   window.donate = function() {
-      clientNetwork.donate().then(() => {
-        // Force local UI update immediately after the network request is sent,
-        // assuming state change locally for better responsiveness.
-        updatePartyDisplay(currentState);
-      });
+      // clientNetwork.donate() returns undefined (Socket.IO emit is fire-and-forget),
+      // so it cannot be chained with .then() -- that previously threw on every click.
+      clientNetwork.donate();
+      // Force local UI update immediately after the network request is sent.
+      updatePartyDisplay(currentState);
   };
 
   window.leaveParty = function() {

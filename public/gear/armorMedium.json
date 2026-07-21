@@ -11,7 +11,7 @@
       "AGI": 5
     },
     "range": 1,
-    "value": 74,
+    "value": 32,
     "description": "Medium armor formed from layered chitin, balancing mobility and guard."
   },
   {
@@ -26,7 +26,39 @@
       "HP": 12
     },
     "range": 1,
-    "value": 86,
+    "value": 36,
     "description": "Medium armor made of interlinked metal rings."
+  },
+  {
+    "id": "scaleArmor",
+    "name": "Scale Armor",
+    "type": "medium",
+    "defense": 12,
+    "magicResist": 2,
+    "bonuses": {
+      "STR": 4,
+      "DEX": 3,
+      "VIT": 4,
+      "HP": 10
+    },
+    "range": 1,
+    "value": 36,
+    "description": "Medium armor of overlapping metal scales that shifts with your movement."
+  },
+  {
+    "id": "wyrmhideJerkin",
+    "name": "Wyrmhide Jerkin",
+    "type": "medium",
+    "defense": 15,
+    "magicResist": 3,
+    "bonuses": {
+      "AGI": 5,
+      "DEX": 3,
+      "CNC": 3,
+      "HP": 14
+    },
+    "range": 1,
+    "value": 40,
+    "description": "Medium jerkin of enchanted wyrmhide — no metal, yet as tough as the best plate studded mail."
   }
 ]

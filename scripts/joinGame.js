@@ -212,10 +212,9 @@ function handleWebRTCMessage(type, data) {
     case 'combatStart': return onCombatStart(data);
     case 'combatEnd': return onCombatEnd(data);
     // Combat hit/crit/damage events are delivered over WebRTC as `combatEvent`
-    // (the server's broadcastCriticalUpdate -> combatEvent). They carry the
-    // same actor/target shape the browser routes through the critical handler,
-    // so reuse onCriticalUpdate to keep player/enemy HP in sync.
-    case 'combatEvent': return onCriticalUpdate(data);
+    // (the server's broadcastCriticalUpdate -> combatEvent). They carry an
+    // actor/target shape; reuse onGameDelta to keep player/enemy HP/AP in sync.
+    case 'combatEvent': return onGameDelta(data);
     case 'gameDelta': return onGameDelta(data);
     case 'fullState':
     case 'partyUpdate': return onFullState(data);
@@ -341,7 +340,16 @@ function onGameDelta(d) {
   if (d.playerUpdates) {
     for (const [id, u] of Object.entries(d.playerUpdates)) {
       const p = state.players.get(id) || (u.name && [...state.players.values()].find(x => x.name === u.name));
-      if (p) Object.assign(p, u);
+      if (p) {
+        Object.assign(p, u);
+        // Gear structural changes (inventory / equipment) arrive here via
+        // broadcastCriticalGearUpdate so we can discover looted item ids.
+        if (u.inventory !== undefined) p.inventory = u.inventory;
+        if (u.equipment !== undefined) p.equipment = u.equipment;
+        if (p.name === NAME) {
+          state.player = Object.assign({}, state.player, p);
+        }
+      }
     }
   }
 }
@@ -418,6 +426,39 @@ socket.on('connect_error', (err) => console.error('[connect_error]', err.message
 socket.on('disconnect', (reason) => log('disconnected:', reason));
 
 // ── Command handling ────────────────────────────────────────────────────
+function describeItem(item) {
+  if (!item) return 'null';
+  const name = item.displayName || item.name || item.id || 'item';
+  const lvl = item.level !== undefined ? ` Lv${item.level}` : '';
+  const rar = item.rarity !== undefined ? ` ${item.rarity}★` : '';
+  return `${name}${lvl}${rar}`;
+}
+
+// Compute the average tier of currently equipped items using the same formula
+// as public/gear/itemGenerator.js calculateItemTier (so it matches the browser's
+// ♔X.Y readout). Prints per-slot tiers and the average.
+function showTier() {
+  const me = state.player;
+  if (!me) return log('not joined yet');
+  const eq = me.equipment || {};
+  const slotNames = ['weapon', 'armour', 'helmet', 'shoes'];
+  let sum = 0, count = 0;
+  for (const s of slotNames) {
+    const it = eq[s];
+    if (!it) { log(`${s}: —`); continue; }
+    const level = Number.isFinite(it.level) ? it.level : 1;
+    const rarity = Number.isFinite(it.rarity) ? it.rarity : 1;
+    const levelMul = 0.8 + level / 24;
+    const rarityMul = 0.7 + rarity / 13;
+    const stat = Math.max(0.01, 37 * levelMul * rarityMul);
+    const tier = (stat - 22.2) / 2.05;
+    sum += tier; count++;
+    log(`${s}: ${describeItem(it)} ♔${tier.toFixed(2)}`);
+  }
+  const avg = count ? sum / count : 0;
+  log(`Average equipped tier: ♔${avg.toFixed(2)} (${count}/4 slots filled)`);
+}
+
 function status() {
   const me = state.player;
   if (!me) return log('not joined yet');
@@ -426,6 +467,30 @@ function status() {
   log(`Enemies: ${state.enemies.length ? state.enemies.map(e => `${e.name}(${e.hp}/${e.maxHp})`).join(', ') : 'none'}`);
   log(`Players: ${[...state.players.values()].map(p => p.name).join(', ')}`);
   log(`Shop: ${state.shopStock.length} items (use 'buyshop <index>')`);
+  const eq = me.equipment || {};
+  const slotNames = ['weapon', 'armour', 'helmet', 'shoes'];
+  log(`Equipped: ${slotNames.map(s => `${s}=${eq[s] ? describeItem(eq[s]) : '—'}`).join(', ')}`);
+  const inv = Array.isArray(me.inventory) ? me.inventory : [];
+  if (inv.length) {
+    log(`Inventory (${inv.length}): use 'inv' for details, 'equip <slot> <id>' to wear`);
+  } else {
+    log(`Inventory: empty`);
+  }
+}
+
+// Focused inventory listing with ids so looted items can be equipped.
+function showInventory() {
+  const me = state.player;
+  if (!me) return log('not joined yet');
+  const inv = Array.isArray(me.inventory) ? me.inventory : [];
+  if (!inv.length) { log('Inventory: empty'); return; }
+  log(`Inventory (${inv.length}):`);
+  inv.forEach((item, i) => {
+    const id = item.id !== undefined ? item.id : '(no id)';
+    const slot = item.slot ? `[${item.slot}]` : '[?]';
+    log(`  ${i}. ${slot} ${id} - ${describeItem(item)}`);
+  });
+  log(`Equip: equip <weapon|armour|helmet|shoes> <id>`);
 }
 
 rl.on('line', (line) => {
@@ -437,8 +502,14 @@ rl.on('line', (line) => {
     case 'help':
       showHelp();
       break;
+    case 'tier':
+      showTier();
+      break;
     case 'status':
       status();
+      break;
+    case 'inv':
+      showInventory();
       break;
     case 'embark': {
       const dungeon = args[0] || state.dungeon || 'field';
@@ -572,6 +643,9 @@ function showHelp() {
     'Commands:',
     '  help                              show this list',
     '  status                            print current tracked state',
+    '  tier                             print average equipped item tier (♔X.Y)',
+    '  inv                               list your inventory (ids for equip)',
+
     '  embark [dungeon]                 embark (default current/field)',
     '  change <dungeon>                 switch dungeon in town',
     '  escape                           return to Town',

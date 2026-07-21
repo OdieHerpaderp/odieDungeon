@@ -78,9 +78,10 @@ client only issues the player-driven actions.
 | Command | Effect | Server event emitted |
 |---------|--------|----------------------|
 | `help` | Print the command list. | — |
-| `status` | Print tracked state: party, dungeon, floor, combat flag, your HP/MP/AP/gold/points, enemies, players, shop count. | — |
+| `status` | Print tracked state: party, dungeon, floor, combat flag, your HP/MP/AP/gold/points, enemies, players, shop count, **equipped gear per slot**, and an inventory hint. | — |
+| `inv` | List your inventory with per-item **index, slot, id, name, level, and rarity** — the ids needed for `equip`. | — |
 | `embark [dungeon]` | Embark the party (defaults to current dungeon, usually `field`). Must be in Town (floor 0). | `embarkDungeon` |
-| `change <dungeon>` | Switch dungeon while in Town (respects unlock gates). | `changeDungeon` |
+| `change <dungeon>` | Switch dungeon while in Town (respects unlock gates). **Important:** disable auto-embark first, wait for the current dungeon to fully complete (or use `escape` between combats), then select the new dungeon and click `embark`. | `changeDungeon` |
 | `escape` | Return to Town and reset dungeon progress. | `escapeDungeon` |
 | `auto [on|off]` | Toggle auto-embark (re-embark on the same dungeon from Town). | `toggleAutoEmbark` |
 | `allocate <stat> <points>` | Spend unallocated stat points (`str/dex/agi/vit/int/cnc/wis/for/luk/pie`). | `allocatePoints` |
@@ -99,11 +100,17 @@ client only issues the player-driven actions.
 
 ### Notes on arguments
 
-- `itemId` / `abilityId` values come from the live server state. Use `status`
-  and the `criticalUpdate` / `fullState` packets to discover real ids. The
-  client prints `[event:...]` lines from the server `eventLog` channel, which
-  surface validation errors (e.g. "You do not own that item.", "Not enough
-  gold...", "Invalid ability slot.").
+- `itemId` / `abilityId` values come from the live server state. Use the `inv`
+  command to list your inventory with real item ids (and `status` to see the
+  four equipped slots). The client prints `[event:...]` lines from the server
+  `eventLog` channel, which surface validation errors (e.g. "You do not own that
+  item.", "Not enough gold...", "Invalid ability slot.").
+- The server sends inventory/equipment inside `partyUpdate` / `fullState` (via
+  `buildFullStatePacket`) and inside `gameDelta.playerUpdates` (via
+  `broadcastCriticalGearUpdate`). The client merges those into its tracked
+  `state.player`, so `status` and `inv` always reflect current gear after any
+  loot drop or purchase. Looted items appear with an `id` you can pass straight
+  to `equip <slot> <id>`.
 - Stat allocation is rejected server-side if `pointsToAllocate` is insufficient
   or `points <= 0`.
 - Gear purchases are only allowed in Town (`floor === 0`) and out of combat.
@@ -113,13 +120,29 @@ client only issues the player-driven actions.
 The script maintains an in-memory `state` object updated from server broadcasts:
 
 - `partyUpdate` / `fullState` → full snapshot (`onFullState`).
-- `dungeonChange` / `combatStart` / `combatEnd` → floor, dungeon, combat flag,
-  enemies.
-- `criticalUpdate` / `combatEvent` / `standardUpdate` / `backgroundUpdate` /
-  `hpMpUpdate` → incremental player/enemy stat deltas (same channels the browser
-  client uses). These arrive over WebRTC when the data channel is open, and over
-  Socket.IO otherwise, but are routed through identical handlers either way.
+- `dungeonChange` / `combatStart` / `combatEnd` / `nextFloor` / `autoEmbark` →
+  floor, dungeon, combat flag, enemies.
+- `gameDelta` / `combatEvent` → incremental player/enemy stat deltas (same
+  channels the browser client uses). `combatEvent` carries an `actor`/`target`
+  shape (HP/MP/AP updates) and is routed through the same `onGameDelta` handler
+  as `gameDelta` (previously it mistakenly called a non-existent
+  `onCriticalUpdate`, which logged a `message parse error` on every hit — now
+  fixed). Gear structural changes (`inventory` / `equipment`) arrive inside
+  `gameDelta.playerUpdates` via `broadcastCriticalGearUpdate` and are merged into
+  the tracked player so `status` / `inv` stay current. These arrive over WebRTC
+  when the data channel is open, and over Socket.IO in a `batchUpdate` envelope
+  otherwise, but are routed through identical handlers either way.
 - `eventLog` → surfaced as `[event:type] message` lines for debugging.
+
+**Transport note:** the server coalesces `gameDelta`, `combatEvent`, `eventLog`,
+`dungeonChange`, `combatStart`, `combatEnd`, `nextFloor`, and `autoEmbark` into a
+single `batchUpdate` envelope that is delivered over **both** transports — the
+WebRTC data channel when it is open, and a Socket.IO `batchUpdate` emit as a
+fallback when WebRTC is unavailable or drops. The client registers a
+`socket.on('batchUpdate', …)` handler that unwraps the envelope and routes each
+message through the same handlers as the WebRTC path, so `state` stays correct
+regardless of transport. This means the client no longer goes "blind" when
+`wrtc` is missing or the data channel closes mid-session.
 
 `status` renders this local view. Treat it as the agent's "screen": after any
 command, re-run `status` (with a short delay) to observe the result.
@@ -138,11 +161,11 @@ leave
 ### Gear / economy test
 
 ```
-buy random        # purchase a random item into inventory
-status            # inspect gold / inventory via eventLog + full state
+status            # inspect gold, equipped gear, and inventory hint
+inv               # list inventory with real item ids + slots
 buyshop 0         # buy first shop-stock item if available
-equip weapon <id> # equip it (id from a prior fullState/status)
-sell <id>         # sell something back
+equip weapon <id> # equip it (id from the prior `inv` listing)
+sell <id>         # sell something back (id from `inv`)
 donate            # gold must be >= 50
 ```
 
@@ -155,6 +178,55 @@ change forest     # only works once field floor 101 reached (gated server-side)
 escape            # back to Town, progress reset
 auto on           # re-embark automatically next time in Town
 ```
+
+## 5a. Autonomous loop: reaching the 5th dungeon (orchard)
+
+An agent can drive the character to the orchard (dungeon index 5 in
+`generateDungeon.js`: field → backyard → meadow → farm → orchard) with a
+repeatable loop. Each dungeon only needs to be **cleared once** to unlock the
+next (gated by `characters.isDungeonUnlocked`, which checks
+`party.completedDungeons[prevDungeon] === true`). The loop below never needs a
+browser — it only uses the commands in §3 plus `status`.
+
+The loop, per dungeon:
+
+1. **Set up once in Town (floor 0).**
+   - `ability 0 firstAid` — assign First Aid (heals an ally; improves survivability
+     in longer fights). Assign any other useful abilities to slots 1–7 as desired.
+   - `allocate <stat> <points>` — spend all `pointsToAllocate` (shown in `status`)
+     on a sensible build (e.g. `vit` for survivability, `str`/`int` for damage).
+     Re-run `status` to confirm `Points` dropped to 0.
+2. **Embark once.** `embark <dungeon>` (defaults to the current dungeon, usually
+   the one you just unlocked). Do **not** use `auto on` — let combat run to
+   completion; the server auto-progresses floors and, on a full clear, sets
+   `completedDungeons[dungeon] = true` and unlocks the next dungeon.
+3. **Gear up between clears (still in Town).** After a clear, loot drops into
+   inventory and the shop restocks:
+    - `status` — read your equipped gear and the inventory hint.
+    - `inv` — list looted items with their ids and slots.
+    - Equip useful loot: `equip <slot> <itemId>` (ids come from the `inv`
+      listing; see `getAverageItemTier` in `public/index.js:858` — tier is
+      computed from each equipped item's `level`/`rarity` via
+      `itemGenerator.calculateItemTier`).
+   - Sell useless loot: `sell <itemId>`.
+   - Buy better gear and equip it: `buy random` / `buyshop <index>` then
+     `equip <slot> <itemId>`. Gear purchases require being in Town (`floor === 0`)
+     and out of combat.
+4. **Decide whether to advance.** Compare two signals from `status`:
+   - **Average equipped item tier** — `♔X.Y` in the browser; on the client compute
+     it as the mean of `itemGenerator.calculateItemTier(item)` over the four
+     equipped slots (`weapon`/`armour`/`helmet`/`shoes`), where
+     `tier = (calculateItemStat(37, level, rarity) - 22.2) / 2.05`.
+   - **Character level** (`LvN` in `status`).
+   - If both are high enough for the *next* dungeon's difficulty, switch:
+     `change <nextDungeon>` then `embark <nextDungeon>` (disable auto-embark first
+     if it was on, per the `change` note in §3). Otherwise **repeat the current
+     dungeon** (re-`embark`) to farm more levels/loot.
+5. Repeat steps 2–4 until `status` shows `dungeon: orchard` and the orchard clear
+   completes (`completedDungeons.orchard === true`).
+
+Tip: keep 1–1.5s gaps between commands (see §7), and re-run `status` after each
+action so the local `state` reflects server changes before the next decision.
 
 ## 5b. Latency / input-lag diagnosis
 
@@ -251,17 +323,17 @@ received `dungeonChange`, and `packetGap` reflects the real game-traffic cadence
 ### WebRTC gotchas
 
 - **`wrtc` is required** for the data channel. If it is not installed the client
-  logs a warning and runs Socket.IO-only; everything still works, you just miss
-  the WebRTC-preferred broadcasts (as described in the old "Embark routing
-  note" below).
+  logs a warning and runs Socket.IO-only. Thanks to the Socket.IO `batchUpdate`
+  fallback (see §4), game traffic is still delivered — `state` tracking and
+  `commandRTT` continue to work; you simply lose the lower-latency WebRTC path.
 - **Channel can drop mid-session:** the server may close the data channel on a
   transient party/peer state change (e.g. another player dies and the party
   churns). The client falls back to Socket.IO automatically and state tracking
   continues; `webrtc` will then report `channel=closed`. There is no automatic
   re-open yet — re-join to re-establish it.
 - **`combatEvent` messages** (per-hit/crit/damage) arrive over WebRTC and are
-  routed through the critical-update handler to keep player/enemy HP in sync;
-  they are not surfaced as separate log lines.
+  routed through `onGameDelta` (same handler as `gameDelta`) to keep
+  player/enemy HP/AP in sync; they are not surfaced as separate log lines.
 
 ## 6. Exit
 
@@ -283,9 +355,9 @@ received `dungeonChange`, and `packetGap` reflects the real game-traffic cadence
   `combatStart`, `criticalUpdate`, `combatEvent`, deltas, etc.). With the channel
   open, `embark`'s `commandRTT` resolves via the received `dungeonChange` and
   `packetGap` shows the real ~100–300ms game-traffic batches. If `wrtc` is absent
-  (or the channel drops), the client transparently falls back to Socket.IO; state
-  tracking continues but you lose those WebRTC-preferred broadcasts. Run `webrtc`
-  to confirm the channel state (see §5c).
+  (or the channel drops), the client transparently falls back to Socket.IO; the
+  server's `batchUpdate` envelope is delivered over Socket.IO too, so state
+  tracking continues fully (run `webrtc` to confirm the channel state). See §4.
 - **Don't spam commands:** the server processes actions synchronously per
   socket; issuing many commands with no delay can race with `joinedParty` or
   combat-state checks. Insert 1–1.5s gaps between commands.

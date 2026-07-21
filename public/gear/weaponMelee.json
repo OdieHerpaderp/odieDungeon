@@ -4,18 +4,18 @@
     "name": "Newspaper",
     "type": "melee",
     "subType": "blunt",
-    "damage": 5,
+    "damage": 6,
     "spellPower": 1,
-    "attackSpeed": 1.2,
+    "attackSpeed": 1.1,
     "bonuses": {
-      "STR": 3,
-      "AGI": 3
+      "STR": 2,
+      "AGI": 2
     },
     "damageModifiers": {
       "STR": 1
     },
     "range": 1,
-    "value": 30,
+    "value": 20,
     "description": "A basic sword for melee combat."
   },
   {
@@ -27,14 +27,14 @@
     "spellPower": 1,
     "attackSpeed": 1.2,
     "bonuses": {
-      "STR": 6,
-      "DEX": 5
+      "STR": 5,
+      "DEX": 4
     },
     "damageModifiers": {
       "STR": 1
     },
     "range": 1,
-    "value": 50,
+    "value": 24,
     "description": "A basic sword for melee combat."
   },
   {
@@ -53,7 +53,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 62,
+    "value": 28,
     "description": "A basic sword for melee combat."
   },
   {
@@ -65,14 +65,14 @@
     "spellPower": 1,
     "attackSpeed": 1.3,
     "bonuses": {
-      "STR": 9,
+      "STR": 8,
       "DEX": 5
     },
     "damageModifiers": {
       "STR": 1
     },
     "range": 1,
-    "value": 60,
+    "value": 28,
     "description": "A basic sword for melee combat."
   },
   {
@@ -84,7 +84,7 @@
     "spellPower": 1,
     "attackSpeed": 0.9,
     "bonuses": {
-      "STR": 13,
+      "STR": 12,
       "DEX": 5
     },
     "damageModifiers": {
@@ -92,7 +92,7 @@
       "VIT": 0.2
     },
     "range": 1,
-    "value": 82,
+    "value": 34,
     "description": "A basic sword for melee combat."
   },
   {
@@ -105,14 +105,14 @@
     "attackSpeed": 1.7,
     "bonuses": {
       "DEX": 5,
-      "AGI": 10
+      "AGI": 9
     },
     "damageModifiers": {
       "DEX": 0.3,
       "AGI": 0.7
     },
     "range": 1,
-    "value": 48,
+    "value": 24,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -125,14 +125,14 @@
     "attackSpeed": 1.1,
     "bonuses": {
       "DEX": 5,
-      "STR": 10
+      "STR": 8
     },
     "damageModifiers": {
       "DEX": 0.5,
       "STR": 0.5
     },
     "range": 1,
-    "value": 72,
+    "value": 30,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -144,15 +144,15 @@
     "spellPower": 1,
     "attackSpeed": 0.9,
     "bonuses": {
-      "DEX": 8,
-      "STR": 13
+      "DEX": 6,
+      "STR": 11
     },
     "damageModifiers": {
       "DEX": 0.3,
       "STR": 0.7
     },
     "range": 1,
-    "value": 94,
+    "value": 34,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -174,7 +174,7 @@
       "VIT": 0.4
     },
     "range": 1,
-    "value": 32,
+    "value": 22,
     "description": "Worn cloth wraps that protect the knuckles for brawling."
   },
   {
@@ -196,7 +196,7 @@
       "VIT": 0.45
     },
     "range": 1,
-    "value": 42,
+    "value": 24,
     "description": "Padded gloves built for delivering powerful punches."
   }
 ]

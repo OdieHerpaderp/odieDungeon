@@ -98,8 +98,8 @@ const DEFAULT_CHARACTER_STATS = {
     pointsToAllocate: 3,
     actionBar: 0,
     maxActionBar: 100,
-    gold: 5,
-    donated: 25,
+    gold: 50,
+    donated: 75,
     dots: [],
     hots: []
 };

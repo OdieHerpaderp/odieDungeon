@@ -426,7 +426,7 @@ class ClientNetwork {
     }
 
     sendWebRTCMessage(type, data) {
-        if (this.webrtcConnected && this.webrtcDataChannel.readyState === 'open') {
+        if (this.webrtcConnected && this.webrtcDataChannel?.readyState === 'open') {
             this.trackPacket(this.udpStats, true);
             this.udpStats.connected = this.webrtcConnected;
             this.webrtcDataChannel.send(JSON.stringify({ id: this.generateMessageId(), timestamp: Date.now(), type, data }));
@@ -449,7 +449,7 @@ class ClientNetwork {
         if (this.webrtcPingInterval) return;
         // Send ping every 2 seconds for more accurate and responsive UDP ping measurement
         this.webrtcPingInterval = setInterval(() => {
-            if (this.webrtcConnected && this.webrtcDataChannel.readyState === 'open') {
+            if (this.webrtcConnected && this.webrtcDataChannel?.readyState === 'open') {
                 this.sendWebRTCMessage('ping', { clientTimestamp: Date.now(), pingId: this.generateMessageId() });
             }
         }, 2000);
@@ -505,9 +505,12 @@ class ClientNetwork {
 
     initWebRTCHandlers() {
       this.socket.on('webrtc-answer', async (d) => {
+        // Ignore answers for a stale connection (a newer setup already superseded us).
+        if (!this.webrtcPeer || this.webrtcPeer.connectionState === 'closed') return;
         try { await this.webrtcPeer.setRemoteDescription(d.answer); } catch (e) { console.error('WebRTC answer error:', e); }
       });
       this.socket.on('webrtc-signal', async (d) => {
+        if (!this.webrtcPeer || this.webrtcPeer.connectionState === 'closed') return;
         try { d.candidate && await this.webrtcPeer.addIceCandidate(d.candidate); } catch (e) { console.error('WebRTC signal error:', e); }
       });
       this.socket.on('webrtc-error', (d) => {

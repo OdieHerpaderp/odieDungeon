@@ -6,12 +6,15 @@
     "defense": 16,
     "magicResist": 1,
     "bonuses": {
-      "STR": 6,
-      "VIT": 5,
-      "HP": 20
+      "VIT": 6,
+      "STR": 2,
+      "HP": 20,
+      "AGI": -1,
+      "INT": -1,
+      "CNC": -1
     },
     "range": 1,
-    "value": 110,
+    "value": 40,
     "description": "Heavy protective armor made of metal plates."
   },
   {
@@ -23,10 +26,13 @@
     "bonuses": {
       "STR": 6,
       "VIT": 4,
-      "HP": 18
+      "HP": 18,
+      "AGI": -0.5,
+      "INT": -0.5,
+      "CNC": -0.5
     },
     "range": 1,
-    "value": 100,
+    "value": 40,
     "description": "Heavy armor forged from iron plates, balancing weight and protection."
   }
 ]

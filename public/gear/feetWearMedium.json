@@ -11,7 +11,7 @@
       "AGI": 3
     },
     "range": 1,
-    "value": 46,
+    "value": 24,
     "description": "Medium boots of chitin that spring with every step."
   },
   {
@@ -26,7 +26,38 @@
       "HP": 8
     },
     "range": 1,
-    "value": 56,
+    "value": 28,
     "description": "Medium boots reinforced with interlinked metal rings."
+  },
+  {
+    "id": "scaleBoots",
+    "name": "Scale Boots",
+    "type": "medium",
+    "defense": 6,
+    "magicResist": 2,
+    "bonuses": {
+      "STR": 3,
+      "DEX": 3,
+      "VIT": 3
+    },
+    "range": 1,
+    "value": 26,
+    "description": "Medium boots of overlapping metal scales that absorb hard impacts."
+  },
+  {
+    "id": "wyrmhideBoots",
+    "name": "Wyrmhide Boots",
+    "type": "medium",
+    "defense": 8,
+    "magicResist": 3,
+    "bonuses": {
+      "AGI": 4,
+      "DEX": 3,
+      "CNC": 3,
+      "HP": 8
+    },
+    "range": 1,
+    "value": 28,
+    "description": "Medium boots of textured wyrmhide that spring with every step yet shrug off heavy blows."
   }
 ]

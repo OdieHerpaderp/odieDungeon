@@ -6,7 +6,7 @@ const backupPath = path.join(__dirname, 'public', 'dungeonsOld.json');
 
 const firstDungeonStats = {
   floorBase: 0.672,
-  floorMult: 0.064,
+  floorMult: 0.058,
   floorAmount: 7
 };
 
@@ -68,8 +68,8 @@ for (let i = 0; i < dungeonList.length; i++) {
     stats = { ...firstDungeonStats };
   } else {
     const raw = {
-      floorBase: prev.floorBase * 1.17 + 2.1 + (prev.floorMult * prev.floorAmount) * 1.11,
-      floorMult: (prev.floorMult + 0.0001) * 1.015,
+      floorBase: prev.floorBase * 1.13 + 3.1 + (prev.floorMult * prev.floorAmount) * 1.09,
+      floorMult: (prev.floorMult + 0.0001) * 1.014,
       floorAmount: prev.floorAmount + 1
     };
     stats = {

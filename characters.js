@@ -180,10 +180,26 @@ function ensureSkillAndAbilityState(character) {
 }
 
 function getEquipmentBonus(player, statName) {
-  // Case-insensitive lookup backed by mapped equipment bonuses
   if (!statName) return 0;
   const mapped = getMappedEquipmentBonuses(player);
   return mapped[statName.toLowerCase()] || 0;
+}
+
+function logGearBonuses(player, changeType = 'calculated') {
+  const mapped = getMappedEquipmentBonuses(player);
+  const bonusList = [
+    { stat: 'STR', val: mapped.str || 0 },
+    { stat: 'DEX', val: mapped.dex || 0 },
+    { stat: 'AGI', val: mapped.agi || 0 },
+    { stat: 'VIT', val: mapped.vit || 0 },
+    { stat: 'INT', val: mapped.int || 0 },
+    { stat: 'CNC', val: mapped.cnc || 0 },
+    { stat: 'HP',  val: mapped.hp || 0 },
+    { stat: 'MP',  val: mapped.mp || 0 }
+  ];
+  
+  const withSign = bonusList.map(b => `${b.stat}: ${b.val >= 0 ? '+' : ''}${b.val}`).join(', ');
+  console.log(`[${changeType}] ${player?.name || 'Unknown'} gear bonuses: [${withSign}]`);
 }
 
 // Compact equipment refs persist only { id, level, rarity } and carry no bonuses
@@ -227,12 +243,16 @@ function getDungeonData(dungeonKey) {
   return dungeons[dungeonKey] || null;
 }
 
+// Ordered progression chain. Follows the real dungeon list so clearing one
+// dungeon unlocks the next (field -> backyard -> meadow -> farm -> orchard ...).
+const DUNGEON_PROGRESSION = Object.keys(dungeons);
+
 // Helper function to check if a dungeon is unlocked for a party
 function isDungeonUnlocked(party, dungeonKey) {
   // Field is always unlocked (first dungeon)
   if (dungeonKey === "field") return true;
 
-  const dungeonOrder = ["field", "forest", "cave"];
+  const dungeonOrder = DUNGEON_PROGRESSION;
   const dungeonIndex = dungeonOrder.indexOf(dungeonKey);
 
   // If dungeon not found or is first (field), return true
@@ -253,7 +273,7 @@ function isDungeonUnlocked(party, dungeonKey) {
 
 // Helper function to get unlocked dungeons for a party
 function getUnlockedDungeons(party) {
-  const dungeonOrder = ["field", "forest", "cave"];
+  const dungeonOrder = DUNGEON_PROGRESSION;
   const unlocked = [];
 
   for (const dungeonKey of dungeonOrder) {
@@ -405,6 +425,8 @@ module.exports = {
   getDungeonData,
   isDungeonUnlocked,
   getUnlockedDungeons,
+  getMappedEquipmentBonuses,
+  logGearBonuses,
 
   calcMiscStats,
   calcMaxHp,

@@ -8,10 +8,13 @@
     "bonuses": {
       "STR": 4,
       "VIT": 3,
-      "HP": 12
+      "HP": 12,
+      "AGI": -0.5,
+      "INT": -0.5,
+      "CNC": -0.5
     },
     "range": 1,
-    "value": 70,
+    "value": 30,
     "description": "A sturdy iron helm offering reliable protection."
   },
   {
@@ -23,10 +26,13 @@
     "bonuses": {
       "STR": 4,
       "VIT": 5,
-      "HP": 14
+      "HP": 14,
+      "AGI": -1,
+      "INT": -1,
+      "CNC": -1
     },
     "range": 1,
-    "value": 82,
+    "value": 34,
     "description": "Heavy protective helmet made of metal plates."
   },
   {
@@ -38,10 +44,13 @@
     "bonuses": {
       "VIT": 6,
       "STR": 5,
-      "HP": 16
+      "HP": 16,
+      "AGI": -1,
+      "INT": -1,
+      "CNC": -1
     },
     "range": 1,
-    "value": 92,
+    "value": 36,
     "description": "A towering full helm forged for the heaviest of battles."
   }
 ]
