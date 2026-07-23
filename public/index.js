@@ -323,8 +323,10 @@ function getOriginalStyle(frameAppearance) {
     titleBarCaptionLeftMargin: '2px', titleBarCaptionColorDefault: 'gray', titleBarCaptionColorFocused: 'white',
     titleBarCaptionTextShadow: null, titleBarColorDefault: '#161616', titleBarColorFocused: '#161616',
     titleBarBorderBottomDefault: null, titleBarBorderBottomFocused: null, frameBorderRadius: '4px',
-    frameBorderWidthDefault: '2px', frameBorderWidthFocused: '2px',
+    frameBorderWidthDefault: '3px', frameBorderWidthFocused: '3px',
     frameBorderColorDefault: '#161616', frameBorderColorFocused: '#161616',
+    frameBoxShadow: null,
+    resizeAreaVisible: false, resizeAreaWidth: 5, resizeAreaHeight: 5,
     titleBarClassNameDefault: ' ', titleBarClassNameFocused: ' '
   });
 
@@ -499,7 +501,7 @@ function generateOptionsFrameHtml() {
   return `
     <div style="padding: 10px; color: white; display: flex; gap: 10px;">
       <div style="flex: 1;">
-        ${optionSection('Performance', `<div id="perfHud" class="text-dim" style="margin-bottom: 8px;">FPS: -- | Updates: --ms</div>`)}
+        ${optionSection('Performance', `<div id="perfHud" class="text-dim" style="font-size:9px; margin-bottom: 8px;">FPS: -- | Updates: --ms</div>`)}
         ${optionSection('TCP (Socket.IO)', `<div class="text-sm">
           <div>Ping: <span id="tcpPing" class="text-muted">--</span> ms</div>
           <div>Sent: <span id="tcpSentPerSec" class="text-muted">--</span>/sec</div>
@@ -552,7 +554,7 @@ const frameConfigs = [
   { name: 'Equipment', title: '🎒 Equipment & Inventory', left: 605, top: 285, width: 300, height: 260, minWidth: 180, minHeight: 160, html: generateEquipmentHtml() },
   { name: 'Shop', title: '🛒 Shop (town only)', left: 845, top: 285, width: 300, height: 260, minWidth: 180, minHeight: 160, html: generateShopHtml() },
   { name: 'Win1', title: '📜 Event Log', left: 720, top: 600, width: 380, height: 100, minWidth: 160, minHeight: 80, html: '<div id="eventLog" style="width:100%; height:100%; color:white; overflow-y:scroll; font-size:12px; z-index:1000;"></div>' },
-  { name: 'FloorControls', title: '🗺️ Floor Controls', left: 850, top: 550, width: 200, height: 250, minWidth: 160, minHeight: 200, html: generateFloorControlHtml() },
+  { name: 'FloorControls', title: '🗺️ Floor Controls', left: 1180, top: 224, width: 200, height: 280, minWidth: 160, minHeight: 200, html: generateFloorControlHtml() },
   { name: 'CurrentPlayer', title: '👤 Current Player', left: 2, top: 50, width: 315, height: 230, minWidth: 200, minHeight: 150, html: generatePlayerFrameHtml() },
   { name: 'Options', title: '⚙️ Options & Performance', left: 750, top: 420, width: 310, height: 280, minWidth: 180, minHeight: 250, hidden: true, html: generateOptionsFrameHtml() },
   { name: 'PartyMembers', title: '🛡️ Party Members', left: 330, top: 50, width: 315, height: 230, minWidth: 200, minHeight: 150, html: '<div id="partyMembers" style="width:100%; height:100%; color:white; overflow-y:auto;"></div>' },
@@ -569,14 +571,14 @@ const { Skills: skillsFrame, AbilitySlots: abilitySlotsFrame, Equipment: equipme
 
 // Window Manager: per-frame show/hide + center, plus global shortcuts. Stays on top.
 const createWindowManagerFrame = () => {
-  const row = c => `<div style="display:flex;align-items:center;gap:2px;margin:2px 0;font-size:12px;color:#fff;">
+  const row = c => `<div style="display:flex;align-items:center;gap:0px;margin:0px 0;font-size:11px;color:#fff;">
       <span style="flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="${c.title}">${c.title}</span>
-      <button id="wm-toggle-${c.name}" onclick="wmToggle('${c.name}')" style="font-size:11px;padding:1px 4px;"></button>
-      <button onclick="wmCenter('${c.name}')" title="Center" style="font-size:11px;padding:1px 4px;">⤢</button></div>`;
-  const wm = jsFrame.create({ name: 'WindowManager', title: 'Window Manager', left: 1182, top: 2, width: 200, height: 360,
+      <button id="wm-toggle-${c.name}" onclick="wmToggle('${c.name}')" style="font-size:11px;padding:1px 2px;"></button>
+      <button onclick="wmCenter('${c.name}')" title="Center" style="font-size:11px;padding:1px 2px;">⤢</button></div>`;
+  const wm = jsFrame.create({ name: 'WindowManager', title: 'Window Manager', left: 1180, top: 2, width: 200, height: 220,
       appearance: getOriginalStyle(jsFrame.createFrameAppearance()),
       html: `<div style="padding:4px;color:#fff;">
-        <div style="display:flex;gap:2px;margin-bottom:4px;">
+        <div style="display:flex;gap:2px;margin-bottom:0px;">
           <button onclick="wmShowAll()" style="flex:1;font-size:11px;padding:2px;">Show All</button>
           <button onclick="wmHideAll()" style="flex:1;font-size:11px;padding:2px;">Hide All</button>
           <button onclick="wmCenterAll()" style="flex:1;font-size:11px;padding:2px;">Center All</button></div>
@@ -1566,8 +1568,14 @@ function updatePlayerStats(ui, c, player) {
     const be = bonusSels[i];
     if (be) {
       const b = getEquipmentStatBonus(player, k);
-      const bv = b ? `+${Math.round(b)}` : '';
-      if (c.bonuses[k] !== bv) { be.textContent = bv; c.bonuses[k] = bv; }
+      const rounded = Math.round(b);
+      const bv = rounded === 0 ? '0' : `${rounded > 0 ? '+' : ''}${rounded}`;
+      const signClass = rounded >= 0 ? 'gear-bonus-positive' : 'gear-bonus-negative';
+      if (c.bonuses[k] !== bv) {
+        be.textContent = bv;
+        be.className = `gear-bonus ${signClass} ${k}-bonus`;
+        c.bonuses[k] = bv;
+      }
     }
   });
 }

@@ -38,16 +38,16 @@ function generateEnemies(party) {
         // Use effectiveFloor for tier selection
         const enemyData = getRandomEnemy(party.floor, effectiveFloor);
         let enemyName = enemyData.name;
-        let floorBonus = Math.pow((enemyBonus * 0.8 + enemyBonus * effectiveFloor * 1.1) / (0.8 + enemyCount / 22) + Math.random() * (0.1 + effectiveFloor / 44), 1.23) * 0.25 + 0.1;
+        let floorBonus = Math.pow((enemyBonus * 0.8 + (0.1 + enemyBonus / 1.3) * effectiveFloor * 1.1) / (0.8 + enemyCount / 22) + Math.random() * (0.1 + effectiveFloor / 44), 1.15) * 0.25 + 0.1;
         let calcVit = Math.floor((2 + floorBonus / 1.3) + Math.random() * (0.5 + floorBonus / 9));
-        let calcHp = Math.floor(Math.pow(floorBonus * 0.08 * (0.03 + calcVit * 0.03) + calcVit * 7 + floorBonus * 4 + effectiveFloor * 5 + 36 + Math.random() * (calcVit * 0.07 + 0.02 + floorBonus / 33) , 1.03));
+        let calcHp = Math.floor(Math.pow(floorBonus * 0.08 * (0.03 + calcVit * 0.02) + calcVit * 6 + floorBonus * 4 + effectiveFloor * 5 + 36 + Math.random() * (calcVit * 0.05 + 0.02 + floorBonus / 55) , 1.03));
         calcHp = Math.round(1.1 * calcHp / (1.1 + enemyCount / 14) * (0.65 + enemyBonus / 1.7));
         let enemyAp = Math.floor(calcHp * 0.05 + floorBonus + Math.random() * (floorBonus + calcHp * 0.1));
         if(boss) {
             // Last-floor boss: single boss unit + stronger stats
-            floorBonus += 0.5 + enemyBonus * 1.2;
-            floorBonus *= (1.1 + enemyBonus * 1.3);
-            calcHp = Math.round(calcHp * (2.8 + enemyBonus * 1.4));
+            floorBonus += 0.5 + enemyBonus * 0.6;
+            floorBonus *= (1.1 + enemyBonus * 0.3);
+            calcHp = Math.round(calcHp * (2.3 + enemyBonus * 0.7));
             calcVit += 10;
             enemyAp = Math.floor((20 + enemyAp) * 2.5);
         }
@@ -55,14 +55,14 @@ function generateEnemies(party) {
             id: `enemy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
             name: enemyName,
             level: floorBonus.toFixed(2),
-            gold: floorBonus * 0.0016 + calcHp * 0.00052 + 0.18,
+            gold: floorBonus * 0.0012 + calcHp * 0.00036 + 0.12,
             hp: calcHp,
             maxHp: calcHp,
             ap: enemyAp,
             maxAp: enemyAp,
             mp: Math.floor(8 + floorBonus * 1.1),
             maxMp: Math.floor(8 + floorBonus * 1.1),
-            str: Math.floor(((0.5 + enemyBonus) * floorBonus * 14) + Math.random() * (1.8 + floorBonus / 2.1)) / 10,
+            str: Math.floor(((0.6 + enemyBonus / 2.6) * floorBonus * 13) + Math.random() * (1.8 + floorBonus / 2.1)) / 10,
             dex: Math.floor((1 + floorBonus * 12) + Math.random() * (2.2 + floorBonus / 1.8)) / 10,
             agi: Math.floor((1 + floorBonus * 12) + Math.random() * (2.2 + floorBonus / 1.8)) / 10,
             vit: calcVit,
@@ -72,7 +72,7 @@ function generateEnemies(party) {
             weaponRanged: ((0.3 + floorBonus / 15) + Math.random() * (0.2 + floorBonus / 48)),
             weaponMagic: ((0.3 + floorBonus / 15) + Math.random() * (0.2 + floorBonus / 48)),
             shoes: Math.floor((1.1 + floorBonus / 6) + Math.random() * (1 + floorBonus / 5)),
-            xpValue: Math.pow(calcHp / 27 + 0.4 + floorBonus / 11 + calcVit / 17, 1.06) / 1.7,
+            xpValue: Math.pow(calcHp / 34 + 0.7 + floorBonus / 14 + calcVit / 22, 0.99) / 1.6,
             isEnemy: true,
             isBoss: boss,
             actionBar: 10,

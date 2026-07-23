@@ -20,21 +20,21 @@ async function loadSkillCurve() {
     _skillCurve = await response.json();
   } catch (error) {
     console.warn('Unable to load skill curve config:', error);
-    _skillCurve = { xpDivisor: 5, exponent: 0.72, levelDivisor: 15, minLevel: 1 };
+    _skillCurve = { xpDivisor: 5, exponent: 0.72, levelDivisor: 15, minLevel: 0 };
   }
   return _skillCurve;
 }
 
 // Client-side copy of the skill level calculation formula
 function calcSkillLv(xp) {
-  const { xpDivisor, exponent, levelDivisor, minLevel } = _skillCurve || { xpDivisor: 5, exponent: 0.72, levelDivisor: 15, minLevel: 1 };
+  const { xpDivisor, exponent, levelDivisor, minLevel } = _skillCurve || { xpDivisor: 5, exponent: 0.72, levelDivisor: 15, minLevel: 0 };
   return Math.max(minLevel, Math.floor((Math.pow(xp / xpDivisor, exponent) / levelDivisor)));
 }
 
 // Client-side function to get skill level from skills state (mirrors server-side getSkillLevel)
 function getSkillLevelFromClient(skillsState, skillId) {
   const xp = skillsState?.[skillId]?.xp || 0;
-  return Math.max(1, Math.floor(calcSkillLv(xp)));
+  return Math.floor(calcSkillLv(xp));
 }
 
 // Compact signature of which abilities are currently unlocked for a player.
@@ -44,7 +44,7 @@ function getUnlockedAbilitySignature(player) {
   if (!abilityDefinitions.length) return '';
   const skillsState = player?.skillsState || {};
   return abilityDefinitions
-    .filter(a => getSkillLevelFromClient(skillsState, a.skillId) >= (a.unlockSkillLevelMin || 1))
+    .filter(a => getSkillLevelFromClient(skillsState, a.skillId) >= (a.unlockSkillLevelMin ?? 1))
     .map(a => a.id)
     .sort()
     .join(',');
@@ -163,7 +163,7 @@ function getClientEquippedWeaponSubType(player) {
 function isAbilityUnlockedByLevel(player, ability) {
   if (!player || !ability) return false;
   const skillLevel = getSkillLevelFromClient(player?.skillsState || {}, ability.skillId);
-  return skillLevel >= (ability.unlockSkillLevelMin || 1);
+  return skillLevel >= (ability.unlockSkillLevelMin ?? 1);
 }
 
 async function loadAbilityDefinitions() {
@@ -205,7 +205,7 @@ function buildSkillAbilitiesList(player, skillId) {
   const playerSkillLevel = getSkillLevelFromClient(player?.skillsState || {}, skillId);
 
   return abilities.map(ability => {
-    const requiredLevel = ability.unlockSkillLevelMin || 1;
+    const requiredLevel = ability.unlockSkillLevelMin ?? 1;
     const unlocked = playerSkillLevel >= requiredLevel;
     const levelColor = unlocked ? '#8fe28b' : '#ff9e80';
     return `
@@ -446,7 +446,7 @@ function buildAbilityList(player, filterAvailable = false) {
       : abilities;
 
     const rows = visibleAbilities.map(ability => {
-      const requiredLevel = ability.unlockSkillLevelMin || 1;
+    const requiredLevel = ability.unlockSkillLevelMin ?? 1;
       const unlocked = playerSkillLevel >= requiredLevel;
       const inSlotIndex = (player?.abilitySlots || []).indexOf(ability.id);
       const inSelectedSlot = inSlotIndex === selectedSlotIndex;
@@ -533,7 +533,7 @@ window.equipAbility = async function(abilityId) {
   const ability = abilityDefinitions.find(a => a.id === abilityId);
   if (!ability) return;
 
-  const requiredLevel = ability.unlockSkillLevelMin || 1;
+  const requiredLevel = ability.unlockSkillLevelMin ?? 1;
   const playerSkillLevel = getSkillLevelFromClient(lastPlayerForSlots?.skillsState || {}, ability.skillId);
   if (playerSkillLevel < requiredLevel) {
     toastFrame.showToast({

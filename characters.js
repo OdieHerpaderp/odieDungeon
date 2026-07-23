@@ -39,7 +39,7 @@ const dungeons = require("./public/dungeons.json");
 
 // Maximum number of items a shop can hold. Shared so the sell-to-shop path can
 // apply the same cap/re-sort as the dungeon restock path.
-const MAX_SHOP_ITEMS = 90;
+const MAX_SHOP_ITEMS = 120;
 
 // How long a shop item stays on the shelf before the expiry sweep removes it.
 const SHOP_ITEM_MAX_AGE_MS = 30 * 60 * 1000;
@@ -61,12 +61,12 @@ function restockShopWithDungeonScaling(party, dungeon, dungeonData) {
   // Keep existing stock and add to it instead of clearing it out
   party.shopStock = party.shopStock || [];
 
-  // Generate 1-3 items for every category so each restock always covers all
+  // Generate 2-4 items for every category so each restock always covers all
   // gear types (weapon, armor, headgear, shoes).
   const categoryPool = ["weapon", "armor", "headgear", "shoes"];
 
   for (const category of categoryPool) {
-    const count = 1 + Math.floor(Math.random() * 3); // 1-3 items
+    const count = 2 + Math.floor(Math.random() * 2); // 2-4 items
     for (let i = 0; i < count; i++) {
       // Pass a single-category pool so the generator's random pick always
       // resolves to this category.

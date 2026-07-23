@@ -33,7 +33,7 @@ function getSkillDefinition(skillId) {
 
 function getSkillLevel(skillsState, skillId) {
   const xp = skillsState?.[skillId]?.xp || 0;
-  return Math.max(1, Math.floor(calcSkillLv(xp)));
+  return Math.floor(calcSkillLv(xp));
 }
 
 function getSkillXp(skillsState, skillId) {
@@ -154,7 +154,7 @@ function getEquippedWeaponSubType(weapon) {
 function getAbilityUnlockState(ability, player) {
   if (!ability) return false;
   const ownSkillLevel = getSkillLevel(player?.skillsState || {}, ability.skillId);
-  return ownSkillLevel >= (ability.unlockSkillLevelMin || 1);
+  return ownSkillLevel >= (ability.unlockSkillLevelMin ?? 1);
 }
 
 function selectAbilityToCast(player, abilities, now, liveTargets) {
@@ -213,7 +213,7 @@ function calculateHealAmount(ability, player) {
   if (!ability || !player) return 0;
 
   let healAmount = ability.healAmount || 0;
-  const skillLevel = getSkillLevel(player.skillsState, ability.skillId) || 1;
+  const skillLevel = getSkillLevel(player.skillsState, ability.skillId);
   const skillMultiplier = 1 + skillLevel * 0.01;
 
   if (!ability.castUsesWeaponDamageModel) {
@@ -230,9 +230,8 @@ function calculateHealAmount(ability, player) {
 }
 
 // New function to award XP for healing actions
-function awardHealXp(skillsState, targetWasEnemy = false) {
-  // Award healing skill XP when healing others (especially allies)
-  const healingXp = targetWasEnemy ? 2 : 5; // More XP for healing allies vs enemies
+function awardHealXp(skillsState, amountHealed) {
+  const healingXp = 3 + amountHealed / 4;
   return awardSkillXp(skillsState, 'skill_healing', healingXp);
 }
 
@@ -313,7 +312,7 @@ function applyDot(caster, target, ability, party, combatStats) {
   }
 
   // Calculate DoT damage based on skill level
-  const skillLevel = getSkillLevel(caster.skillsState, ability.skillId) || 1;
+  const skillLevel = getSkillLevel(caster.skillsState, ability.skillId);
   const skillMultiplier = 1 + (skillLevel - 1) * 0.05; // 5% more per skill level
   const attributeMultiplier = calculateAttributeScaling(caster, ability.attributeDamageScale);
   const damagePerTick = Math.floor((ability.dotDamagePerTick || 0) * skillMultiplier * attributeMultiplier);
@@ -357,7 +356,7 @@ function applyHot(caster, target, ability, party, combatStats) {
   }
 
   // Calculate HoT healing based on skill level
-  const skillLevel = getSkillLevel(caster.skillsState, ability.skillId) || 1;
+  const skillLevel = getSkillLevel(caster.skillsState, ability.skillId);
   const skillMultiplier = 1 + (skillLevel - 1) * 0.05; // 5% more per skill level
   const attributeMultiplier = calculateAttributeScaling(caster, ability.attributeDamageScale);
   const healPerTick = Math.floor((ability.hotHealPerTick || 0) * skillMultiplier * attributeMultiplier);

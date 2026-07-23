@@ -323,7 +323,7 @@ button { color: #eee; background-color: #494; border: none; border-radius: 4px; 
 .panel-bg   { background: rgba(0,0,0,0.3); border-radius: 4px; }
 .panel-pad  { padding: 6px; color: white; font-size: 12px; height: 100%; box-sizing: border-box; }
 .col-scroll { display: flex; flex-direction: column; overflow-y: auto; min-height: 0; flex: 1 1 auto; }
-.panel-h4   { font-size: 12px; color: #aaa; margin: 0 0 8px 0; }
+.panel-h4   { font-size: 12px; color: #aaa; margin: 0 0 1px 0; }
 .no-margin  { margin: 0; padding: 0; }
 .stats-owned { font-size: 13px; line-height: 0.9; }
 .stats-party  { font-size: 13px; line-height: 0.9; }

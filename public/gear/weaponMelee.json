@@ -57,6 +57,26 @@
     "description": "A basic sword for melee combat."
   },
   {
+    "id": "ironMaul",
+    "name": "Iron Maul",
+    "type": "melee",
+    "subType": "blunt",
+    "damage": 16,
+    "spellPower": 1,
+    "attackSpeed": 0.9,
+    "bonuses": {
+      "STR": 9,
+      "VIT": 6
+    },
+    "damageModifiers": {
+      "STR": 0.8,
+      "VIT": 0.2
+    },
+    "range": 1,
+    "value": 32,
+    "description": "A basic sword for melee combat."
+  },
+  {
     "id": "longSword",
     "name": "Long Sword",
     "type": "melee",
@@ -88,19 +108,39 @@
       "DEX": 5
     },
     "damageModifiers": {
-      "STR": 1,
+      "STR": 0.8,
       "VIT": 0.2
     },
     "range": 1,
-    "value": 34,
+    "value": 32,
     "description": "A basic sword for melee combat."
+  },
+  {
+    "id": "knife",
+    "name": "Knife",
+    "type": "melee",
+    "subType": "shortBlade",
+    "damage": 8,
+    "spellPower": 1,
+    "attackSpeed": 1.6,
+    "bonuses": {
+      "DEX": 4,
+      "AGI": 7
+    },
+    "damageModifiers": {
+      "DEX": 0.3,
+      "AGI": 0.7
+    },
+    "range": 1,
+    "value": 24,
+    "description": "A small and fast melee weapon for quick strikes."
   },
   {
     "id": "dagger",
     "name": "Dagger",
     "type": "melee",
     "subType": "shortBlade",
-    "damage": 8,
+    "damage": 10,
     "spellPower": 1,
     "attackSpeed": 1.7,
     "bonuses": {
@@ -112,7 +152,7 @@
       "AGI": 0.7
     },
     "range": 1,
-    "value": 24,
+    "value": 26,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {

@@ -104,8 +104,8 @@
       return baseValue; // Return as-is if not a number
     }
 
-    var levelMultiplier = 0.75 + level / 26;
-    var rarityMultiplier = 0.65 + rarity / 13;
+    var levelMultiplier = 0.7 + level / 21;
+    var rarityMultiplier = 0.6 + rarity / 10;
     var calculatedValue =
       Math.round(baseValue * levelMultiplier * rarityMultiplier * 100) / 100;
     return calculatedValue; // Ensure minimum value of 0.01 for defensive stats
@@ -115,7 +115,7 @@
      if (!item) return null;
      var level = Number.isFinite(item.level) ? item.level : 1;
      var rarity = Number.isFinite(item.rarity) ? item.rarity : 1;
-     return (calculateItemStat(39.2, level, rarity) - 21) / 1.5;
+     return (calculateItemStat(39.5, level, rarity) - 18.3) / 2.3;
    }
 
    // Calculate the item's gold price (buy/sell base) using the POW formula.
@@ -126,7 +126,7 @@
     }
     const levelMult = Math.pow(0.9 + level * 0.9, 1.2);
     const rarityMult = Math.pow(0.9 + rarity * 1.5, 1.4);
-    return Math.round(Math.pow((baseValue * (0.9 + levelMult / 11) * (0.9 + rarityMult / 8)) * 1.7, 1.2)) / 10;
+    return Math.round(Math.pow((baseValue * (0.9 + levelMult / 11) * (0.9 + rarityMult / 8)) * 1.9, 1.3)) / 10;
   }
 
   // Calculate bonuses based on base bonuses, level, and rarity
@@ -272,13 +272,13 @@
      var floorAmount = dungeonData && dungeonData.floorAmount || 3;
      var dungeonDifficulty = floorBase + floorMult * floorAmount;
 
-     var baseLevel = Math.max(0.1, dungeonDifficulty / 2);
+     var baseLevel = Math.max(0.1, 0.5 + dungeonDifficulty / 2);
 
      var category = categoryPool[Math.floor(Math.random() * categoryPool.length)];
 
-     var itemLevel = 0.4 + Math.pow(0.3 + (baseLevel / 3 + floorAmount / 15) + Math.random() * (baseLevel * 3.8 + 3), 0.9) / 2.2;
+     var itemLevel = 0.4 + Math.pow(0.3 + (baseLevel / 1.5 + floorAmount / 13) + Math.random() * (baseLevel * 3.2 + 3), 0.9) / 1.8;
   
-     var itemRarity = 0.5 + Math.pow(0.9 + Math.random() * (baseLevel * 2.1 + 6), 0.7) / 2.9;
+     var itemRarity = 0.6 + Math.pow(0.9 + Math.random() * (baseLevel * 2.2 + 7), 0.65) / 2.5;
       itemRarity = Number(itemRarity.toFixed(1));
      console.log(`Generating item for dungeon difficulty ${dungeonDifficulty.toFixed(2)}: level ${itemLevel.toFixed(2)}, rarity ${itemRarity}, category ${category}`);
 

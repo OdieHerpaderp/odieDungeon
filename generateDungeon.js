@@ -68,8 +68,8 @@ for (let i = 0; i < dungeonList.length; i++) {
     stats = { ...firstDungeonStats };
   } else {
     const raw = {
-      floorBase: prev.floorBase * 1.13 + 3.1 + (prev.floorMult * prev.floorAmount) * 1.09,
-      floorMult: (prev.floorMult + 0.0001) * 1.014,
+      floorBase: prev.floorBase * 1.13 + 2.4 + (prev.floorMult * prev.floorAmount) * 1.09,
+      floorMult: (prev.floorMult + 0.00006) * 1.012,
       floorAmount: prev.floorAmount + 1
     };
     stats = {

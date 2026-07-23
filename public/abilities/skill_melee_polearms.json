@@ -43,7 +43,7 @@
     "damageBase": 16,
     "actionBarSlowAmount": 20,
     "actionBarSlowDuration": 3,
-    "maxTargets": 5,
+    "maxTargets": 4,
     "allowedWeaponClasses": ["melee"],
     "requiredWeaponSubTypes": ["polearms"],
     "requiresWeaponEquipped": true,

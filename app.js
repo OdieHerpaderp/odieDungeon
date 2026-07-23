@@ -1359,9 +1359,11 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
         // Get targets for the healing ability
         const healTargets = skillEngine.getAbilityTargets(combatant, ability, [...alivePlayers]);
 
-        // Apply healing to each target
+        let totalHealed = 0;
         healTargets.forEach(target => {
+            const before = target.hp;
             target.hp = Math.min(target.maxHp, target.hp + healAmount);
+            totalHealed += target.hp - before;
 
             // Apply HoT effect if specified in ability
             if (ability.hotHealPerTick && ability.hotDuration) {
@@ -1369,10 +1371,7 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
             }
         });
 
-        // Award XP to healing skill when casting healing abilities
-        // Determine if healing an ally (not enemy) for XP purposes
-        const isHealingAlly = healTargets.some(t => !t.isEnemy && t !== combatant);
-        combatant.skillsState = skillEngine.awardHealXp(combatant.skillsState, !isHealingAlly); // false = healing ally/non-enemy
+        combatant.skillsState = skillEngine.awardHealXp(combatant.skillsState, totalHealed);
     } else {
         // For offensive abilities, calculate damage and apply to targets
         const damageTargets = skillEngine.getAbilityTargets(combatant, ability, liveEnemies(party));
@@ -2100,12 +2099,12 @@ function startRegenSystem() {
             
             live.forEach(p => {
                 // HP Regen (effective attributes include equipment bonuses)
-                let hpRegen = (inCombat ? 0.11 : 0.17) + characters.getEffectiveAttribute(p, 'vit') / 288 + characters.getEffectiveAttribute(p, 'str') / 344 + characters.getEffectiveAttribute(p, 'for') / 377 + characters.getEffectiveAttribute(p, 'pie') / 533;
+                let hpRegen = (inCombat ? 0.09 : 0.17) + characters.getEffectiveAttribute(p, 'vit') / 288 + characters.getEffectiveAttribute(p, 'str') / 344 + characters.getEffectiveAttribute(p, 'for') / 377 + characters.getEffectiveAttribute(p, 'pie') / 533;
                 p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 2.2 : 4.2));
 
                 // MP Regen (effective attributes include equipment bonuses)
-                let mpRegen = (inCombat ? 0.07 : 0.17) + characters.getEffectiveAttribute(p, 'int') / 422 + characters.getEffectiveAttribute(p, 'cnc') / 311 + characters.getEffectiveAttribute(p, 'wis') / 377 + characters.getEffectiveAttribute(p, 'pie') / 422;
-                p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 0.9 : 1.8));
+                let mpRegen = (inCombat ? 0.07 : 0.21) + characters.getEffectiveAttribute(p, 'int') / 422 + characters.getEffectiveAttribute(p, 'cnc') / 311 + characters.getEffectiveAttribute(p, 'wis') / 377 + characters.getEffectiveAttribute(p, 'pie') / 422;
+                p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 1.1 : 2.1));
 
                 // AP Regen (effective attributes include equipment bonuses)
                 let apRegen = (inCombat ? 0.01 : 0.27) + characters.getEffectiveAttribute(p, 'int') / 422 + characters.getEffectiveAttribute(p, 'cnc') / 311 + characters.getEffectiveAttribute(p, 'wis') / 377 + characters.getEffectiveAttribute(p, 'pie') / 422;
