@@ -30,9 +30,15 @@
     "group": "Weapon Proficiencies"
   },
   {
-    "id": "skill_ranged",
-    "name": "Ranged",
-    "description": "Improves ranged weapon attacks.",
+    "id": "skill_archery",
+    "name": "Archery",
+    "description": "Improves slings and bows attacks.",
+    "group": "Weapon Proficiencies"
+  },
+  {
+    "id": "skill_thrown",
+    "name": "Thrown Weapons",
+    "description": "Improves shuriken, kunai, and dart attacks. Gains XP from thrown hits.",
     "group": "Weapon Proficiencies"
   },
   {
@@ -66,15 +72,27 @@
     "group": "Magic"
   },
   {
-    "id": "skill_healing",
-    "name": "Healing",
-    "description": "Improves healing abilities.",
-    "group": "Magic"
-  },
-  {
     "id": "skill_witchcraft",
     "name": "Witchcraft",
     "description": "Curses and damage-over-time magic that weakens and debilitates foes.",
+    "group": "Magic"
+  },
+  {
+    "id": "skill_survival",
+    "name": "Survival",
+    "description": "Herbal and bandage healing. Low MP costs, no weapon required.",
+    "group": "Healing"
+  },
+  {
+    "id": "skill_shamanism",
+    "name": "Shamanism",
+    "description": "Nature-based magical healing using staves and rods. Requires magic weapons.",
+    "group": "Magic"
+  },
+  {
+    "id": "skill_miracles",
+    "name": "Miracles",
+    "description": "Divine healing and protection. Requires magic weapons.",
     "group": "Magic"
   }
 ]

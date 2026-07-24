@@ -392,7 +392,6 @@ function generateShopHtml() {
     <div class="frame-pad">
       ${buildGearTabsHtml('shop')}
       <div id="shopBodies" class="gear-scroll"></div>
-      <button style="background-color:#68b" class="buy-btn" onclick="donate()" id="donateBtn">👼 Donate (50g)</button>
     </div>
   `;
 }
@@ -691,14 +690,15 @@ function flashClass(el, cls) {
       onMovementBlocked: (data) => addToEventLog(data.message, 'error'),
       onNextFloorBlocked: (data) => addToEventLog(data.message, 'error'),
       onDotEffectsUpdate: (data) => {
-        const dotEffects = document.getElementById('dotEffects');
-        const dotList = document.getElementById('dotList');
-        if (!dotEffects || !dotList) return;
+const dotEffects = document.getElementById('dotEffects');
+         const dotList = document.getElementById('dotList');
+         if (!dotEffects || !dotList) return;
 
-        if (data.dots && data.dots.length > 0) {
-          dotEffects.style.display = 'block';
-          const fragment = document.createDocumentFragment();
-          data.dots.forEach(dot => {
+         const dots = (data.effects || []).filter(e => e.type === 'dot');
+         if (dots.length > 0) {
+           dotEffects.style.display = 'block';
+           const fragment = document.createDocumentFragment();
+           dots.forEach(dot => {
             const div = document.createElement('div');
             div.className = 'dot-item';
             div.style.cssText = 'margin-bottom: 2px; padding: 2px; background: rgba(255,255,255,0.1); border-radius: 3px;';
@@ -1269,7 +1269,7 @@ function playerRenderSig(p) {
     if (!it) return '-';
     return `${it.id || ''}|${it.level || ''}|${it.rarity || ''}|${it.defense ?? ''}|${it.damage ?? ''}|${it.weaponClass || it.type || ''}`;
   }).join('/');
-  const deb = `${p.weakenEffects?.length || 0}|${p.vulnerabilityEffects?.length || 0}|${p.defenseDownEffects?.length || 0}|${p.actionSlowEffects?.length || 0}`;
+  const deb = `${(p.effects||[]).filter(e=>e.type==='weaken').length}|${(p.effects||[]).filter(e=>e.type==='vulnerability').length}|${(p.effects||[]).filter(e=>e.type==='defenseDown').length}|${(p.effects||[]).filter(e=>e.type==='actionSlow').length}`;
   return [
     p.level, p.hp, p.maxHp, p.mp, p.maxMp, p.ap, p.maxAp, p.xp, p.xpToNext, p.gold,
     p.pointsToAllocate, p.actionBar, p.maxActionBar,
@@ -1542,8 +1542,8 @@ function updatePlayerShopAndGear(ui, c, player, isOwnPlayer) {
   if (goldChanged || gearChanged) {
     const gs = ui.goldText?.textContent;
     if (gs) {
-      const randomGearButton = shopFrame.$('#buyRandomGearBtn');
-      if (randomGearButton) randomGearButton.textContent = `🎲 Random Gear: 40g`;
+      const buyRandomGearBtn = shopFrame.$('#buyRandomGearBtn');
+      if (buyRandomGearBtn) buyRandomGearBtn.textContent = `🎲 Random Gear: 40g`;
     }
     c._lastGold = player.gold;
   }
@@ -1598,10 +1598,10 @@ window.updatePartyDisplay = updatePartyDisplay;
       const n = (arr || []).filter(e => (e.duration || 0) > 0).length;
       if (n > 0) badges.push(`<span class="debuff-badge" style="color:${color};border-color:${color};">${label} ${n}</span>`);
     };
-    add(entity.weakenEffects, 'Weakened', '#b388ff');
-    add(entity.vulnerabilityEffects, 'Vulnerable', '#ff6b6b');
-    add(entity.defenseDownEffects, 'Exposed', '#4fc3f7');
-    add(entity.actionSlowEffects, 'Slowed', '#ffd166');
+    add(entity.effects?.filter(e => e.type === 'weaken'), 'Weakened', '#b388ff');
+    add(entity.effects?.filter(e => e.type === 'vulnerability'), 'Vulnerable', '#ff6b6b');
+    add(entity.effects?.filter(e => e.type === 'defenseDown'), 'Exposed', '#4fc3f7');
+    add(entity.effects?.filter(e => e.type === 'actionSlow'), 'Slowed', '#ffd166');
     return badges.length ? `<div class="debuffs">${badges.join('')}</div>` : '';
   }
 
@@ -1657,13 +1657,8 @@ window.updatePartyDisplay = updatePartyDisplay;
       clientNetwork.sellItem(itemId);
   };
 
-  window.donate = function() {
-      // clientNetwork.donate() returns undefined (Socket.IO emit is fire-and-forget),
-      // so it cannot be chained with .then() -- that previously threw on every click.
-      clientNetwork.donate();
-      // Force local UI update immediately after the network request is sent.
-      updatePartyDisplay(currentState);
-  };
+
+
 
   window.leaveParty = function() {
       clientNetwork.leaveParty();

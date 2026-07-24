@@ -65,8 +65,6 @@ function getWeaponSkillId(weapon) {
   if (weaponClass === 'ranged') {
     const subType = (resolved?.subType || '').toLowerCase();
     if (subType === 'thrown') return 'skill_thrown';
-    // slings, bows, or any other ranged subType → archery
-    return 'skill_archery';
   }
   if (weaponClass === 'magic') return 'skill_magic';
   if (weaponClass === 'melee') {
@@ -338,3 +336,10 @@ module.exports = {
   calcXpForLevel,
   calcXpForNextLevel
 };
+
+
+console.log("=== DEBUG getWeaponSkillId ===
+");
+  console.log("input weapon:", JSON.stringify(weapon).substring(0,120));
+  console.log("resolved id:", resolved?.id);
+  console.log("weaponClass:", weaponClass);

@@ -6,7 +6,7 @@ const PLAYER_FIELDS = [
     'pointsToAllocate', 'abilityCooldowns',
     'str', 'dex', 'agi', 'vit', 'int', 'cnc', 'wis', 'for', 'luk', 'pie',
     'equipment', 'inventory', 'armor', 'weapon', 'actionBar', 'maxActionBar',
-    'currentVenture', 'dots', 'hots', 'actionSlowEffects'
+    'currentVenture', 'effects'
 ];
 
 const ENEMY_FIELDS = ['hp', 'maxHp', 'ap', 'maxAp', 'mp', 'maxMp', 'actionBar', 'maxActionBar', 'isDead'];

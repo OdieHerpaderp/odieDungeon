@@ -20,9 +20,9 @@ function saveCharacter(name, character) {
     const key = canonicalKey(name);
     const filePath = path.join(CHARACTERS_DIR, `${key}.json`);
     
-    // Ensure dots array exists
-    if (!character.dots) {
-        character.dots = [];
+    // Ensure effects array exists
+    if (!character.effects) {
+        character.effects = [];
     }
     
     const characterData = {
@@ -60,7 +60,7 @@ function saveCharacter(name, character) {
         spells: character.spells,
         lastSpellCast: character.lastSpellCast,
         abilities: character.abilities || [],
-        dots: character.dots,              // Damage over time effects
+        effects: character.effects,              // Active buff/debuff effects
         inventory: character.inventory || [],            // Player inventory
         lastUpdated: new Date().toISOString()
     };
@@ -92,7 +92,7 @@ function loadCharacter(name) {
             characterData.abilitySlots = characterData.abilitySlots || [];
             characterData.abilityCooldowns = characterData.abilityCooldowns || {};
             characterData.equipment = characterData.equipment || {};
-            characterData.dots = characterData.dots || []; // Initialize DoT array
+            characterData.effects = characterData.effects || []; // Initialize effects array
             characterData.inventory = Array.isArray(characterData.inventory) ? characterData.inventory : [];
             delete characterData.currentVenture;
             delete characterData.ventures;

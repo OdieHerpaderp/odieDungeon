@@ -7,8 +7,9 @@
     "unlockSkillLevelMin": 5,
     "mpCostBase": 1,
     "cooldownMsBase": 5000,
-    "defenseUpAmount": 0.20,
-    "defenseUpDuration": 7,
+    "effects": [
+      { "type": "defenseUp", "amount": 0.20, "duration": 7 }
+    ],
     "maxTargets": 1,
     "requiresWeaponEquipped": false,
     "abilityType": "buff"

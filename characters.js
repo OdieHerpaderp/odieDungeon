@@ -289,10 +289,18 @@ function getUnlockedDungeons(party) {
 
 // Helper function to determine weapon type from useMelee emoji
 
+function getStartingInventory() {
+  return [
+    { id: 'pebble', level: 1, rarity: 1, slot: 'weapon' },
+    { id: 'magicRune', level: 1, rarity: 1, slot: 'weapon' },
+  ];
+}
+
 // Character creation and management functions
 function createCharacter(name) {
   let character = createDefaultCharacter(name);
   character = ensureSkillAndAbilityState(character);
+  character.inventory.push(...getStartingInventory());
 
   // Initialize equipment
   character.equipment = normalizeEquipment(character.equipment || {});
@@ -419,6 +427,7 @@ module.exports = {
   getDefaultEquipment,
   normalizeEquipment,
   ensureSkillAndAbilityState,
+  getStartingInventory,
   getEquipmentBonus,
   getActiveWeapon,
   getActiveWeaponClass,

@@ -39,8 +39,9 @@
     "mpCostBase": 7,
     "cooldownMsBase": 2800,
     "damageBase": 24,
-    "dotDamagePerTick": 6,
-    "dotDuration": 5,
+    "effects": [
+      { "type": "dot", "amount": 6, "duration": 5 }
+    ],
     "maxTargets": 1,
     "allowedWeaponClasses": ["melee"],
     "requiredWeaponSubTypes": ["longBlade"],

@@ -1,6 +1,6 @@
 // odieDungeon
 // Global tuning: multiplier applied to all damage dealt BY enemies (1.0 = unchanged, 0.5 = -50%)
-const ENEMY_DAMAGE_MULTIPLIER = 0.75;
+const ENEMY_DAMAGE_MULTIPLIER = 0.8;
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -10,6 +10,7 @@ const characters = require('./characters');
 const WebRTCServer = require('./appWebRTC');
 const { extractDelta, buildSnapshot } = require('./utilities/deltaTracker');
 const { generateEnemies } = require('./enemies.js');
+const buffEngine = require('./public/skills/buffEngine');
 const skillEngine = require('./public/skills/skillEngine');
 const { loadAbilities } = require('./loadAbilities');
 const abilities = loadAbilities();
@@ -513,39 +514,6 @@ function broadcastCriticalGearUpdate(partyId, party) {
         }
     }
 
-    function handleDonate(socket, data) {
-        utils.trackSocketIoReceived('donate', data);
-        console.log("donate", data);
-        const partyId = data.partyId;
-        const party = parties.get(partyId);
-        if (!party) {console.log("donate no party", partyId); return;}
-        if (party.combatActive || party.floor !== 0) {
-            utils.trackSocketIoSent('eventLog', { message: 'You can only donate in town!', type: 'error' });
-            socket.emit('eventLog', { message: 'You can only donate in town!', type: 'error' });
-            return;
-        }
-        const player = party.players.get(socket.id);
-        if (!player) {
-            console.log("Player not found in party for socket.id:", socket.id);
-            return;
-        }
-        if(player.gold >= 50) {
-            console.log("donate " + 50);
-            player.gold -= 50;
-            player.donated += 50;
-            utils.trackSocketIoSent('eventLog', { message: 'Donated 50 gold! PIE increased.', type: 'success' });
-            socket.emit('eventLog', { message: 'Donated 50 gold! PIE increased.', type: 'success' });
-            characters.calcMiscStats(player);
-
-            // OPTIMIZATION: Use targeted broadcast instead of full state
-            broadcastPlayerUpdate(partyId, party, socket.id);
-        } else {
-            utils.trackSocketIoSent('eventLog', { message: 'Not enough gold to donate!', type: 'error' });
-            socket.emit('eventLog', { message: 'Not enough gold to donate!', type: 'error' });
-            console.log("donate n");
-        }
-    }
-
     function handleEscapeDungeon(socket, data) {
         utils.trackSocketIoReceived('escapeDungeon', data);
         const { partyId } = data;
@@ -786,6 +754,10 @@ function broadcastCriticalGearUpdate(partyId, party) {
             let character = savedData || utils.createDefaultCharacter(name);
             character = characters.ensureSkillAndAbilityState(character);
 
+            if (!savedData) {
+              character.inventory.push(...characters.getStartingInventory());
+            }
+
             delete character.id;
             character.id = socket.id;
 
@@ -988,7 +960,7 @@ function broadcastCriticalGearUpdate(partyId, party) {
     }
 
 // Event-driven single-player sync. Forces an immediate flush through the
-// consolidated emitter (single gameDelta) so discrete-action changes (donate,
+// consolidated emitter (single gameDelta) so discrete-action changes (escape,
 // assign ability slot, disconnect) land without waiting for the next periodic
 // tick. Gear/inventory structural changes go through broadcastCriticalGearUpdate instead.
 function broadcastPlayerUpdate(partyId, party, socketId) {
@@ -1280,9 +1252,7 @@ function restorePartyToFull(partyId) {
         p.mp = p.maxMp;
         p.ap = p.maxAp;
         p.actionBar = 0;
-        p.dots = [];
-        p.hots = [];
-        p.actionSlowEffects = [];
+        buffEngine.clearEffects(p);
         saveCharacter(p.name, p);
     });
 }
@@ -1339,8 +1309,8 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
     const alivePlayers = livePlayers(party);
 
     // Handle defense-up self-buff abilities (armor proficiencies) before all others.
-    if (ability.defenseUpAmount && ability.defenseUpDuration) {
-        skillEngine.applyDefenseUp(combatant, ability);
+    if (ability.effects?.some(e => e.type === 'defenseUp')) {
+        buffEngine.applyEffect(combatant, combatant, ability);
         combatant.skillsState = skillEngine.awardSkillXp(combatant.skillsState, ability.skillId, 3);
         broadcastCriticalUpdate(partyId, party, {
             actor: { ...combatant },
@@ -1366,12 +1336,12 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
             totalHealed += target.hp - before;
 
             // Apply HoT effect if specified in ability
-            if (ability.hotHealPerTick && ability.hotDuration) {
-                skillEngine.applyHot(combatant, target, ability, party, party.combatStats);
+            if (ability.effects?.some(e => e.type === 'hot')) {
+                buffEngine.applyEffect(combatant, target, ability);
             }
         });
 
-        combatant.skillsState = skillEngine.awardHealXp(combatant.skillsState, totalHealed);
+        combatant.skillsState = skillEngine.awardHealXp(combatant.skillsState, totalHealed, ability.skillId);
     } else {
         // For offensive abilities, calculate damage and apply to targets
         const damageTargets = skillEngine.getAbilityTargets(combatant, ability, liveEnemies(party));
@@ -1421,24 +1391,24 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
             applyDamage(target, scaledDamage, partyId, party);
 
             // Apply DoT effect if specified in ability
-            if (ability.dotDamagePerTick && ability.dotDuration) {
-                skillEngine.applyDot(combatant, target, ability, party, party.combatStats);
+            if (ability.effects?.some(e => e.type === 'dot')) {
+                buffEngine.applyEffect(combatant, target, ability);
             }
 
             // Apply action bar slow effect if specified in ability
-            if (ability.actionBarSlowAmount) {
-                skillEngine.applyActionSlowing(combatant, target, ability);
+            if (ability.effects?.some(e => e.type === 'actionSlow')) {
+                buffEngine.applyEffect(combatant, target, ability);
             }
 
             // Apply witchcraft debuff effects if specified in ability
-            if (ability.weakenAmount && ability.weakenDuration) {
-                skillEngine.applyWeaken(combatant, target, ability);
+            if (ability.effects?.some(e => e.type === 'weaken')) {
+                buffEngine.applyEffect(combatant, target, ability);
             }
-            if (ability.vulnerabilityAmount && ability.vulnerabilityDuration) {
-                skillEngine.applyVulnerability(combatant, target, ability);
+            if (ability.effects?.some(e => e.type === 'vulnerability')) {
+                buffEngine.applyEffect(combatant, target, ability);
             }
-            if (ability.defenseDownAmount && ability.defenseDownDuration) {
-                skillEngine.applyDefenseDown(combatant, target, ability);
+            if (ability.effects?.some(e => e.type === 'defenseDown')) {
+                buffEngine.applyEffect(combatant, target, ability);
             }
 
             // Update combat stats for the caster
@@ -1496,10 +1466,6 @@ function startActionBarSystem(partyId, party) {
     }, 100);
     spellCastIntervals.set(partyId, spellInterval);
 
-    const dotInterval = setInterval(() => {
-        skillEngine.processDotTicks(party);
-        skillEngine.processHotTicks(party);
-    }, 160);
     const interval = setInterval(() => {
         if (!party.combatActive) {
             clearInterval(interval);
@@ -1547,7 +1513,6 @@ function startActionBarSystem(partyId, party) {
             if (liveEnemiesList.length === 0) {
                 party.combatActive = false;
                 clearInterval(interval);
-                clearInterval(dotInterval);
                 actionIntervals.delete(partyId);
 
                 // Re-baseline deltas so the just-ended combat cannot re-inject old
@@ -1661,86 +1626,9 @@ function startActionBarSystem(partyId, party) {
                     : null;
                 const weaponAspd = resolvedWeapon?.attackSpeed ?? 1.0;
                 let fillAmount = (0.7 + agiFillRate * weaponAspd) * (1.1 + combatant.agi / 244 + weaponAspd / 20 + (combatant.equipment?.shoes?.defense || combatant.shoes || 3) / 122);
-                combatant.actionBar = Math.min(combatant.maxActionBar, combatant.actionBar + fillAmount);
-                
-                // Process DoT, HoT, and action slow effects for this combatant
-                if (combatant.dots && combatant.dots.length > 0) {
-                    // Process individual DoT for this combatant
-                    for (let i = combatant.dots.length - 1; i >= 0; i--) {
-                        const dot = combatant.dots[i];
-                        dot.tickCount++;
-                        dot.duration--;
-                        
-                        // Apply damage (bypasses AP as specified)
-                        // DoT on a player (combatant not an enemy) originates from an enemy -> reduce it
-                        let damage = Math.max(1, Math.floor(dot.damagePerTick * (1 + dot.tickCount * 0.05)));
-                        if (!combatant.isEnemy) damage = Math.max(1, Math.floor(damage * ENEMY_DAMAGE_MULTIPLIER));
-                        // Prevent DoT from killing characters - leave at least 1 HP
-                        combatant.hp = Math.max(1, combatant.hp - damage);
-                        
-                        // Find the source for credit attribution
-                        let source = null;
-                        if (!combatant.isEnemy) {
-                            source = party.players.get(dot.sourceId);
-                        } else {
-                            // Find source among players
-                            source = livePlayersList.find(p => p.id === dot.sourceId);
-                        }
-                        
-                        // Track damage in combat stats
-                        if (source && party.combatStats) {
-                            const stats = party.combatStats.get(source.id);
-                            if (stats) {
-                                if (!stats.totalDotDamage) stats.totalDotDamage = 0;
-                                stats.totalDotDamage += damage;
-                            }
-                        }
-                        
-                        // Remove DoT if duration is up
-                        if (dot.duration <= 0) {
-                            combatant.dots.splice(i, 1);
-                        }
-                    }
-                }
-                
-                if (combatant.hots && combatant.hots.length > 0) {
-                    // Process individual HoT for this combatant
-                    for (let i = combatant.hots.length - 1; i >= 0; i--) {
-                        const hot = combatant.hots[i];
-                        hot.tickCount++;
-                        hot.duration--;
-                        
-                        // Apply healing
-                        const healAmount = Math.max(1, Math.floor(hot.healPerTick * (1 + hot.tickCount * 0.05)));
-                        // Don't over-heal - respect max HP
-                        combatant.hp = Math.min(combatant.maxHp, combatant.hp + healAmount);
-                        
-                        // Find the source for credit attribution
-                        let source = null;
-                        if (!combatant.isEnemy) {
-                            source = party.players.get(hot.sourceId);
-                        } else {
-                            // Find source among players
-                            source = livePlayersList.find(p => p.id === hot.sourceId);
-                        }
-                        
-                        // Track healing in combat stats
-                        if (source && party.combatStats) {
-                            const stats = party.combatStats.get(source.id);
-                            if (stats) {
-                                if (!stats.totalHotHealing) stats.totalHotHealing = 0;
-                                stats.totalHotHealing += healAmount;
-                            }
-                        }
-                        
-                        // Remove HoT if duration is up
-                        if (hot.duration <= 0) {
-                            combatant.hots.splice(i, 1);
-                        }
-                    }
-                }
-                
-                if (combatant.actionBar >= combatant.maxActionBar) {
+combatant.actionBar = Math.min(combatant.maxActionBar, combatant.actionBar + fillAmount);
+                 
+                 if (combatant.actionBar >= combatant.maxActionBar) {
                     // Spell casting is handled by a separate ~100ms timer (see startActionBarSystem).
                     // The action bar now drives weapon attacks exclusively.
                     performActionBarAttack(combatant, partyId, party);
@@ -1860,7 +1748,7 @@ function handlePlayerDeath(partyId, party, player) {
 
 function applyDamage(target, damage, partyId, party) {
     // Vulnerability debuff: target takes increased incoming damage
-    const vulnerability = skillEngine.sumDebuffAmount(target.vulnerabilityEffects, 2.0);
+    const vulnerability = buffEngine.sumEffectAmount(target.effects, 'vulnerability', 2.0);
     if (vulnerability > 0) {
         damage = damage * (1 + vulnerability);
     }
@@ -1910,7 +1798,7 @@ function performActionBarAttack(actor, partyId, party) {
         damage = calculateDamage(actor, damageMod, roll);
 
         // Weaken debuff: the attacker's outgoing damage is reduced
-        const weaken = skillEngine.sumDebuffAmount(actor.weakenEffects, 0.9);
+        const weaken = buffEngine.sumEffectAmount(actor.effects, 'weaken', 0.9);
         if (weaken > 0) {
             damage = damage * (1 - weaken);
         }
@@ -1918,9 +1806,9 @@ function performActionBarAttack(actor, partyId, party) {
         const rawDamage = damage; // pre-mitigation damage
 
         // Defense-Down debuff: the target's damage mitigation is reduced
-        const defenseDown = skillEngine.sumDebuffAmount(target.defenseDownEffects, 0.9);
+        const defenseDown = buffEngine.sumEffectAmount(target.effects, 'defenseDown', 0.9);
         const mitigationTerm = (0.2 * Math.random() * (target.equipment?.helmet?.defense || target.helmet || 1) + 0.3 * Math.random() * (target.equipment?.armour?.defense || target.armour || 0) + 0.1 * Math.random() * (target.equipment?.shoes?.defense || target.shoes || 0) + 0.003 * Math.random() * target.vit + 0.001 * Math.random() * target.for) / 6;
-        const defenseUp = skillEngine.sumDebuffAmount(target.defenseUpEffects, 0.5);
+        const defenseUp = buffEngine.sumEffectAmount(target.effects, 'defenseUp', 0.5);
         const effectiveMitigation = (defenseDown > 0 ? mitigationTerm * (1 - defenseDown) : mitigationTerm) + defenseUp;
         const cappedMitigation = Math.min(effectiveMitigation, rawDamage * 0.85);
         damage = Math.max(0, Math.round(damage - cappedMitigation));
@@ -2099,15 +1987,15 @@ function startRegenSystem() {
             
             live.forEach(p => {
                 // HP Regen (effective attributes include equipment bonuses)
-                let hpRegen = (inCombat ? 0.09 : 0.17) + characters.getEffectiveAttribute(p, 'vit') / 288 + characters.getEffectiveAttribute(p, 'str') / 344 + characters.getEffectiveAttribute(p, 'for') / 377 + characters.getEffectiveAttribute(p, 'pie') / 533;
-                p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 2.2 : 4.2));
+                let hpRegen = (inCombat ? 0.08 : 0.17) + characters.getEffectiveAttribute(p, 'vit') / 288 + characters.getEffectiveAttribute(p, 'str') / 344 + characters.getEffectiveAttribute(p, 'for') / 677;
+                p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 1.8 : 3.5));
 
                 // MP Regen (effective attributes include equipment bonuses)
-                let mpRegen = (inCombat ? 0.07 : 0.21) + characters.getEffectiveAttribute(p, 'int') / 422 + characters.getEffectiveAttribute(p, 'cnc') / 311 + characters.getEffectiveAttribute(p, 'wis') / 377 + characters.getEffectiveAttribute(p, 'pie') / 422;
-                p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 1.1 : 2.1));
+                let mpRegen = (inCombat ? 0.07 : 0.21) + characters.getEffectiveAttribute(p, 'int') / 422 + characters.getEffectiveAttribute(p, 'cnc') / 311 + characters.getEffectiveAttribute(p, 'wis') / 677;
+                p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 1.3 : 2.3));
 
                 // AP Regen (effective attributes include equipment bonuses)
-                let apRegen = (inCombat ? 0.01 : 0.27) + characters.getEffectiveAttribute(p, 'int') / 422 + characters.getEffectiveAttribute(p, 'cnc') / 311 + characters.getEffectiveAttribute(p, 'wis') / 377 + characters.getEffectiveAttribute(p, 'pie') / 422;
+                let apRegen = (inCombat ? 0.01 : 0.25) + characters.getEffectiveAttribute(p, 'int') / 422 + characters.getEffectiveAttribute(p, 'cnc') / 311 + characters.getEffectiveAttribute(p, 'wis') / 677;
                 p.ap = Math.min(p.maxAp, p.ap + apRegen * (inCombat ? 0.01 : 1.8));
                 
                 // HP/MP changes are emitted by the consolidated delta broadcaster
@@ -2421,7 +2309,6 @@ socket.on('changeDungeon', (data) => handleChangeDungeon(socket, data));
         }
     });
 
-    socket.on('donate', (data) => handleDonate(socket, data));
 });
 
 // 🩸 Start global regeneration and broadcast system
@@ -2430,35 +2317,16 @@ const broadcastIntervalId = startBroadcastSystem();
 
 // Initialize DoT system
 function initDotSystem() {
-    const EFFECT_FIELDS = ['dots', 'hots', 'actionSlowEffects', 'weakenEffects', 'vulnerabilityEffects', 'defenseDownEffects', 'defenseUpEffects'];
+    const EFFECT_FIELDS = ['effects'];
     const hasActiveEffects = (party) => {
         const combatants = [...party.players.values(), ...(party.enemies || [])];
         return combatants.some(c => EFFECT_FIELDS.some(f => Array.isArray(c[f]) && c[f].length > 0));
     };
-    // Process DoTs every 1000ms for all parties (reduced from 160ms for less bandwidth)
+    // Process all effects every 1000ms for all parties
     const dotInterval = setInterval(() => {
         for (const [partyId, party] of parties.entries()) {
-            // The process* calls are no-op-safe on empty effect arrays, so only
-            // gate the broadcast: skip the delta flush when no combatant has any
-            // active DoT/HoT/debuff/buff effect this tick.
             const active = hasActiveEffects(party);
-
-            // Process DoT ticks
-            skillEngine.processDotTicks(party);
-            
-            skillEngine.processHotTicks(party);
-            
-            // Process action slow effects using the new function from skillEngine
-            skillEngine.processActionSlowEffects(party);
-
-            // Process witchcraft debuff effects using the new functions from skillEngine
-            skillEngine.processWeakenEffects(party);
-            skillEngine.processVulnerabilityEffects(party);
-            skillEngine.processDefenseDownEffects(party);
-            skillEngine.processDefenseUpEffects(party);
-
-            // OPTIMIZATION: only flush a critical delta update when effects were
-            // active (or just expired) this tick, instead of every party every second.
+            buffEngine.processEffects(party);
             if (active) {
                 broadcastCriticalUpdate(partyId, party);
             }

@@ -15,7 +15,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 20,
+    "value": 22,
     "description": "A basic sword for melee combat."
   },
   {
@@ -34,7 +34,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 24,
+    "value": 28,
     "description": "A basic sword for melee combat."
   },
   {
@@ -53,7 +53,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 28,
+    "value": 32,
     "description": "A basic sword for melee combat."
   },
   {
@@ -73,7 +73,7 @@
       "VIT": 0.2
     },
     "range": 1,
-    "value": 32,
+    "value": 36,
     "description": "A basic sword for melee combat."
   },
   {
@@ -92,7 +92,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 28,
+    "value": 30,
     "description": "A basic sword for melee combat."
   },
   {
@@ -112,7 +112,7 @@
       "VIT": 0.2
     },
     "range": 1,
-    "value": 32,
+    "value": 36,
     "description": "A basic sword for melee combat."
   },
   {
@@ -132,7 +132,7 @@
       "AGI": 0.7
     },
     "range": 1,
-    "value": 24,
+    "value": 26,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -152,7 +152,7 @@
       "AGI": 0.7
     },
     "range": 1,
-    "value": 26,
+    "value": 28,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -172,7 +172,7 @@
       "STR": 0.5
     },
     "range": 1,
-    "value": 30,
+    "value": 34,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -192,7 +192,7 @@
       "STR": 0.7
     },
     "range": 1,
-    "value": 34,
+    "value": 40,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -236,7 +236,105 @@
       "VIT": 0.45
     },
     "range": 1,
-    "value": 24,
+    "value": 26,
     "description": "Padded gloves built for delivering powerful punches."
+  },
+  {
+    "id": "lance",
+    "name": "Lance",
+    "type": "melee",
+    "subType": "polearms",
+    "damage": 14,
+    "spellPower": 1,
+    "attackSpeed": 1.3,
+    "bonuses": {
+      "STR": 7,
+      "AGI": 5
+    },
+    "damageModifiers": {
+      "STR": 0.6,
+      "DEX": 0.4
+    },
+    "range": 1,
+    "value": 28,
+    "description": "A fast thrusting polearm — faster than spear but lower damage ceiling."
+  },
+  {
+    "id": "pike",
+    "name": "Pike",
+    "type": "melee",
+    "subType": "polearms",
+    "damage": 21,
+    "spellPower": 1,
+    "attackSpeed": 0.85,
+    "bonuses": {
+      "STR": 12,
+      "VIT": 6
+    },
+    "damageModifiers": {
+      "STR": 0.7,
+      "VIT": 0.3
+    },
+    "range": 1,
+    "value": 42,
+    "description": "A heavy slow polearm — high damage output over time."
+  },
+  {
+    "id": "flail",
+    "name": "Flail",
+    "type": "melee",
+    "subType": "blunt",
+    "damage": 8,
+    "spellPower": 1,
+    "attackSpeed": 1.5,
+    "bonuses": {
+      "VIT": 8,
+      "AGI": 4
+    },
+    "damageModifiers": {
+      "VIT": 0.9
+    },
+    "range": 1,
+    "value": 26,
+    "description": "A pure VIT-scaling flail — fast ASPD for mobility."
+  },
+  {
+    "id": "rapier",
+    "name": "Rapier",
+    "type": "melee",
+    "subType": "shortBlade",
+    "damage": 12,
+    "spellPower": 1,
+    "attackSpeed": 1.5,
+    "bonuses": {
+      "DEX": 7,
+      "AGI": 9
+    },
+    "damageModifiers": {
+      "DEX": 0.4,
+      "AGI": 0.6
+    },
+    "range": 1,
+    "value": 30,
+    "description": "A classic single-edged thrusting blade — finesse playstyle with high power ceiling."
+  },
+  {
+    "id": "claymore",
+    "name": "Claymore",
+    "type": "melee",
+    "subType": "longBlade",
+    "damage": 17,
+    "spellPower": 1,
+    "attackSpeed": 0.85,
+    "bonuses": {
+      "STR": 13,
+      "AGI": 2
+    },
+    "damageModifiers": {
+      "STR": 0.9
+    },
+    "range": 1,
+    "value": 46,
+    "description": "A canonical longBlade upgrade — slowest ASPD for pure brute force."
   }
 ]

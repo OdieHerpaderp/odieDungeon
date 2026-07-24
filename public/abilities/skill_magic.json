@@ -39,8 +39,9 @@
     "mpCostBase": 10,
     "cooldownMsBase": 3200,
     "damageBase": 16,
-    "dotDamagePerTick": 4,
-    "dotDuration": 3,
+    "effects": [
+      { "type": "dot", "amount": 4, "duration": 3 }
+    ],
     "maxTargets": 3,
     "allowedWeaponClasses": ["magic"],
     "requiredWeaponSubTypes": ["rods", "staves"],

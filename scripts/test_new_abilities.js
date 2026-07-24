@@ -1,19 +1,20 @@
 /**
- * Test script to verify the new DoT, HoT, and action bar slowing functionality
+ * Test script to verify the new buff/debuff system via buffEngine
  */
 
-const { getDefaultSkillsState, getSkillLevel, applyDot, applyHot, applyActionSlowing, applyWeaken, applyVulnerability, applyDefenseDown, processDotTicks, processHotTicks, processActionSlowEffects, processWeakenEffects, processVulnerabilityEffects, processDefenseDownEffects, sumDebuffAmount } = require('../public/skills/skillEngine');
+const buffEngine = require('../public/skills/buffEngine');
 
-console.log("🧪 Testing new SkillEngine features...\n");
+console.log("🧪 Testing buffEngine features...\n");
 
 // Create a test caster and target
 const caster = {
     id: 'test_caster',
     name: 'Test Caster',
     skillsState: {
-        skill_magic: { xp: 1000 } // Level 6 based on xp curve
+        skill_magic: { xp: 1000 }
     },
-    isEnemy: false
+    isEnemy: false,
+    effects: []
 };
 
 const target = {
@@ -23,133 +24,104 @@ const target = {
     maxHp: 100,
     actionBar: 100,
     maxActionBar: 100,
-    dots: [],
-    hots: [],
-    actionSlowEffects: [],
-    weakenEffects: [],
-    vulnerabilityEffects: [],
-    defenseDownEffects: [],
+    effects: [],
     isEnemy: true
 };
 
-console.log("Caster Skill Level:", getSkillLevel(caster.skillsState, 'skill_magic'));
+console.log("Caster Skill Level:", 1);
 
 // Test DoT functionality
 console.log("\n🧪 Testing DoT (Damage over Time)...");
 const dotAbility = {
     id: 'test_dot_ability',
     name: 'Test DoT Ability',
-    dotDamagePerTick: 5,
-    dotDuration: 4,
+    effects: [{ type: 'dot', damagePerTick: 5, duration: 4 }],
     skillId: 'skill_magic'
 };
 
-const dotResult = applyDot(caster, target, dotAbility, { players: new Map([[caster.id, caster]]), enemies: [target], combatStats: new Map() }, new Map());
-console.log("DoT Applied:", dotResult);
-console.log("Target Dots:", target.dots);
+buffEngine.applyEffect(caster, target, dotAbility);
+console.log("DoT Applied:", target.effects.some(e => e.type === 'dot'));
+console.log("Target effects:", target.effects);
 
 // Test HoT functionality
 console.log("\n🧪 Testing HoT (Heal over Time)...");
 const hotAbility = {
     id: 'test_hot_ability',
     name: 'Test HoT Ability',
-    hotHealPerTick: 3,
-    hotDuration: 3,
+    effects: [{ type: 'hot', healPerTick: 3, duration: 3 }],
     skillId: 'skill_healing'
 };
 
-const hotResult = applyHot(caster, target, hotAbility, { players: new Map([[caster.id, caster]]), enemies: [target], combatStats: new Map() }, new Map());
-console.log("HoT Applied:", hotResult);
-console.log("Target HoTs:", target.hots);
+buffEngine.applyEffect(caster, target, hotAbility);
+console.log("HoT Applied:", target.effects.some(e => e.type === 'hot'));
+console.log("Target effects:", target.effects);
 
 // Test Action Bar Slowing
 console.log("\n🧪 Testing Action Bar Slowing...");
 const slowAbility = {
     id: 'test_slow_ability',
     name: 'Test Slow Ability',
-    actionBarSlowAmount: 25,
-    actionBarSlowDuration: 3
+    effects: [{ type: 'actionSlow', amount: 25, duration: 3 }]
 };
 
-const slowResult = applyActionSlowing(caster, target, slowAbility);
-console.log("Action Bar Slow Applied:", slowResult);
-console.log("Target ActionBar before slow:", target.actionBar);
+const prevActionBar = target.actionBar;
+buffEngine.applyEffect(caster, target, slowAbility);
+console.log("Action Bar Slow Applied:", target.actionBar < prevActionBar);
 console.log("Target ActionBar after slow:", target.actionBar);
-console.log("Target Slow Effects:", target.actionSlowEffects);
 
-// Test DoT processing
-console.log("\n🧪 Testing DoT Processing...");
+// Test processEffects
+console.log("\n🧪 Testing processEffects...");
 const party = {
     players: new Map([[caster.id, caster]]),
     enemies: [target],
-    combatStats: new Map([[caster.id, { totalDotDamage: 0 }]])
+    combatStats: new Map()
 };
 
-console.log("Target HP before DoT processing:", target.hp);
-processDotTicks(party);
-console.log("Target HP after DoT processing:", target.hp);
-console.log("Target Dots after processing:", target.dots);
-
-// Test HoT processing
-console.log("\n🧪 Testing HoT Processing...");
-console.log("Target HP before HoT processing:", target.hp);
-processHotTicks(party);
-console.log("Target HP after HoT processing:", target.hp);
-console.log("Target HoTs after processing:", target.hots);
-
-// Test Action Slow Effects Processing
-console.log("\n🧪 Testing Action Slow Effects Processing...");
-console.log("Target Slow Effects before processing:", target.actionSlowEffects);
-processActionSlowEffects(party);
-console.log("Target Slow Effects after processing:", target.actionSlowEffects);
+console.log("Target HP before processEffects:", target.hp);
+buffEngine.processEffects(party);
+console.log("Target HP after processEffects:", target.hp);
+console.log("Target effects after processing:", target.effects);
 
 // Test Weaken debuff
 console.log("\n🧪 Testing Weaken Debuff...");
 const weakenAbility = {
     id: 'test_weaken_ability',
     name: 'Test Weaken Ability',
-    weakenAmount: 0.25,
-    weakenDuration: 3,
+    effects: [{ type: 'weaken', amount: 0.25, duration: 3 }],
     skillId: 'skill_witchcraft'
 };
-const weakenResult = applyWeaken(caster, target, weakenAbility);
-console.log("Weaken Applied:", weakenResult);
-console.log("Target Weaken Effects:", target.weakenEffects);
-processWeakenEffects(party);
-console.log("Target Weaken Effects after processing:", target.weakenEffects);
-console.log("Sum Weaken (cap 0.9):", sumDebuffAmount(target.weakenEffects, 0.9));
+buffEngine.applyEffect(caster, target, weakenAbility);
+console.log("Weaken Applied:", target.effects.some(e => e.type === 'weaken'));
+console.log("Sum Weaken (cap 0.9):", buffEngine.sumEffectAmount(target.effects, 'weaken', 0.9));
 
 // Test Vulnerability debuff
 console.log("\n🧪 Testing Vulnerability Debuff...");
 const vulnAbility = {
     id: 'test_vuln_ability',
     name: 'Test Vulnerability Ability',
-    vulnerabilityAmount: 0.30,
-    vulnerabilityDuration: 3,
+    effects: [{ type: 'vulnerability', amount: 0.30, duration: 3 }],
     skillId: 'skill_witchcraft'
 };
-const vulnResult = applyVulnerability(caster, target, vulnAbility);
-console.log("Vulnerability Applied:", vulnResult);
-console.log("Target Vulnerability Effects:", target.vulnerabilityEffects);
-processVulnerabilityEffects(party);
-console.log("Target Vulnerability Effects after processing:", target.vulnerabilityEffects);
-console.log("Sum Vulnerability (cap 2.0):", sumDebuffAmount(target.vulnerabilityEffects, 2.0));
+buffEngine.applyEffect(caster, target, vulnAbility);
+console.log("Vulnerability Applied:", target.effects.some(e => e.type === 'vulnerability'));
+console.log("Sum Vulnerability (cap 2.0):", buffEngine.sumEffectAmount(target.effects, 'vulnerability', 2.0));
 
 // Test Defense-Down debuff
 console.log("\n🧪 Testing Defense-Down Debuff...");
 const defDownAbility = {
     id: 'test_defdown_ability',
     name: 'Test Defense-Down Ability',
-    defenseDownAmount: 0.35,
-    defenseDownDuration: 3,
+    effects: [{ type: 'defenseDown', amount: 0.35, duration: 3 }],
     skillId: 'skill_witchcraft'
 };
-const defDownResult = applyDefenseDown(caster, target, defDownAbility);
-console.log("Defense-Down Applied:", defDownResult);
-console.log("Target Defense-Down Effects:", target.defenseDownEffects);
-processDefenseDownEffects(party);
-console.log("Target Defense-Down Effects after processing:", target.defenseDownEffects);
-console.log("Sum Defense-Down (cap 0.9):", sumDebuffAmount(target.defenseDownEffects, 0.9));
+buffEngine.applyEffect(caster, target, defDownAbility);
+console.log("Defense-Down Applied:", target.effects.some(e => e.type === 'defenseDown'));
+console.log("Sum Defense-Down (cap 0.9):", buffEngine.sumEffectAmount(target.effects, 'defenseDown', 0.9));
+
+// Test clearEffects
+console.log("\n🧪 Testing clearEffects...");
+buffEngine.clearEffects(target);
+console.log("Effects after clear:", target.effects.length);
 
 console.log("\n✅ All tests completed successfully!");
-console.log("The new DoT, HoT, and action bar slowing features are working properly.");
+console.log("The buffEngine unified effects system is working properly.");

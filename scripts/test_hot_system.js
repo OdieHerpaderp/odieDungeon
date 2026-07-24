@@ -1,23 +1,18 @@
 // Test script for Heal Over Time (HoT) system
-const { ventureEffects, defaultCharacterValues, applyHot, processHotTicks } = require('../public/ventures.js');
+// Uses buffEngine.js where the unified effects system is implemented.
+const assert = require('assert');
+const buffEngine = require('../public/skills/buffEngine');
 
 console.log('Testing Heal Over Time (HoT) System');
 console.log('=' .repeat(50));
 
-// Create test characters
+// Create a healer agent with enough healing XP for level 1 skill scaling
 const medic = {
   id: 'medic1',
   name: 'Test Medic',
-  currentVenture: 'medic',
-  ventures: { medic: 1000, acolyte: 500, cleric: 300 },
-  int: 25,
-  wis: 20,
-  cnc: 18,
-  hp: 100,
-  maxHp: 100,
-  mp: 50,
-  maxMp: 50,
-  isEnemy: false
+  skillsState: { skill_healing: { xp: 200 } },
+  isEnemy: false,
+  effects: []
 };
 
 const ally = {
@@ -25,7 +20,7 @@ const ally = {
   name: 'Injured Ally',
   hp: 30,
   maxHp: 100,
-  hots: [],
+  effects: [],
   isEnemy: false
 };
 
@@ -34,10 +29,10 @@ const enemy = {
   name: 'Test Enemy',
   hp: 80,
   maxHp: 100,
-  isEnemy: true
+  isEnemy: true,
+  effects: []
 };
 
-// Create test party
 const party = {
   players: new Map([
     ['medic1', medic],
@@ -47,7 +42,6 @@ const party = {
   combatStats: new Map()
 };
 
-// Initialize combat stats
 party.combatStats.set('medic1', {
   totalDamage: 0,
   totalHealed: 0,
@@ -58,35 +52,44 @@ party.combatStats.set('medic1', {
 console.log('Initial state:');
 console.log(`Medic HP: ${medic.hp}/${medic.maxHp}`);
 console.log(`Ally HP: ${ally.hp}/${ally.maxHp}`);
-console.log(`Ally HoTs: ${ally.hots.length}`);
+console.log(`Ally effects: ${ally.effects.length}`);
 
-// Test medic onHit effect
-console.log('\nTesting medic onHit effect...');
-const medicEffect = ventureEffects.medic;
-if (medicEffect && medicEffect.onHit) {
-  medicEffect.onHit(medic, enemy, 85, 15, party, party.combatStats);
-  
-  console.log(`After onHit - Ally HoTs: ${ally.hots.length}`);
-  if (ally.hots.length > 0) {
-    const hot = ally.hots[0];
-    console.log(`HoT details: ${hot.healPerTick} heal/tick, ${hot.duration} ticks`);
-  }
+// Test applying a HoT to the ally via buffEngine.applyEffect
+console.log('\nTesting applyEffect with HoT to wounded ally...');
+const hotAbility = {
+  id: 'test_hot_ability',
+  name: 'Test HoT Ability',
+  skillId: 'skill_healing',
+  effects: [{ type: 'hot', healPerTick: 3, duration: 3 }]
+};
+
+buffEngine.applyEffect(medic, ally, hotAbility);
+console.log(`Hot applied: ${ally.effects.some(e => e.type === 'hot')}`);
+console.log(`Ally effects after apply: ${ally.effects.length}`);
+const hotEffect = ally.effects.find(e => e.type === 'hot');
+if (hotEffect) {
+  console.log(`HoT details: ${hotEffect.healPerTick} heal/tick, ${hotEffect.duration} ticks`);
 }
 
-// Test HoT processing
+assert.strictEqual(ally.effects.some(e => e.type === 'hot'), true, 'HoT should be applied');
+assert.ok(ally.effects.length >= 1, 'ally should have at least 1 effect after applyEffect');
+
+// Test HoT tick processing
 console.log('\nTesting HoT tick processing...');
 console.log(`Ally HP before ticks: ${ally.hp}/${ally.maxHp}`);
 
-// Process multiple ticks
 for (let i = 0; i < 5; i++) {
-  processHotTicks(party);
-  console.log(`After tick ${i+1}: Ally HP = ${ally.hp}/${ally.maxHp}, HoTs remaining: ${ally.hots.length}`);
+  buffEngine.processEffects(party);
+  console.log(`After tick ${i+1}: Ally HP = ${ally.hp}/${ally.maxHp}, effects remaining: ${ally.effects.length}`);
 }
+
+assert.ok(ally.hp > 30, 'ally HP should have increased from HoT ticks');
 
 // Check combat stats
 const medicStats = party.combatStats.get('medic1');
 console.log('\nCombat stats:');
-console.log(`HoTs applied: ${medicStats.hotsApplied || 0}`);
 console.log(`Total HoT healing: ${medicStats.totalHotHealing || 0}`);
+
+assert.ok(medicStats.totalHotHealing > 0, 'combatStats should record HoT healing amount');
 
 console.log('\nHoT system test completed successfully!');

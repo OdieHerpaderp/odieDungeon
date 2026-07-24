@@ -1,0 +1,61 @@
+[
+  {
+    "id": "thrown_firecracker",
+    "name": "Firecracker",
+    "description": "Explodes on impact, dealing low damage to nearby targets and slowing their action bars.",
+    "skillId": "skill_thrown",
+    "unlockSkillLevelMin": 0,
+    "mpCostBase": 3,
+    "cooldownMsBase": 2800,
+    "damageBase": 6,
+    "maxTargets": 2,
+    "allowedWeaponClasses": ["ranged"],
+    "requiredWeaponSubTypes": ["thrown"],
+    "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
+    "attributeDamageScale": {"DEX": 0.8, "AGI": 0.2},
+    "abilityType": "damage",
+    "effects": [
+      { "type": "actionSlow", "amount": 20, "duration": 3 }
+    ]
+  },
+  {
+    "id": "thrown_poison_dart",
+    "name": "Poison Dart",
+    "description": "A dart soaked in poison that applies damage over time to the target.",
+    "skillId": "skill_thrown",
+    "unlockSkillLevelMin": 3,
+    "mpCostBase": 7,
+    "cooldownMsBase": 2800,
+    "damageBase": 10,
+    "effects": [
+      { "type": "dot", "amount": 5, "duration": 6 }
+    ],
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["ranged"],
+    "requiredWeaponSubTypes": ["thrown"],
+    "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
+    "attributeDamageScale": {"DEX": 0.9, "AGI": 0.1}
+  },
+  {
+    "id": "thrown_barrage",
+    "name": "Throwing Barrage",
+    "description": "Throws multiple weapons in a spread, dealing moderate damage and reducing target defense.",
+    "skillId": "skill_thrown",
+    "unlockSkillLevelMin": 6,
+    "mpCostBase": 10,
+    "cooldownMsBase": 3400,
+    "damageBase": 22,
+    "effects": [
+      { "type": "defenseDown", "amount": 0.20, "duration": 5 }
+    ],
+    "maxTargets": 5,
+    "allowedWeaponClasses": ["ranged"],
+    "requiredWeaponSubTypes": ["thrown"],
+    "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
+    "abilityType": "damage",
+    "attributeDamageScale": {"DEX": 0.9, "AGI": 0.1}
+  }
+]

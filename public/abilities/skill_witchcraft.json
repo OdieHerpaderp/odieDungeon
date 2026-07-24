@@ -8,8 +8,9 @@
     "mpCostBase": 5,
     "cooldownMsBase": 2600,
     "damageBase": 6,
-    "dotDamagePerTick": 3,
-    "dotDuration": 4,
+    "effects": [
+      { "type": "dot", "amount": 3, "duration": 4 }
+    ],
     "maxTargets": 1,
     "requiresWeaponEquipped": false,
     "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
@@ -23,10 +24,10 @@
     "mpCostBase": 6,
     "cooldownMsBase": 3000,
     "damageBase": 8,
-    "dotDamagePerTick": 4,
-    "dotDuration": 5,
-    "weakenAmount": 0.25,
-    "weakenDuration": 6,
+    "effects": [
+      { "type": "dot", "amount": 4, "duration": 5 },
+      { "type": "weaken", "amount": 0.25, "duration": 6 }
+    ],
     "maxTargets": 1,
     "requiresWeaponEquipped": false,
     "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
@@ -40,10 +41,10 @@
     "mpCostBase": 9,
     "cooldownMsBase": 3200,
     "damageBase": 10,
-    "dotDamagePerTick": 5,
-    "dotDuration": 5,
-    "vulnerabilityAmount": 0.30,
-    "vulnerabilityDuration": 6,
+    "effects": [
+      { "type": "dot", "amount": 5, "duration": 5 },
+      { "type": "vulnerability", "amount": 0.30, "duration": 6 }
+    ],
     "maxTargets": 1,
     "requiresWeaponEquipped": false,
     "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
@@ -57,10 +58,10 @@
     "mpCostBase": 12,
     "cooldownMsBase": 3400,
     "damageBase": 12,
-    "dotDamagePerTick": 6,
-    "dotDuration": 6,
-    "defenseDownAmount": 0.35,
-    "defenseDownDuration": 6,
+    "effects": [
+      { "type": "dot", "amount": 6, "duration": 6 },
+      { "type": "defenseDown", "amount": 0.35, "duration": 6 }
+    ],
     "maxTargets": 1,
     "requiresWeaponEquipped": false,
     "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}

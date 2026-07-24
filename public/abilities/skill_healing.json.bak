@@ -1,19 +1,5 @@
 [
-  {
-    "id": "firstAid",
-    "name": "First Aid",
-    "description": "Heals one ally.",
-    "skillId": "skill_healing",
-    "unlockSkillLevelMin": 0,
-    "mpCostBase": 5,
-    "cooldownMsBase": 2500,
-    "healAmount": 6,
-    "maxTargets": 1,
-    "allowedWeaponClasses": ["magic","ranged","melee"],
-    "requiresWeaponEquipped": false,
-    "isHeal": true,
-    "attributeDamageScale": {"CNC": 0.9, "PIE": 0.5, "INT": 0.1}
-  },
+
   {
     "id": "heal_mended_light",
     "name": "Mended Light",
@@ -53,8 +39,9 @@
     "mpCostBase": 12,
     "cooldownMsBase": 2500,
     "healAmount": 10,
-    "hotHealPerTick": 4,
-    "hotDuration": 5,
+    "effects": [
+      { "type": "hot", "amount": 4, "duration": 5 }
+    ],
     "maxTargets": 1,
     "allowedWeaponClasses": ["magic","ranged","melee"],
     "requiresWeaponEquipped": false,
@@ -70,8 +57,9 @@
     "mpCostBase": 22,
     "cooldownMsBase": 3000,
     "healAmount": 20,
-    "hotHealPerTick": 8,
-    "hotDuration": 4,
+    "effects": [
+      { "type": "hot", "amount": 8, "duration": 4 }
+    ],
     "maxTargets": 1,
     "allowedWeaponClasses": ["magic","ranged","melee"],
     "requiresWeaponEquipped": false,
@@ -87,8 +75,9 @@
     "mpCostBase": 30,
     "cooldownMsBase": 4000,
     "healAmount": 25,
-    "hotHealPerTick": 5,
-    "hotDuration": 6,
+    "effects": [
+      { "type": "hot", "amount": 5, "duration": 6 }
+    ],
     "maxTargets": 3,
     "allowedWeaponClasses": ["magic","ranged","melee"],
     "requiresWeaponEquipped": false,

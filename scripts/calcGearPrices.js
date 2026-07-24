@@ -77,7 +77,7 @@ function scoreWeapon(item) {
   const effectiveSpellPower = (item.spellPower || 0) * modMult;
   return (
     effectiveDamage +
-    effectiveSpellPower +
+    effectiveSpellPower / 8 +
     (item.attackSpeed || 1) * 0.8 +
     sumBonuses(item, stat => weaponBonusWeight(stat, item))
   );

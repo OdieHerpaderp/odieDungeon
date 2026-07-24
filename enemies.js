@@ -25,7 +25,7 @@ function generateEnemies(party) {
     const effectiveFloor = dungeonFloor * floorMult + floorBase;
 
     let boss = dungeonFloor === dungeonFloorMax;
-    let enemyCount = Math.ceil(Math.random() * (0.3 + effectiveFloor / 21)) + enemyBonus * 1.5 + effectiveFloor / 22 + (enemyBonus * 1.1 - 0.3) * (0.28 + effectiveFloor / 24);
+    let enemyCount = Math.ceil(Math.random() * (0.3 + effectiveFloor / 21)) + enemyBonus * 1.4 + effectiveFloor / 9 + (enemyBonus * 1.2 + 0.3) * (0.35 + effectiveFloor / 9 + dungeonFloor / 9);
 
     // Last floor boss: force a single boss unit
     if (boss) {
@@ -38,18 +38,18 @@ function generateEnemies(party) {
         // Use effectiveFloor for tier selection
         const enemyData = getRandomEnemy(party.floor, effectiveFloor);
         let enemyName = enemyData.name;
-        let floorBonus = Math.pow((enemyBonus * 0.8 + (0.1 + enemyBonus / 1.3) * effectiveFloor * 1.1) / (0.8 + enemyCount / 22) + Math.random() * (0.1 + effectiveFloor / 44), 1.15) * 0.25 + 0.1;
+        let floorBonus = Math.pow((enemyBonus * 0.8 + (0.1 + enemyBonus / 1.3) * effectiveFloor * 1.1) / (0.8 + enemyCount / 18) + Math.random() * (0.1 + effectiveFloor / 44), 1.15) * 0.34 + 0.2;
         let calcVit = Math.floor((2 + floorBonus / 1.3) + Math.random() * (0.5 + floorBonus / 9));
-        let calcHp = Math.floor(Math.pow(floorBonus * 0.08 * (0.03 + calcVit * 0.02) + calcVit * 6 + floorBonus * 4 + effectiveFloor * 5 + 36 + Math.random() * (calcVit * 0.05 + 0.02 + floorBonus / 55) , 1.03));
-        calcHp = Math.round(1.1 * calcHp / (1.1 + enemyCount / 14) * (0.65 + enemyBonus / 1.7));
-        let enemyAp = Math.floor(calcHp * 0.05 + floorBonus + Math.random() * (floorBonus + calcHp * 0.1));
+        let calcHp = Math.floor(Math.pow(floorBonus * 0.08 * (0.04 + calcVit * 0.03) + calcVit * 6 + floorBonus * 4 + effectiveFloor * 5 + 36 + Math.random() * (calcVit * 0.05 + 0.02 + floorBonus / 55) , 1.03));
+        calcHp = Math.round(1.1 * calcHp / (1.1 + enemyCount / 16) * (0.65 + enemyBonus / 2.1));
+        let enemyAp = Math.floor(calcHp * 0.06 + floorBonus + Math.random() * (floorBonus + calcHp * 0.1));
         if(boss) {
             // Last-floor boss: single boss unit + stronger stats
-            floorBonus += 0.5 + enemyBonus * 0.6;
-            floorBonus *= (1.1 + enemyBonus * 0.3);
-            calcHp = Math.round(calcHp * (2.3 + enemyBonus * 0.7));
-            calcVit += 10;
-            enemyAp = Math.floor((20 + enemyAp) * 2.5);
+            floorBonus += 1.6 + enemyBonus * 0.6;
+            floorBonus *= (1.3 + enemyBonus * 0.3);
+            calcHp = Math.round(calcHp * (2.6 + enemyBonus * 0.7));
+            calcVit += 15;
+            enemyAp = Math.floor((40 + enemyAp) * 2.5);
         }
         party.enemies.push({
             id: `enemy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
@@ -62,7 +62,7 @@ function generateEnemies(party) {
             maxAp: enemyAp,
             mp: Math.floor(8 + floorBonus * 1.1),
             maxMp: Math.floor(8 + floorBonus * 1.1),
-            str: Math.floor(((0.6 + enemyBonus / 2.6) * floorBonus * 13) + Math.random() * (1.8 + floorBonus / 2.1)) / 10,
+            str: Math.floor(((1.2 + enemyBonus / 2.8) * floorBonus * 13) + Math.random() * (1.8 + floorBonus / 2.1)) / 10,
             dex: Math.floor((1 + floorBonus * 12) + Math.random() * (2.2 + floorBonus / 1.8)) / 10,
             agi: Math.floor((1 + floorBonus * 12) + Math.random() * (2.2 + floorBonus / 1.8)) / 10,
             vit: calcVit,

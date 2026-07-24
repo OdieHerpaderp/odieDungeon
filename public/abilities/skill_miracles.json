@@ -1,0 +1,68 @@
+[
+    {
+    "id": "miracle_symbol",
+    "name": "Miracle Symbol",
+    "description": "Deals weapon damage to one foe.",
+    "skillId": "skill_miracles",
+    "unlockSkillLevelMin": 0,
+    "mpCostBase": 4,
+    "cooldownMsBase": 2000,
+    "damageBase": 8,
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["magic"],
+    "requiresWeaponEquipped": true,
+    "attributeDamageScale": {"INT": 0.5, "CNC": 0.2}
+  },
+  {
+    "id": "miracle_blessed_touch",
+    "name": "Blessed Touch",
+    "description": "Places a blessing on one ally, healing them and sustaining recovery over time.",
+    "skillId": "skill_miracles",
+    "unlockSkillLevelMin": 2,
+    "mpCostBase": 8,
+    "cooldownMsBase": 3200,
+    "healAmount": 9,
+    "effects": [
+      { "type": "hot", "amount": 2, "duration": 10 }
+    ],
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["magic"],
+    "requiresWeaponEquipped": true,
+    "isHeal": true,
+    "attributeDamageScale": {"INT": 0.5, "CNC": 0.2}
+  },
+  {
+    "id": "miracle_holy_light",
+    "name": "Holy Light",
+    "description": "Channels divine light to heal all allies within range instantly.",
+    "skillId": "skill_miracles",
+    "unlockSkillLevelMin": 6,
+    "mpCostBase": 14,
+    "cooldownMsBase": 4000,
+    "healAmount": 16,
+    "maxTargets": 3,
+    "allowedWeaponClasses": ["magic"],
+    "requiresWeaponEquipped": true,
+    "isHeal": true,
+    "abilityType": "aoe",
+    "attributeDamageScale": {"INT": 0.5, "CNC": 0.2}
+  },
+  {
+    "id": "miracle_divine_mend",
+    "name": "Divine Mend",
+    "description": "Channels divine power to heal one ally up to a percentage of their max HP.",
+    "skillId": "skill_miracles",
+    "unlockSkillLevelMin": 14,
+    "mpCostBase": 25,
+    "cooldownMsBase": 5000,
+    "healAmount": 22,
+    "effects": [
+      { "type": "hot", "amount": 6, "duration": 8 }
+    ],
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["magic"],
+    "requiresWeaponEquipped": true,
+    "isHeal": true,
+    "attributeDamageScale": {"INT": 0.5, "CNC": 0.2}
+  }
+]

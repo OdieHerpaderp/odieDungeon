@@ -1,0 +1,70 @@
+[
+    {
+    "id": "nature_bolt",
+    "name": "Nature Bolt",
+    "description": "Deals weapon damage to one foe.",
+    "skillId": "skill_shamanism",
+    "unlockSkillLevelMin": 0,
+    "mpCostBase": 4,
+    "cooldownMsBase": 2200,
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["magic"],
+    "requiresWeaponEquipped": false,
+    "attributeDamageScale": {"INT": 0.3, "CNC": 0.5}
+  },
+    {
+    "id": "shaman_vine_wrap",
+    "name": "Vine Wrap",
+    "description": "Wraps self in healing vines that restore HP and boost armor over time.",
+    "skillId": "skill_shamanism",
+    "unlockSkillLevelMin": 2,
+    "mpCostBase": 6,
+    "cooldownMsBase": 2400,
+    "healAmount": 6,
+    "effects": [
+      { "type": "hot", "amount": 2, "duration": 6 }
+    ],
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["magic"],
+    "requiresWeaponEquipped": true,
+    "isHeal": true,
+    "attributeDamageScale": {"CNC": 0.5, "INT": 0.2}
+  },
+  {
+    "id": "shaman_call_spirit",
+    "name": "Call Spirit",
+    "description": "Summons a nature spirit that heals one ally and slowly restores HP over time.",
+    "skillId": "skill_shamanism",
+    "unlockSkillLevelMin": 4,
+    "mpCostBase": 7,
+    "cooldownMsBase": 2800,
+    "healAmount": 7,
+    "effects": [
+      { "type": "hot", "amount": 2, "duration": 9 }
+    ],
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["magic"],
+    "requiresWeaponEquipped": true,
+    "isHeal": true,
+    "attributeDamageScale": {"CNC": 0.5, "INT": 0.2}
+  },
+  {
+    "id": "shaman_root_heal",
+    "name": "Root Heal",
+    "description": "Channels earth magic to heal all allies within range with sustained regeneration.",
+    "skillId": "skill_shamanism",
+    "unlockSkillLevelMin": 7,
+    "mpCostBase": 10,
+    "cooldownMsBase": 3500,
+    "healAmount": 10,
+    "effects": [
+      { "type": "hot", "amount": 3, "duration": 9 }
+    ],
+    "maxTargets": 3,
+    "allowedWeaponClasses": ["magic"],
+    "requiresWeaponEquipped": true,
+    "isHeal": true,
+    "abilityType": "aoe",
+    "attributeDamageScale": {"CNC": 0.5, "INT": 0.2}
+  }
+]

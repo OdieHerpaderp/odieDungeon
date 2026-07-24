@@ -1,4 +1,18 @@
 [
+    {
+    "id": "arcane_bolt",
+    "name": "Arcane Bolt",
+    "description": "Deals weapon damage to one foe.",
+    "skillId": "skill_spellcasting",
+    "unlockSkillLevelMin": 0,
+    "mpCostBase": 4,
+    "cooldownMsBase": 1800,
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["magic","ranged","melee"],
+    "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
+    "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
+  },
   {
     "id": "spell_minor_spark",
     "name": "Minor Spark",
@@ -15,20 +29,6 @@
     "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
   },
   {
-    "id": "arcane_bolt",
-    "name": "Arcane Bolt",
-    "description": "Deals weapon damage to one foe.",
-    "skillId": "skill_spellcasting",
-    "unlockSkillLevelMin": 0,
-    "mpCostBase": 4,
-    "cooldownMsBase": 1800,
-    "maxTargets": 1,
-    "allowedWeaponClasses": ["magic","ranged","melee"],
-    "requiresWeaponEquipped": true,
-    "castUsesWeaponDamageModel": true,
-    "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
-  },
-  {
     "id": "poison_strike",
     "name": "Poison Strike",
     "description": "Deals weapon damage to one foe with a magic weapon and deals damage over time.",
@@ -37,8 +37,9 @@
     "mpCostBase": 8,
     "cooldownMsBase": 2800,
     "damageBase": 20,
-    "dotDamagePerTick": 5,
-    "dotDuration": 6,
+    "effects": [
+      { "type": "dot", "amount": 5, "duration": 6 }
+    ],
     "maxTargets": 1,
     "allowedWeaponClasses": ["magic"],
     "requiresWeaponEquipped": true,
@@ -53,10 +54,10 @@
     "mpCostBase": 10,
     "cooldownMsBase": 3200,
     "damageBase": 9,
-    "dotDamagePerTick": 3,
-    "dotDuration": 4,
-    "actionBarSlowAmount": 25,
-    "actionBarSlowDuration": 3,
+    "effects": [
+      { "type": "dot", "amount": 3, "duration": 4 },
+      { "type": "actionSlow", "amount": 25, "duration": 3 }
+    ],
     "maxTargets": 1,
     "allowedWeaponClasses": ["magic"],
     "requiresWeaponEquipped": true,

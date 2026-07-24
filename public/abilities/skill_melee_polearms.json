@@ -41,8 +41,9 @@
     "mpCostBase": 8,
     "cooldownMsBase": 3200,
     "damageBase": 16,
-    "actionBarSlowAmount": 20,
-    "actionBarSlowDuration": 3,
+    "effects": [
+      { "type": "actionSlow", "amount": 20, "duration": 3 }
+    ],
     "maxTargets": 4,
     "allowedWeaponClasses": ["melee"],
     "requiredWeaponSubTypes": ["polearms"],
