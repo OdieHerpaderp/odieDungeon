@@ -16,10 +16,10 @@ let _skillCurve = null;
 async function loadSkillCurve() {
   if (_skillCurve) return _skillCurve;
   try {
-    const response = await fetch('/skills/skillCurve.json');
+    const response = await fetch("/skills/skillCurve.json");
     _skillCurve = await response.json();
   } catch (error) {
-    console.warn('Unable to load skill curve config:', error);
+    console.warn("Unable to load skill curve config:", error);
     _skillCurve = { xpDivisor: 5, exponent: 0.72, levelDivisor: 15, minLevel: 0 };
   }
   return _skillCurve;
@@ -28,7 +28,7 @@ async function loadSkillCurve() {
 // Client-side copy of the skill level calculation formula
 function calcSkillLv(xp) {
   const { xpDivisor, exponent, levelDivisor, minLevel } = _skillCurve || { xpDivisor: 5, exponent: 0.72, levelDivisor: 15, minLevel: 0 };
-  return Math.max(minLevel, Math.floor((Math.pow(xp / xpDivisor, exponent) / levelDivisor)));
+  return Math.max(minLevel, Math.floor(Math.pow(xp / xpDivisor, exponent) / levelDivisor));
 }
 
 // Client-side function to get skill level from skills state (mirrors server-side getSkillLevel)
@@ -41,18 +41,18 @@ function getSkillLevelFromClient(skillsState, skillId) {
 // Changes only when an ability actually crosses its unlock threshold (not on
 // every XP tick), so it can gate ability-list re-renders without flicker.
 function getUnlockedAbilitySignature(player) {
-  if (!abilityDefinitions.length) return '';
+  if (!abilityDefinitions.length) return "";
   const skillsState = player?.skillsState || {};
   return abilityDefinitions
-    .filter(a => getSkillLevelFromClient(skillsState, a.skillId) >= (a.unlockSkillLevelMin ?? 1))
-    .map(a => a.id)
+    .filter((a) => getSkillLevelFromClient(skillsState, a.skillId) >= (a.unlockSkillLevelMin ?? 1))
+    .map((a) => a.id)
     .sort()
-    .join(',');
+    .join(",");
 }
 
 function calcXpForLevel(level) {
   const { xpDivisor, exponent, levelDivisor } = _skillCurve || { xpDivisor: 5, exponent: 0.72, levelDivisor: 15 };
-  return Math.pow((level * levelDivisor), 1 / exponent) * xpDivisor;
+  return Math.pow(level * levelDivisor, 1 / exponent) * xpDivisor;
 }
 
 function calcXpForNextLevel(level) {
@@ -65,18 +65,18 @@ function calcXpForNextLevel(level) {
 // nothing to update (no active cooldowns and no pending text).
 let _cooldownsRafId = null;
 function tickAbilityCooldowns() {
-  const el = document.getElementById('abilitySlotsPanel');
+  const el = document.getElementById("abilitySlotsPanel");
   if (!el || !lastOwnPlayerForCooldowns) return;
 
   const cooldowns = lastOwnPlayerForCooldowns?.abilityCooldowns || {};
-  const anyActive = Object.values(cooldowns).some(end => typeof end === 'number' && end > Date.now());
-  const panelHasPending = Array.from(el.querySelectorAll('[data-cd-slot]')).some(n => n.textContent !== 'Ready');
+  const anyActive = Object.values(cooldowns).some((end) => typeof end === "number" && end > Date.now());
+  const panelHasPending = Array.from(el.querySelectorAll("[data-cd-slot]")).some((n) => n.textContent !== "Ready");
   if (!anyActive && !panelHasPending) return;
 
-  el.querySelectorAll('[data-cd-slot]').forEach(node => {
-    const assignedId = node.dataset.cdId || '';
+  el.querySelectorAll("[data-cd-slot]").forEach((node) => {
+    const assignedId = node.dataset.cdId || "";
     const cooldownText = formatCooldownText(lastOwnPlayerForCooldowns, assignedId);
-    const color = cooldownText === 'OK' ? '#8fe28b' : '#ffd166';
+    const color = cooldownText === "OK" ? "#8fe28b" : "#ffd166";
     if (node.textContent !== cooldownText) node.textContent = cooldownText;
     if (node.style.color !== color) node.style.color = color;
   });
@@ -84,7 +84,7 @@ function tickAbilityCooldowns() {
 
 let _lastCooldownsRefresh = 0;
 function _cooldownsHaveWork() {
-  const el = document.getElementById('abilitySlotsPanel');
+  const el = document.getElementById("abilitySlotsPanel");
   if (!el) return false;
   // Keep the RAF loop alive while we have an own player whose cooldowns may still
   // be settling in (server pushes every ~400ms). This prevents the loop from dying
@@ -92,8 +92,8 @@ function _cooldownsHaveWork() {
   if (lastOwnPlayerForCooldowns && _lastCooldownsRefresh >= Date.now() - 2000) return true;
   if (!el || !lastOwnPlayerForCooldowns) return false;
   const cooldowns = lastOwnPlayerForCooldowns?.abilityCooldowns || {};
-  if (Object.values(cooldowns).some(end => typeof end === 'number' && end > Date.now())) return true;
-  return Array.from(el.querySelectorAll('[data-cd-slot]')).some(n => n.textContent !== 'Ready');
+  if (Object.values(cooldowns).some((end) => typeof end === "number" && end > Date.now())) return true;
+  return Array.from(el.querySelectorAll("[data-cd-slot]")).some((n) => n.textContent !== "Ready");
 }
 
 function _cooldownsRafLoop() {
@@ -107,42 +107,42 @@ function _cooldownsRafLoop() {
   }
 }
 
-window.startCooldownsTick = function() {
+export function startCooldownsTick() {
   if (_cooldownsRafId) return;
   _cooldownsRafId = requestAnimationFrame(_cooldownsRafLoop);
-};
+}
 
-window.stopCooldownsTick = function() {
+export function stopCooldownsTick() {
   if (_cooldownsRafId) {
     cancelAnimationFrame(_cooldownsRafId);
     _cooldownsRafId = null;
   }
-};
+}
 
-window.calcSkillLv = calcSkillLv;
+export { calcSkillLv };
 
 function formatDisplayLabel(id) {
-  if (!id) return 'Unknown';
-  return id.replace(/^skill_/, '').replace(/_/g, ' ');
+  if (!id) return "Unknown";
+  return id.replace(/^skill_/, "").replace(/_/g, " ");
 }
 
 function formatCooldownText(player, abilityId) {
   const cooldownEnd = player?.abilityCooldowns?.[abilityId];
-  if (!cooldownEnd) return 'OK';
+  if (!cooldownEnd) return "OK";
   const remainingMs = Math.max(0, cooldownEnd - Date.now());
-  if (remainingMs <= 0) return 'OK';
+  if (remainingMs <= 0) return "OK";
   return `${(remainingMs / 1000).toFixed(1)}s`;
 }
 
 function getClientEquippedWeaponClass(player) {
   const weapon = player?.equipment?.weapon;
-  if (!weapon) return '';
+  if (!weapon) return "";
   if (weapon.weaponClass) return String(weapon.weaponClass).toLowerCase();
   if (weapon.id && window.itemGenerator?.resolveItem) {
-    const resolved = window.itemGenerator.resolveItem('weapon', weapon.id, weapon.level || 1, weapon.rarity || 1);
+    const resolved = window.itemGenerator.resolveItem("weapon", weapon.id, weapon.level || 1, weapon.rarity || 1);
     if (resolved?.weaponClass) return String(resolved.weaponClass).toLowerCase();
   }
-  return '';
+  return "";
 }
 
 function getClientEquippedWeaponSubType(player) {
@@ -150,7 +150,7 @@ function getClientEquippedWeaponSubType(player) {
   if (!weapon) return null;
   if (weapon.subType) return String(weapon.subType).toLowerCase();
   if (weapon.id && window.itemGenerator?.resolveItem) {
-    const resolved = window.itemGenerator.resolveItem('weapon', weapon.id, weapon.level || 1, weapon.rarity || 1);
+    const resolved = window.itemGenerator.resolveItem("weapon", weapon.id, weapon.level || 1, weapon.rarity || 1);
     if (resolved?.subType) return String(resolved.subType).toLowerCase();
   }
   return null;
@@ -169,11 +169,11 @@ function isAbilityUnlockedByLevel(player, ability) {
 async function loadAbilityDefinitions() {
   if (abilityDefinitions.length > 0) return abilityDefinitions;
   try {
-    const response = await fetch('/api/abilities');
+    const response = await fetch("/api/abilities");
     const data = await response.json();
     abilityDefinitions = Array.isArray(data) ? data : [];
   } catch (error) {
-    console.warn('Unable to load ability definitions:', error);
+    console.warn("Unable to load ability definitions:", error);
     abilityDefinitions = [];
   }
   return abilityDefinitions;
@@ -182,43 +182,45 @@ async function loadAbilityDefinitions() {
 async function loadSkillDefinitions() {
   if (skillDefinitionsClient.length > 0) return skillDefinitionsClient;
   try {
-    const response = await fetch('/skills/skills.json');
+    const response = await fetch("/skills/skills.json");
     const data = await response.json();
     skillDefinitionsClient = Array.isArray(data) ? data : [];
   } catch (error) {
-    console.warn('Unable to load skill definitions:', error);
+    console.warn("Unable to load skill definitions:", error);
     skillDefinitionsClient = [];
   }
   return skillDefinitionsClient;
 }
 
 function getSkillDefinitionClient(skillId) {
-  return skillDefinitionsClient.find(skill => skill.id === skillId) || null;
+  return skillDefinitionsClient.find((skill) => skill.id === skillId) || null;
 }
 
 function buildSkillAbilitiesList(player, skillId) {
-  const abilities = abilityDefinitions.filter(ability => ability.skillId === skillId);
+  const abilities = abilityDefinitions.filter((ability) => ability.skillId === skillId);
   if (abilities.length === 0) {
     return `<div style="font-size:11px; color:#777; padding:3px 0 4px 16px;">No abilities yet.</div>`;
   }
 
   const playerSkillLevel = getSkillLevelFromClient(player?.skillsState || {}, skillId);
 
-  return abilities.map(ability => {
-    const requiredLevel = ability.unlockSkillLevelMin ?? 1;
-    const unlocked = playerSkillLevel >= requiredLevel;
-    const levelColor = unlocked ? '#8fe28b' : '#ff9e80';
-    return `
+  return abilities
+    .map((ability) => {
+      const requiredLevel = ability.unlockSkillLevelMin ?? 1;
+      const unlocked = playerSkillLevel >= requiredLevel;
+      const levelColor = unlocked ? "#8fe28b" : "#ff9e80";
+      return `
       <div class="ability-indent">
         <div class="flex-between">
-          <span style="color:${unlocked ? '#eee' : '#888'}; font-weight:600;">${ability.name}</span>
+          <span style="color:${unlocked ? "#eee" : "#888"}; font-weight:600;">${ability.name}</span>
           <span class="text-info">Req Lv.${requiredLevel}</span>
         </div>
-        <div class="text-dim">${ability.description || ''}</div>
-        <div class="text-info">MP: ${ability.mpCostBase ?? '-'} • CD: ${ability.cooldownMsBase ? (ability.cooldownMsBase / 1000).toFixed(1) + 's' : '-'}</div>
+        <div class="text-dim">${ability.description || ""}</div>
+        <div class="text-info">MP: ${ability.mpCostBase ?? "-"} • CD: ${ability.cooldownMsBase ? (ability.cooldownMsBase / 1000).toFixed(1) + "s" : "-"}</div>
       </div>
     `;
-  }).join('');
+    })
+    .join("");
 }
 
 function buildSkillRow(player, id, state, def) {
@@ -242,13 +244,13 @@ function buildSkillRow(player, id, state, def) {
   }
 
   const isExpanded = expandedSkills.has(id);
-  const abilityCount = abilityDefinitions.filter(ability => ability.skillId === id).length;
-  const arrow = isExpanded ? '▼' : '▶';
-  const listDisplay = isExpanded ? 'block' : 'none';
+  const abilityCount = abilityDefinitions.filter((ability) => ability.skillId === id).length;
+  const arrow = isExpanded ? "▼" : "▶";
+  const listDisplay = isExpanded ? "block" : "none";
 
-    return `
+  return `
       <div class="skill-row mb-6">
-        <div class="skill-header clickable-row" onclick="toggleSkillExpand('${id}', this)">
+        <div class="skill-header clickable-row" onclick="window.toggleSkillExpand('${id}', this)">
           <span class="text-info" style="font-size:10px; width:10px;">${arrow}</span>
           <strong class="text-truncate" style="flex:1;">${label}</strong>
           <span class="text-dim">Lv${currentLevel}</span>
@@ -279,7 +281,7 @@ function buildSkillsPanel(player) {
   const groups = {};
   for (const [id, state] of entries) {
     const def = getSkillDefinitionClient(id);
-    const group = def?.group || 'General';
+    const group = def?.group || "General";
     if (!groups[group]) {
       groups[group] = [];
       groupsOrder.push(group);
@@ -287,14 +289,15 @@ function buildSkillsPanel(player) {
     groups[group].push([id, state, def]);
   }
 
-  const groupHtml = groupsOrder.map(group => {
-    const rows = groups[group].map(([id, state, def]) => buildSkillRow(player, id, state, def)).join('');
-    const isCollapsed = collapsedGroups.has(group);
-    const arrow = isCollapsed ? '▶' : '▼';
-    const rowsDisplay = isCollapsed ? 'none' : 'block';
-    return `
+  const groupHtml = groupsOrder
+    .map((group) => {
+      const rows = groups[group].map(([id, state, def]) => buildSkillRow(player, id, state, def)).join("");
+      const isCollapsed = collapsedGroups.has(group);
+      const arrow = isCollapsed ? "▶" : "▼";
+      const rowsDisplay = isCollapsed ? "none" : "block";
+      return `
       <div class="skill-group mb-6">
-        <div class="skill-group-header clickable-row" onclick="toggleGroupExpand('${encodeURIComponent(group)}', this)">
+        <div class="skill-group-header clickable-row" onclick="window.toggleGroupExpand('${encodeURIComponent(group)}', this)">
           <span class="skill-group-arrow text-info" style="font-size:10px; width:10px;">${arrow}</span>
           <span class="text-info-bold">${group}</span>
         </div>
@@ -303,7 +306,8 @@ function buildSkillsPanel(player) {
         </div>
       </div>
     `;
-  }).join('');
+    })
+    .join("");
 
   return `
     <div class="panel-text">
@@ -313,68 +317,68 @@ function buildSkillsPanel(player) {
   `;
 }
 
-window.toggleGroupExpand = function(groupName, el) {
+export function toggleGroupExpand(groupName, el) {
   const decoded = decodeURIComponent(groupName);
-  const groupEl = el.closest('.skill-group');
-  const rows = groupEl?.querySelector('.skill-group-rows');
-  const arrowEl = groupEl?.querySelector('.skill-group-arrow');
+  const groupEl = el.closest(".skill-group");
+  const rows = groupEl?.querySelector(".skill-group-rows");
+  const arrowEl = groupEl?.querySelector(".skill-group-arrow");
 
   if (collapsedGroups.has(decoded)) {
     collapsedGroups.delete(decoded);
-    if (rows) rows.style.display = 'block';
-    if (arrowEl) arrowEl.textContent = '▼';
+    if (rows) rows.style.display = "block";
+    if (arrowEl) arrowEl.textContent = "▼";
   } else {
     collapsedGroups.add(decoded);
-    if (rows) rows.style.display = 'none';
-    if (arrowEl) arrowEl.textContent = '▶';
+    if (rows) rows.style.display = "none";
+    if (arrowEl) arrowEl.textContent = "▶";
   }
 };
 
-window.toggleSkillExpand = function(skillId, el) {
-  const wrap = el.closest('.skill-row');
-  const list = wrap?.querySelector('.skill-abilities');
-  const arrowEl = wrap?.querySelector('.skill-header > span');
+export function toggleSkillExpand(skillId, el) {
+  const wrap = el.closest(".skill-row");
+  const list = wrap?.querySelector(".skill-abilities");
+  const arrowEl = wrap?.querySelector(".skill-header > span");
   if (expandedSkills.has(skillId)) {
     expandedSkills.delete(skillId);
-    wrap?.classList.remove('expanded');
-    if (list) list.style.display = 'none';
-    if (arrowEl) arrowEl.textContent = '▶';
+    wrap?.classList.remove("expanded");
+    if (list) list.style.display = "none";
+    if (arrowEl) arrowEl.textContent = "▶";
   } else {
     expandedSkills.add(skillId);
-    wrap?.classList.add('expanded');
-    if (list) list.style.display = 'block';
-    if (arrowEl) arrowEl.textContent = '▼';
+    wrap?.classList.add("expanded");
+    if (list) list.style.display = "block";
+    if (arrowEl) arrowEl.textContent = "▼";
   }
 };
 
-window.toggleAbilityGroup = function(skillId, el) {
-  const groupEl = el.closest('.ability-group');
-  const rows = groupEl?.querySelector('.ability-group-rows');
-  const arrowEl = groupEl?.querySelector('.ability-group-arrow');
+export function toggleAbilityGroup(skillId, el) {
+  const groupEl = el.closest(".ability-group");
+  const rows = groupEl?.querySelector(".ability-group-rows");
+  const arrowEl = groupEl?.querySelector(".ability-group-arrow");
 
   if (collapsedAbilityGroups.has(skillId)) {
     collapsedAbilityGroups.delete(skillId);
-    if (rows) rows.style.display = 'block';
-    if (arrowEl) arrowEl.textContent = '▼';
+    if (rows) rows.style.display = "block";
+    if (arrowEl) arrowEl.textContent = "▼";
   } else {
     collapsedAbilityGroups.add(skillId);
-    if (rows) rows.style.display = 'none';
-    if (arrowEl) arrowEl.textContent = '▶';
+    if (rows) rows.style.display = "none";
+    if (arrowEl) arrowEl.textContent = "▶";
   }
 };
 
 function buildAbilitySlotsColumn(player) {
   const slotCards = Array.from({ length: 8 }, (_, index) => {
-    const assignedId = player?.abilitySlots?.[index] || '';
-    const ability = abilityDefinitions.find(ability => ability.id === assignedId);
-    const name = ability ? ability.name : 'Empty';
-    const mpCost = ability ? (ability.mpCostBase ?? '-') : '-';
-    const skillLabel = ability ? formatDisplayLabel(ability.skillId) : '-';
+    const assignedId = player?.abilitySlots?.[index] || "";
+    const ability = abilityDefinitions.find((ability) => ability.id === assignedId);
+    const name = ability ? ability.name : "Empty";
+    const mpCost = ability ? (ability.mpCostBase ?? "-") : "-";
+    const skillLabel = ability ? formatDisplayLabel(ability.skillId) : "-";
     const isSelected = index === selectedSlotIndex;
-    const highlightStyle = isSelected ? 'background:#4caf50;' : 'background:#2a2a2a;';
-    const clearButton = assignedId ? `<button onclick="event.stopPropagation(); window.unequipAbilitySlot(${index})" class="btn-sm">🗑️</button>` : '';
+    const highlightStyle = isSelected ? "background:#4caf50;" : "background:#2a2a2a;";
+    const clearButton = assignedId ? `<button onclick="event.stopPropagation(); window.unequipAbilitySlot(${index})" class="btn-sm">🗑️</button>` : "";
     const cooldownText = formatCooldownText(player, assignedId);
-    const cooldownColor = cooldownText === 'Ready' ? '#8fe28b' : '#ffd166';
+    const cooldownColor = cooldownText === "Ready" ? "#8fe28b" : "#ffd166";
 
     return `
       <div class="ability-slot-row">
@@ -389,7 +393,7 @@ function buildAbilitySlotsColumn(player) {
         </div>
       </div>
     `;
-  }).join('');
+  }).join("");
 
   return `<div class="col-scroll" style="padding-right:4px;">${slotCards}</div>`;
 }
@@ -398,17 +402,17 @@ function formatWeaponRequirement(ability) {
   const parts = [];
   if (ability.requiresWeaponEquipped) {
     if (ability.requiredWeaponSubTypes && ability.requiredWeaponSubTypes.length > 0) {
-      parts.push(ability.requiredWeaponSubTypes.join('/'));
+      parts.push(ability.requiredWeaponSubTypes.join("/"));
     } else if (ability.allowedWeaponClasses && ability.allowedWeaponClasses.length > 0) {
-      parts.push(ability.allowedWeaponClasses.join('/'));
+      parts.push(ability.allowedWeaponClasses.join("/"));
     } else {
-      parts.push('equipped weapon');
+      parts.push("equipped weapon");
     }
   } else if (ability.allowedWeaponClasses && ability.allowedWeaponClasses.length > 0) {
-    parts.push(ability.allowedWeaponClasses.join('/'));
+    parts.push(ability.allowedWeaponClasses.join("/"));
   }
-  if (!parts.length) return '';
-  return `Wpn: ${parts.join(' + ')}`;
+  if (!parts.length) return "";
+  return `Wpn: ${parts.join(" + ")}`;
 }
 
 function buildAbilityList(player, filterAvailable = false) {
@@ -427,64 +431,65 @@ function buildAbilityList(player, filterAvailable = false) {
   });
 
   if (filterAvailable) {
-    skillOrder = skillOrder.filter(skillId => {
-      return grouped[skillId].some(ability => isAbilityUnlockedByLevel(player, ability));
+    skillOrder = skillOrder.filter((skillId) => {
+      return grouped[skillId].some((ability) => isAbilityUnlockedByLevel(player, ability));
     });
   }
 
-  const groupsHtml = skillOrder.map(skillId => {
-    const abilities = grouped[skillId];
-    const def = getSkillDefinitionClient(skillId);
-    const groupLabel = def?.name || formatDisplayLabel(skillId);
-    const playerSkillLevel = getSkillLevelFromClient(player?.skillsState || {}, skillId);
-    const isCollapsed = collapsedAbilityGroups.has(skillId);
-    const arrow = isCollapsed ? '▶' : '▼';
-    const rowsDisplay = isCollapsed ? 'none' : 'block';
+  const groupsHtml = skillOrder
+    .map((skillId) => {
+      const abilities = grouped[skillId];
+      const def = getSkillDefinitionClient(skillId);
+      const groupLabel = def?.name || formatDisplayLabel(skillId);
+      const playerSkillLevel = getSkillLevelFromClient(player?.skillsState || {}, skillId);
+      const isCollapsed = collapsedAbilityGroups.has(skillId);
+      const arrow = isCollapsed ? "▶" : "▼";
+      const rowsDisplay = isCollapsed ? "none" : "block";
 
-    const visibleAbilities = filterAvailable
-      ? abilities.filter(ability => isAbilityUnlockedByLevel(player, ability))
-      : abilities;
+      const visibleAbilities = filterAvailable ? abilities.filter((ability) => isAbilityUnlockedByLevel(player, ability)) : abilities;
 
-    const rows = visibleAbilities.map(ability => {
-    const requiredLevel = ability.unlockSkillLevelMin ?? 1;
-      const unlocked = playerSkillLevel >= requiredLevel;
-      const inSlotIndex = (player?.abilitySlots || []).indexOf(ability.id);
-      const inSelectedSlot = inSlotIndex === selectedSlotIndex;
-      const inOtherSlot = inSlotIndex >= 0 && !inSelectedSlot;
+      const rows = visibleAbilities
+        .map((ability) => {
+          const requiredLevel = ability.unlockSkillLevelMin ?? 1;
+          const unlocked = playerSkillLevel >= requiredLevel;
+          const inSlotIndex = (player?.abilitySlots || []).indexOf(ability.id);
+          const inSelectedSlot = inSlotIndex === selectedSlotIndex;
+          const inOtherSlot = inSlotIndex >= 0 && !inSelectedSlot;
 
-      let btnLabel = 'Equip';
-      let btnDisabled = '';
-      if (inSelectedSlot) {
-        btnLabel = 'Equipped';
-        btnDisabled = 'disabled';
-      } else if (inOtherSlot) {
-        btnLabel = 'Move';
-      }
-      if (!unlocked) {
-        btnDisabled = 'disabled';
-        btnLabel = `Lv.${requiredLevel}`;
-      }
+          let btnLabel = "Equip";
+          let btnDisabled = "";
+          if (inSelectedSlot) {
+            btnLabel = "Equipped";
+            btnDisabled = "disabled";
+          } else if (inOtherSlot) {
+            btnLabel = "Move";
+          }
+          if (!unlocked) {
+            btnDisabled = "disabled";
+            btnLabel = `Lv.${requiredLevel}`;
+          }
 
-      const weaponReq = formatWeaponRequirement(ability);
+          const weaponReq = formatWeaponRequirement(ability);
 
-      return `
+          return `
         <div class="ability-card">
           <div class="ability-card-left">
-            <div class="text-truncate" style="font-weight:600; color:${unlocked ? '#eee' : '#888'};">${ability.name}</div>
-            <div class="text-dim ability-desc">${ability.description || ''}</div>
-            <div class="text-info ability-meta">MP:${ability.mpCostBase ?? '-'} • CD:${ability.cooldownMsBase ? (ability.cooldownMsBase / 1000).toFixed(1) + 's' : '-'}${!unlocked ? ` • Req Lv.${requiredLevel}` : ''}</div>
-            ${weaponReq ? `<div class="text-warn ability-meta">${weaponReq}</div>` : ''}
+            <div class="text-truncate" style="font-weight:600; color:${unlocked ? "#eee" : "#888"};">${ability.name}</div>
+            <div class="text-dim ability-desc">${ability.description || ""}</div>
+            <div class="text-info ability-meta">MP:${ability.mpCostBase ?? "-"} • CD:${ability.cooldownMsBase ? (ability.cooldownMsBase / 1000).toFixed(1) + "s" : "-"}${!unlocked ? ` • Req Lv.${requiredLevel}` : ""}</div>
+            ${weaponReq ? `<div class="text-warn ability-meta">${weaponReq}</div>` : ""}
           </div>
           <button onclick="window.equipAbility('${ability.id}')" ${btnDisabled} class="btn-sm">${btnLabel}</button>
         </div>
       `;
-    }).join('');
+        })
+        .join("");
 
-    if (visibleAbilities.length === 0 && filterAvailable) {
-      return '';
-    }
+      if (visibleAbilities.length === 0 && filterAvailable) {
+        return "";
+      }
 
-    return `
+      return `
       <div class="ability-group mb-6">
         <div class="ability-group-header clickable-row" onclick="window.toggleAbilityGroup('${skillId}', this)" style="margin-bottom:3px;">
           <span class="ability-group-arrow text-info" style="font-size:10px; width:10px;">${arrow}</span>
@@ -495,7 +500,8 @@ function buildAbilityList(player, filterAvailable = false) {
         </div>
       </div>
     `;
-  }).join('');
+    })
+    .join("");
 
   return `<div style="flex:1; min-width:200px; overflow-y:auto; padding-left:6px; border-left:1px solid #444; min-height:0;">${groupsHtml}</div>`;
 }
@@ -508,7 +514,7 @@ function buildAbilitySlotsPanel(player) {
         <div style="display:flex; align-items:center; gap:2px;">
           <span class="text-info-bold">Abilities</span>
           <label class="ability-filter-label" style="display:flex; align-items:center; gap:4px; font-size:11px; color:#ccc; cursor:pointer;">
-            <input type="checkbox" id="availableOnlyFilter" onchange="window.toggleAvailableFilter(this.checked)" ${showAvailableOnly ? 'checked' : ''}>
+            <input type="checkbox" id="availableOnlyFilter" onchange="window.toggleAvailableFilter(this.checked)" ${showAvailableOnly ? "checked" : ""}>
             Unlocked only
           </label>
         </div>
@@ -521,16 +527,21 @@ function buildAbilitySlotsPanel(player) {
   `;
 }
 
-window.selectAbilitySlot = function(index) {
+export function selectAbilitySlot(index) {
   selectedSlotIndex = index;
   if (lastPlayerForSlots) {
-    window.renderAbilitySlotsPanel(lastPlayerForSlots);
+    renderAbilitySlotsPanel(lastPlayerForSlots);
   }
 };
 
-window.equipAbility = async function(abilityId) {
+let _clientNetwork = null;
+export function setClientNetwork(cn) {
+  _clientNetwork = cn;
+}
+
+export async function equipAbility(abilityId) {
   if (!lastPlayerForSlots) return;
-  const ability = abilityDefinitions.find(a => a.id === abilityId);
+  const ability = abilityDefinitions.find((a) => a.id === abilityId);
   if (!ability) return;
 
   const requiredLevel = ability.unlockSkillLevelMin ?? 1;
@@ -538,58 +549,59 @@ window.equipAbility = async function(abilityId) {
   if (playerSkillLevel < requiredLevel) {
     toastFrame.showToast({
       html: `Cannot equip ${ability.name}: Requires level ${requiredLevel} ${formatDisplayLabel(ability.skillId)}`,
-      duration: 3000
+      duration: 3000,
     });
     return;
   }
 
-  await clientNetwork.assignAbilitySlot(selectedSlotIndex, abilityId);
+  await _clientNetwork.assignAbilitySlot(selectedSlotIndex, abilityId);
 
   const currentSlots = Array.isArray(lastPlayerForSlots.abilitySlots) ? lastPlayerForSlots.abilitySlots : Array(8).fill(null);
-  const nextSlots = currentSlots.map((id, i) => i === selectedSlotIndex ? abilityId : id);
+  const nextSlots = currentSlots.map((id, i) => (i === selectedSlotIndex ? abilityId : id));
   const dupIndex = nextSlots.findIndex((id, i) => i !== selectedSlotIndex && id === abilityId);
   if (dupIndex !== -1) nextSlots[dupIndex] = null;
   lastPlayerForSlots.abilitySlots = nextSlots;
   lastSlotsSnapshot = null;
-  window.renderAbilitySlotsPanel(lastPlayerForSlots);
+  renderAbilitySlotsPanel(lastPlayerForSlots);
 };
 
-window.unequipAbilitySlot = async function(index) {
-  await clientNetwork.assignAbilitySlot(index, '');
+export async function unequipAbilitySlot(index) {
+  await _clientNetwork.assignAbilitySlot(index, "");
 
   const currentSlots = Array.isArray(lastPlayerForSlots.abilitySlots) ? lastPlayerForSlots.abilitySlots : Array(8).fill(null);
   const nextSlots = [...currentSlots];
   nextSlots[index] = null;
   lastPlayerForSlots.abilitySlots = nextSlots;
   lastSlotsSnapshot = null;
-  window.renderAbilitySlotsPanel(lastPlayerForSlots);
+  renderAbilitySlotsPanel(lastPlayerForSlots);
 };
 
-window.toggleAvailableFilter = function(checked) {
+export function toggleAvailableFilter(checked) {
   showAvailableOnly = checked;
   lastSlotsSnapshot = null;
-  if (lastPlayerForSlots) window.renderAbilitySlotsPanel(lastPlayerForSlots);
+  if (lastPlayerForSlots) renderAbilitySlotsPanel(lastPlayerForSlots);
 };
 
 // Skills state change signature - avoids JSON.stringify allocation
 function skillsStateSig(skillsState) {
-  if (!skillsState) return 'none';
+  if (!skillsState) return "none";
   return Object.entries(skillsState)
-    .filter(([, v]) => v && typeof v.xp === 'number')
+    .filter(([, v]) => v && typeof v.xp === "number")
     .map(([k, v]) => `${k}:${v.xp}`)
-    .sort().join(',');
+    .sort()
+    .join(",");
 }
 
 // Ability slots change signature - avoids JSON.stringify allocation
 function abilitySlotsSig(player) {
-  if (!player) return 'none';
+  if (!player) return "none";
   const slots = player.abilitySlots || [];
   const unlockedSig = getUnlockedAbilitySignature(player);
-  return `${slots.filter(Boolean).join(',')}|${selectedSlotIndex}|${showAvailableOnly}|${unlockedSig}`;
+  return `${slots.filter(Boolean).join(",")}|${selectedSlotIndex}|${showAvailableOnly}|${unlockedSig}`;
 }
 
-window.renderSkillsPanel = async function(player) {
-  const el = document.getElementById('skillsPanel');
+export async function renderSkillsPanel(player) {
+  const el = document.getElementById("skillsPanel");
   if (!el) return;
   const snapshot = skillsStateSig(player?.skillsState);
   if (snapshot === lastSkillsSnapshot && el.innerHTML) {
@@ -601,8 +613,8 @@ window.renderSkillsPanel = async function(player) {
   el.innerHTML = buildSkillsPanel(player);
 };
 
-window.renderAbilitySlotsPanel = async function(player) {
-  const el = document.getElementById('abilitySlotsPanel');
+export async function renderAbilitySlotsPanel(player) {
+  const el = document.getElementById("abilitySlotsPanel");
   if (!el) return;
   await loadAbilityDefinitions();
   const snapshot = abilitySlotsSig(player);
@@ -615,21 +627,35 @@ window.renderAbilitySlotsPanel = async function(player) {
 };
 
 let _skillPanelLastRender = 0;
-window.renderSkillPanel = async function(player, force = false) {
+export async function renderSkillPanel(player, force = false) {
   // Keep a live reference to the own player's cooldowns for the RAF tick, and mark
   // the refresh time so the loop stays alive between server pushes (~400ms standard).
   if (player) {
     lastOwnPlayerForCooldowns = player;
     _lastCooldownsRefresh = Date.now();
-    if (window.startCooldownsTick) window.startCooldownsTick();
+    startCooldownsTick();
   }
   // Throttle full skill-panel rebuilds to at most ~2x/sec during rapid combat ticks.
   const now = Date.now();
   if (!force && now - _skillPanelLastRender < 500) return;
   _skillPanelLastRender = now;
   await loadSkillCurve();
-  await Promise.all([
-    window.renderSkillsPanel(player),
-    window.renderAbilitySlotsPanel(player)
-  ]);
-};
+  await Promise.all([renderSkillsPanel(player), renderAbilitySlotsPanel(player)]);
+}
+
+// Make exported functions available as globals for onclick handlers in generated HTML
+if (typeof window !== "undefined") {
+  window.startCooldownsTick = startCooldownsTick;
+  window.stopCooldownsTick = stopCooldownsTick;
+  window.calcSkillLv = calcSkillLv;
+  window.toggleGroupExpand = toggleGroupExpand;
+  window.toggleSkillExpand = toggleSkillExpand;
+  window.toggleAbilityGroup = toggleAbilityGroup;
+  window.selectAbilitySlot = selectAbilitySlot;
+  window.equipAbility = equipAbility;
+  window.unequipAbilitySlot = unequipAbilitySlot;
+  window.toggleAvailableFilter = toggleAvailableFilter;
+  window.renderSkillsPanel = renderSkillsPanel;
+  window.renderAbilitySlotsPanel = renderAbilitySlotsPanel;
+  window.renderSkillPanel = renderSkillPanel;
+}

@@ -1,4 +1,6 @@
 // Load dungeons configuration for enemy scaling
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
 const dungeons = require("./public/dungeons.json");
 
 /**
@@ -6,7 +8,7 @@ const dungeons = require("./public/dungeons.json");
  * Respects dungeon `floorAmount` from `public/dungeons.json`.
  * The last (boss) floor spawns exactly ONE boss unit.
  */
-function generateEnemies(party) {
+export function generateEnemies(party) {
   const livePlayers = Array.from(party.players.values()).filter((p) => p.hp > 0);
   const enemyBonus = livePlayers.length - 0.35;
 
@@ -114,17 +116,17 @@ function generateEnemies(party) {
 }
 
 // Enemy definitions organized by strength tiers
-const enemyTiers = {
+export const enemyTiers = {
   // Weak enemies (Floors 1-10)
   weak: {
-    names: ["🧫Slime", "🐀Rat", "🧫Poring", "🦇Bat", "☃️SnowMan", "👺Goblin", "🎅Santa", "🐍DangerNoodle", "😈Kobold", "🧝Elf", "🐌Snail", "🦗Bug", "🐸Frog"],
+    names: ["\uD83E\uDDEBSlime", "\uD83D\uDC00Rat", "\uD83E\uDDEBPoring", "\uD83E\uDE80Bat", "\u2603\uFE0FSnowMan", "\uD83D\uDF3AGoblin", "\uD83C\uDF85Santa", "\uD83D\uDC0DDangerNoodle", "\uD83D\uDE08Kobold", "\uD83E\uDDDCElf", "\uD83D\uDC0CSnail", "\uD83E\uDDD7Bug", "\uD83D\uDC38Frog"],
     floorRange: [1, 10],
     weight: 60, // Higher weight for lower floors
   },
 
   // Medium enemies (Floors 11-40)
   medium: {
-    names: ["🦏Rhino", "👽Ayylmao", "🧟livingImpaired", "🀄KnightSlime", "🧜🏼‍♂️Broseidon", "🧌Troll", "👹Ogre", "💀Skeleton", "🐺Wolf", "🦁Lion", "🦂Scorpion"],
+    names: ["\uD83E\uDED8Rhino", "\uD83D\uDC7DAyylmao", "\uD83E\uDDD8livingImpaired", "\uD83C\uDF42\uD83D\uDEA9KnightSlime", "\uD83E\uDDDCAbroseidon", "\uD83E\uDDDFTroll", "\uD83D\uDC79Ogre", "\uD83D\uDC80Skeleton", "\uD83D\uDC3AWolf", "\uD83E\uDD81Lion", "\uD83E\uDD82Scorpion"],
     floorRange: [11, 40],
     weight: 30,
   },
@@ -132,18 +134,18 @@ const enemyTiers = {
   // Strong enemies (Floors 41-150)
   strong: {
     names: [
-      "🐙Kraken",
-      "🦖T-Rex",
-      "👾Invader",
-      "🧛Vampire",
-      "🤖Robit",
-      "🗿Moai",
-      "🦀GiantCrab",
-      "🦍Harambe",
-      "🫈Yeti",
-      "🐺Werewolf",
-      "🦄Unicorn",
-      "🦑Leviathan",
+      "\uD83D\uDC19Kraken",
+      "\uD83E\uDD96T-Rex",
+      "\uD83D\uDC7EInvader",
+      "\uD83E\uDDDCVampire",
+      "\uD83E\uDD16Robit",
+      "\uD83DD\uDDFFMoai",
+      "\uD83E\uDD8DGiantCrab",
+      "\uD83E\uDD0DHarambe",
+      "\uD83E\uDDCCYeti",
+      "\uD83D\uDC3AWerewolf",
+      "\uD83E\uDD84Unicorn",
+      "\uD83E\uDD91Leviathan",
     ],
     floorRange: [41, 150],
     weight: 10,
@@ -151,7 +153,7 @@ const enemyTiers = {
 
   // Boss enemies (Floors 150+ or boss floors)
   boss: {
-    names: ["👑KingSlime", "☠️Lich", "🐉Dragon", "🛸UFO", "☠️BoneLord", "🌚MoonLord", "🐲KingDragon", "🐍Medusa", "🦈SharkLord", "🦅Griffin"],
+    names: ["\uD83D\uDC51KingSlime", "\u2620\uFE0FLich", "\uD83D\uDC09Dragon", "\uD83D\uDEEBUFO", "\u2620\uFE0FBoneLord", "\uD83C\uDF1AMoonLord", "\uD83D\uDC32KingDragon", "\uD83D\uDC0DMedusa", "\uD83E\uDD88SharkLord", "\uD83E\uDD85Griffin"],
     floorRange: [150, 300],
     weight: 5,
     bossOnly: true, // Only appear on boss floors (50, 100, 150, 200, 250, 300)
@@ -159,7 +161,7 @@ const enemyTiers = {
 };
 
 // Helper function to get appropriate enemy tier for floor level
-function getEnemyTierForFloor(actualFloor, effectiveFloor) {
+export function getEnemyTierForFloor(actualFloor, effectiveFloor) {
   // Boss enemies only appear on specific floors
   if (effectiveFloor % 50 === 0 && effectiveFloor > 0) {
     return enemyTiers.boss;
@@ -184,7 +186,7 @@ function getRandomEnemyFromTier(tier) {
 }
 
 // Helper function to get a random enemy based on floor level
-function getRandomEnemy(actualFloor = 1, effectiveFloor = 1) {
+export function getRandomEnemy(actualFloor = 1, effectiveFloor = 1) {
   const tier = getEnemyTierForFloor(actualFloor, effectiveFloor);
   const enemyName = getRandomEnemyFromTier(tier);
 
@@ -194,35 +196,17 @@ function getRandomEnemy(actualFloor = 1, effectiveFloor = 1) {
 }
 
 // Helper function to get a random enemy name only (for backward compatibility)
-function getRandomEnemyName(floor = 1) {
+export function getRandomEnemyName(floor = 1) {
   const tier = getEnemyTierForFloor(floor, floor);
   return getRandomEnemyFromTier(tier);
 }
 
 // Helper function to get all enemy names (for backward compatibility)
-function getAllEnemyNames() {
+export function getAllEnemyNames() {
   const allNames = [];
   for (const tierName in enemyTiers) {
     const tier = enemyTiers[tierName];
     allNames.push(...tier.names);
   }
   return allNames;
-}
-
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = {
-    generateEnemies,
-    getRandomEnemy,
-    getRandomEnemyName,
-    getAllEnemyNames,
-    enemyTiers,
-    getEnemyTierForFloor,
-  };
-} else {
-  window.generateEnemies = generateEnemies;
-  window.getRandomEnemy = getRandomEnemy;
-  window.getRandomEnemyName = getRandomEnemyName;
-  window.getAllEnemyNames = getAllEnemyNames;
-  window.enemyTiers = enemyTiers;
-  window.getEnemyTierForFloor = getEnemyTierForFloor;
 }

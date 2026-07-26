@@ -2,22 +2,6 @@
 
 This guide documents how to automate interactions with odieDungeon using Playwright, based on real usage experience.
 
-## Prerequisites
-
-- Node.js installed
-- Playwright installed in the project: `npm install @playwright/test`
-- Chromium browser installed: `npx playwright install chromium`
-- The game server running at `http://localhost:25561/`
-
-### First-Time Browser Setup
-
-If Playwright fails with `Chromium distribution 'chrome' is not found`, your environment likely has `chromium` instead of `chrome`. Fix it by creating a symlink:
-
-```bash
-mkdir -p /opt/google/chrome
-ln -sf /usr/bin/chromium /opt/google/chrome/chrome
-```
-
 ## Connecting to the Game
 
 ```javascript

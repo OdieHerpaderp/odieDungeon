@@ -1,8 +1,8 @@
 // Character Management Module
 
-const { saveCharacter, loadCharacter } = require("./database.js");
-const { getRandomEnemy, getRandomEnemyName, generateEnemies } = require("./enemies.js");
-const {
+import { saveCharacter, loadCharacter } from "./database.js";
+import { getRandomEnemy, getRandomEnemyName, generateEnemies } from "./enemies.js";
+import {
   getDefaultSkillsState,
   getWeaponSkillId,
   awardSkillXp,
@@ -15,31 +15,28 @@ const {
   calculateDamageScalingForMultipleTargets,
   getAbilityTargets,
   getSkillLevel,
-  applyDot,
-  applyHot: skillEngineApplyHot,
-  applyActionSlowing,
-  processDotTicks: skillEngineProcessDotTicks,
-  processHotTicks: skillEngineProcessHotTicks,
-  processActionSlowEffects,
-} = require("./public/skills/skillEngine");
-const { loadAbilities } = require("./loadAbilities");
-const abilities = loadAbilities();
-const itemGenerator = require("./public/gear/itemGenerator");
-const { DEFAULT_CHARACTER_STATS, createDefaultCharacter, compactEquipment, toCompactRef, toInventoryItem } = require("./utils.js");
+} from "./public/skills/skillEngine.js";
+import { loadAbilities } from "./loadAbilities.js";
+import * as itemGenerator from "./public/gear/itemGenerator.js";
+import { DEFAULT_CHARACTER_STATS, createDefaultCharacter, compactEquipment, toCompactRef, toInventoryItem } from "./utils.js";
 
-// Load dungeons configuration
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
 const dungeons = require("./public/dungeons.json");
+
+const abilities = loadAbilities();
+export { getEffectiveAttribute, getAttributeDamageModifier } from "./utils.js";
 
 // Maximum number of items a shop can hold. Shared so the sell-to-shop path can
 // apply the same cap/re-sort as the dungeon restock path.
-const MAX_SHOP_ITEMS = 120;
+export const MAX_SHOP_ITEMS = 120;
 
 // How long a shop item stays on the shelf before the expiry sweep removes it.
-const SHOP_ITEM_MAX_AGE_MS = 30 * 60 * 1000;
+export const SHOP_ITEM_MAX_AGE_MS = 30 * 60 * 1000;
 
 // Sort the shop stock by price (most expensive first) so the priciest items
 // appear at the top, then cap to MAX_SHOP_ITEMS (keeping the highest-priced).
-function sortAndCapShopStock(party) {
+export function sortAndCapShopStock(party) {
   if (!party || !Array.isArray(party.shopStock)) return;
   party.shopStock.sort((a, b) => (b.price || 0) - (a.price || 0));
   if (party.shopStock.length > MAX_SHOP_ITEMS) {
@@ -48,7 +45,7 @@ function sortAndCapShopStock(party) {
 }
 
 // Function to restock the shop with items scaled to dungeon difficulty
-function restockShopWithDungeonScaling(party, dungeon, dungeonData) {
+export function restockShopWithDungeonScaling(party, dungeon, dungeonData) {
   if (!party) return;
 
   // Keep existing stock and add to it instead of clearing it out
@@ -82,7 +79,7 @@ function restockShopWithDungeonScaling(party, dungeon, dungeonData) {
 // Give every character in the party one randomized item when the dungeon boss is
 // defeated. Items use the same dungeon scaling as the shop restock that happens
 // at the same time, and are added directly to each player's inventory (and saved).
-function rewardPlayersOnDungeonClear(party, dungeon, dungeonData) {
+export function rewardPlayersOnDungeonClear(party, dungeon, dungeonData) {
   if (!party || !party.players || party.players.size === 0) return [];
 
   const floorBase = dungeonData?.floorBase ?? 1;
@@ -108,7 +105,7 @@ function rewardPlayersOnDungeonClear(party, dungeon, dungeonData) {
       results.push({
         name,
         type: "item",
-        message: `🎁 ${name} found ${displayName}${rarityText}!`,
+        message: `\ud83c\udf81 ${name} found ${displayName}${rarityText}!`,
         detail: `${displayName}${rarityText}`,
       });
     } else {
@@ -118,7 +115,7 @@ function rewardPlayersOnDungeonClear(party, dungeon, dungeonData) {
       results.push({
         name,
         type: "gold",
-        message: `💰 ${name} found ${dungeonReward} gold!`,
+        message: `\ud83d\udcb0 ${name} found ${dungeonReward} gold!`,
         detail: `${dungeonReward} gold`,
       });
     }
@@ -131,7 +128,7 @@ function rewardPlayersOnDungeonClear(party, dungeon, dungeonData) {
 // All other stats are calculated from the gear catalogs (e.g. weaponMelee.json).
 const EQUIPMENT_SLOTS = ["weapon", "armour", "helmet", "shoes"];
 
-function getDefaultEquipment() {
+export function getDefaultEquipment() {
   return compactEquipment({
     weapon: { id: "newspaper", level: 1, rarity: 1 },
     armour: { id: "rags", level: 1, rarity: 1 },
@@ -140,7 +137,7 @@ function getDefaultEquipment() {
   });
 }
 
-function normalizeEquipment(equipment) {
+export function normalizeEquipment(equipment) {
   if (!equipment || typeof equipment !== "object") return getDefaultEquipment();
   const refs = {};
   for (const slot of EQUIPMENT_SLOTS) {
@@ -154,7 +151,7 @@ function normalizeEquipment(equipment) {
   return compactEquipment(refs);
 }
 
-function ensureSkillAndAbilityState(character) {
+export function ensureSkillAndAbilityState(character) {
   const defaults = getDefaultSkillsState();
   character.skillsState = character.skillsState || {};
   // Merge in any skills defined in skills.json that an existing save lacks
@@ -173,13 +170,13 @@ function ensureSkillAndAbilityState(character) {
   return character;
 }
 
-function getEquipmentBonus(player, statName) {
+export function getEquipmentBonus(player, statName) {
   if (!statName) return 0;
   const mapped = getMappedEquipmentBonuses(player);
   return mapped[statName.toLowerCase()] || 0;
 }
 
-function logGearBonuses(player, changeType = "calculated") {
+export function logGearBonuses(player, changeType = "calculated") {
   const mapped = getMappedEquipmentBonuses(player);
   const bonusList = [
     { stat: "STR", val: mapped.str || 0 },
@@ -209,7 +206,7 @@ function resolveEquippedItemBonuses(slot, item) {
 }
 
 // Return equipment bonuses with lowercase stat keys (e.g., STR -> str, HP -> hp)
-function getMappedEquipmentBonuses(player) {
+export function getMappedEquipmentBonuses(player) {
   const equipment = player?.equipment || {};
   const out = {};
   for (const [slot, item] of Object.entries(equipment)) {
@@ -224,16 +221,16 @@ function getMappedEquipmentBonuses(player) {
   return out;
 }
 
-function getActiveWeapon(player) {
+export function getActiveWeapon(player) {
   return getEquippedItem(player, "weapon") || getDefaultEquipment().weapon;
 }
 
-function getActiveWeaponClass(player) {
+export function getActiveWeaponClass(player) {
   return getEquippedWeaponClass(getActiveWeapon(player));
 }
 
 // Helper function to get dungeon data
-function getDungeonData(dungeonKey) {
+export function getDungeonData(dungeonKey) {
   return dungeons[dungeonKey] || null;
 }
 
@@ -242,7 +239,7 @@ function getDungeonData(dungeonKey) {
 const DUNGEON_PROGRESSION = Object.keys(dungeons);
 
 // Helper function to check if a dungeon is unlocked for a party
-function isDungeonUnlocked(party, dungeonKey) {
+export function isDungeonUnlocked(party, dungeonKey) {
   // Field is always unlocked (first dungeon)
   if (dungeonKey === "field") return true;
 
@@ -266,7 +263,7 @@ function isDungeonUnlocked(party, dungeonKey) {
 }
 
 // Helper function to get unlocked dungeons for a party
-function getUnlockedDungeons(party) {
+export function getUnlockedDungeons(party) {
   const dungeonOrder = DUNGEON_PROGRESSION;
   const unlocked = [];
 
@@ -283,7 +280,7 @@ function getUnlockedDungeons(party) {
 
 // Helper function to determine weapon type from useMelee emoji
 
-function getStartingInventory() {
+export function getStartingInventory() {
   return [
     { id: "pebble", level: 1, rarity: 1, slot: "weapon" },
     { id: "magicRune", level: 1, rarity: 1, slot: "weapon" },
@@ -291,7 +288,7 @@ function getStartingInventory() {
 }
 
 // Character creation and management functions
-function createCharacter(name) {
+export function createCharacter(name) {
   let character = createDefaultCharacter(name);
   character = ensureSkillAndAbilityState(character);
   character.inventory.push(...getStartingInventory());
@@ -312,7 +309,7 @@ function createCharacter(name) {
   return character;
 }
 
-function calcMiscStats(player) {
+export function calcMiscStats(player) {
   // Calculate derived stats from equipment and core stats
   const equip = getMappedEquipmentBonuses(player);
 
@@ -328,7 +325,7 @@ function calcMiscStats(player) {
   player.pie = (5 + player.donated / 48 - player.gold / 128000) * 0.38 + (equip.pie || 0);
 }
 
-function calcMaxHp(player) {
+export function calcMaxHp(player) {
   calcMiscStats(player);
 
   // Get base HP from core stats
@@ -349,7 +346,7 @@ function calcMaxHp(player) {
   return Math.round(baseHP);
 }
 
-function calcMaxMp(player) {
+export function calcMaxMp(player) {
   calcMiscStats(player);
 
   let output =
@@ -362,7 +359,7 @@ function calcMaxMp(player) {
   return Math.round(Math.pow(output * 1.3, 0.96));
 }
 
-function calcMaxAp(player) {
+export function calcMaxAp(player) {
   const armourDef = player?.equipment?.armour?.defense || 3;
   const helmetDef = player?.equipment?.helmet?.defense || 3;
   const shoesDef = player?.equipment?.shoes?.defense || 3;
@@ -379,64 +376,10 @@ function calcMaxAp(player) {
   return Math.floor((gearBonus + levelBonus + statBonus + hpBonus) * 0.6);
 }
 
-function getEffectiveAttribute(player, statName) {
-  if (!statName) return 0;
-  const statKey = String(statName).toLowerCase();
-  const base = Number.isFinite(player[statKey]) ? player[statKey] : 0;
-  const bonus = getEquipmentBonus(player, statKey) || 0;
-  return base + bonus;
-}
-
-function getAttributeDamageModifier(player, weapon) {
-  if (!weapon || typeof weapon !== "object") return 1;
-  const modifiers = weapon.damageModifiers;
-  if (!modifiers || typeof modifiers !== "object") return 1;
-  const entries = Object.entries(modifiers);
-  if (entries.length === 0) return 1;
-
-  let sum = 0;
-  for (const [stat, weight] of entries) {
-    if (typeof weight !== "number") continue;
-    sum += getEffectiveAttribute(player, stat) * weight;
-  }
-  return 1 + sum * 0.03;
-}
-
 // Export all character-related functions
-function calculateItemSellValue(slot, id, level, rarity) {
+export function calculateItemSellValue(slot, id, level, rarity) {
   const resolved = itemGenerator.resolveItem(slot, id, level, rarity);
   if (!resolved || typeof resolved.baseValue !== "number") return 0;
   const calculatedValue = itemGenerator.calculateItemPrice(resolved.baseValue, level, rarity);
   return Math.floor(calculatedValue * 0.75);
 }
-
-module.exports = {
-  createCharacter,
-  getDefaultEquipment,
-  normalizeEquipment,
-  ensureSkillAndAbilityState,
-  getStartingInventory,
-  getEquipmentBonus,
-  getActiveWeapon,
-  getActiveWeaponClass,
-  getDungeonData,
-  isDungeonUnlocked,
-  getUnlockedDungeons,
-  getMappedEquipmentBonuses,
-  logGearBonuses,
-
-  calcMiscStats,
-  calcMaxHp,
-  calcMaxMp,
-  calcMaxAp,
-  restockShopWithDungeonScaling,
-  rewardPlayersOnDungeonClear,
-  getEffectiveAttribute,
-  getAttributeDamageModifier,
-
-  calculateItemSellValue,
-
-  MAX_SHOP_ITEMS,
-  SHOP_ITEM_MAX_AGE_MS,
-  sortAndCapShopStock,
-};

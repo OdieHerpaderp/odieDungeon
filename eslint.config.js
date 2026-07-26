@@ -1,22 +1,19 @@
 // @ts-check
 /** @type {import('eslint').Linter.Config} */
-module.exports = [
+export default [
   {
-    files: ['*.js'],
+    files: ["**/*.js"],
     languageOptions: {
-      ecmaVersion: 2021,
-      sourceType: 'commonjs',
+      ecmaVersion: 2024,
+      sourceType: "module",
       globals: {
-        console: 'readonly',
-        require: 'readonly',
-        module: 'readonly',
-        exports: 'readonly',
-        process: 'readonly'
-      }
+        console: "readonly",
+        process: "readonly",
+      },
     },
     rules: {
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
-      'no-empty-function': 'warn'
-    }
-  }
+      "no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "no-empty-function": "warn",
+    },
+  },
 ];

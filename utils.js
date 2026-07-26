@@ -1,10 +1,14 @@
-const { v4: uuidv4 } = require("uuid");
-const fs = require("fs");
-const path = require("path");
+import { v4 as uuidv4 } from "uuid";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const skillCurve = JSON.parse(fs.readFileSync(path.join(__dirname, "public", "skills", "skillCurve.json"), "utf8"));
 
-function deepEqual(obj1, obj2) {
+export function deepEqual(obj1, obj2) {
   if (obj1 === obj2) return true;
   if (obj1 == null || obj2 == null) return false;
   if (typeof obj1 !== typeof obj2) return false;
@@ -15,7 +19,7 @@ function deepEqual(obj1, obj2) {
   return keys1.every((key) => keys2.includes(key) && deepEqual(obj1[key], obj2[key]));
 }
 
-function formatBytes(bytes) {
+export function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
@@ -24,12 +28,12 @@ function formatBytes(bytes) {
 // ═══════════════════════════════════════════════════════════════════
 // PACKET TRACKING - Track sent/received packet counts and sizes
 // ═══════════════════════════════════════════════════════════════════
-const socketIoPacketTracker = {
+export const socketIoPacketTracker = {
   sent: { total: { count: 0, bytes: 0 }, byType: {} },
   received: { total: { count: 0, bytes: 0 }, byType: {} },
 };
 
-function trackSocketIoSent(type, data) {
+export function trackSocketIoSent(type, data) {
   const size = Buffer.byteLength(JSON.stringify(data), "utf8");
   socketIoPacketTracker.sent.total.count++;
   socketIoPacketTracker.sent.total.bytes += size;
@@ -40,7 +44,7 @@ function trackSocketIoSent(type, data) {
   socketIoPacketTracker.sent.byType[type].bytes += size;
 }
 
-function trackSocketIoReceived(type, data) {
+export function trackSocketIoReceived(type, data) {
   const jsonString = JSON.stringify(data || {});
   const size = Buffer.byteLength(jsonString, "utf8");
   socketIoPacketTracker.received.total.count++;
@@ -52,7 +56,7 @@ function trackSocketIoReceived(type, data) {
   socketIoPacketTracker.received.byType[type].bytes += size;
 }
 
-function formatPacketStats(prefix = "", stats) {
+export function formatPacketStats(prefix = "", stats) {
   const formatType = (typeStats) => {
     const lines = [];
     const types = Object.keys(typeStats).sort((a, b) => typeStats[b].count - typeStats[a].count);
@@ -71,21 +75,21 @@ ${prefix}  By Type:
 ${formatType(stats.received.byType)}`;
 }
 
-function calcSkillLv(xp) {
+export function calcSkillLv(xp) {
   const { xpDivisor, exponent, levelDivisor, minLevel } = skillCurve;
   return Math.max(minLevel, Math.floor(Math.pow(xp / xpDivisor, exponent) / levelDivisor));
 }
 
-function calcXpForLevel(level) {
+export function calcXpForLevel(level) {
   const { xpDivisor, exponent, levelDivisor } = skillCurve;
   return Math.pow(level * levelDivisor, 1 / exponent) * xpDivisor;
 }
 
-function calcXpForNextLevel(level) {
+export function calcXpForNextLevel(level) {
   return calcXpForLevel(level + 1);
 }
 
-const DEFAULT_CHARACTER_STATS = {
+export const DEFAULT_CHARACTER_STATS = {
   hp: 60,
   maxHp: 60,
   mp: 40,
@@ -114,11 +118,11 @@ const DEFAULT_CHARACTER_STATS = {
   hots: [],
 };
 
-function createDefaultCharacter(name) {
+export function createDefaultCharacter(name) {
   return { ...DEFAULT_CHARACTER_STATS, name };
 }
 
-function compactEquipment(equipment) {
+export function compactEquipment(equipment) {
   const slots = ["weapon", "armour", "helmet", "shoes"];
   const out = {};
   for (const slot of slots) {
@@ -137,7 +141,7 @@ function compactEquipment(equipment) {
   return out;
 }
 
-function toCompactRef(raw, slot) {
+export function toCompactRef(raw, slot) {
   if (!raw || typeof raw !== "object") return null;
   const id = raw.baseItem || raw.id;
   if (typeof id !== "string" || !id) return null;
@@ -146,7 +150,7 @@ function toCompactRef(raw, slot) {
   return { id, level, rarity };
 }
 
-function toInventoryItem(raw, slot) {
+export function toInventoryItem(raw, slot) {
   if (!raw || typeof raw !== "object") return null;
   const id = String(raw.baseItem || raw.id || raw.name || "");
   if (!id) return null;
@@ -158,11 +162,35 @@ function toInventoryItem(raw, slot) {
   return { id, level, rarity, slot: itemSlot };
 }
 
-function generateMessageId() {
+export function generateMessageId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-module.exports = {
+export function getEffectiveAttribute(player, statName) {
+  if (!statName) return 0;
+  const statKey = String(statName).toLowerCase();
+  const base = Number.isFinite(player[statKey]) ? player[statKey] : 0;
+  // Note: at module load time we don't have access to character equipment bonuses yet
+  // This function is called with fully loaded character objects that include equipment
+  return base;
+}
+
+export function getAttributeDamageModifier(player, weapon) {
+  if (!weapon || typeof weapon !== "object") return 1;
+  const modifiers = weapon.damageModifiers;
+  if (!modifiers || typeof modifiers !== "object") return 1;
+  const entries = Object.entries(modifiers);
+  if (entries.length === 0) return 1;
+
+  let sum = 0;
+  for (const [stat, weight] of entries) {
+    if (typeof weight !== "number") continue;
+    sum += getEffectiveAttribute(player, stat) * weight;
+  }
+  return 1 + sum * 0.03;
+}
+
+export default {
   deepEqual,
   formatBytes,
   calcSkillLv,
@@ -174,9 +202,10 @@ module.exports = {
   toCompactRef,
   toInventoryItem,
   generateMessageId,
-  uuidv4,
   socketIoPacketTracker,
   trackSocketIoSent,
   trackSocketIoReceived,
   formatPacketStats,
+  getEffectiveAttribute,
+  getAttributeDamageModifier,
 };

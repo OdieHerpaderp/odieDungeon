@@ -1,14 +1,18 @@
 // database.js - Character Save/Load Module
-const fs = require("fs");
-const path = require("path");
-const { compactEquipment } = require("./utils.js");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { compactEquipment } from "./utils.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const CHARACTERS_DIR = path.join(__dirname, "characters");
 if (!fs.existsSync(CHARACTERS_DIR)) {
   fs.mkdirSync(CHARACTERS_DIR);
 }
 
-function sanitizeName(name) {
+export function sanitizeName(name) {
   return (name || "").replace(/[^a-zA-Z0-9]/g, "_");
 }
 
@@ -16,7 +20,7 @@ function canonicalKey(name) {
   return sanitizeName(name);
 }
 
-function saveCharacter(name, character) {
+export function saveCharacter(name, character) {
   const key = canonicalKey(name);
   const filePath = path.join(CHARACTERS_DIR, `${key}.json`);
 
@@ -73,7 +77,7 @@ function saveCharacter(name, character) {
   }
 }
 
-function loadCharacter(name) {
+export function loadCharacter(name) {
   const key = canonicalKey(name);
   const filePath = path.join(CHARACTERS_DIR, `${key}.json`);
 
@@ -107,7 +111,7 @@ function loadCharacter(name) {
   return null;
 }
 
-function graveyardCharacter(name) {
+export function graveyardCharacter(name) {
   const key = canonicalKey(name);
   const primarySource = path.join(CHARACTERS_DIR, `${key}.json`);
   const graveyardDir = path.join(__dirname, "graveyard");
@@ -121,5 +125,3 @@ function graveyardCharacter(name) {
     console.log(`Moved ${name} to graveyard as ${key}.json`);
   }
 }
-
-module.exports = { saveCharacter, loadCharacter, graveyardCharacter };

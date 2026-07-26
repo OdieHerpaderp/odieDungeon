@@ -49,9 +49,13 @@
 //   3. packetGap   - inter-arrival time between consecutive server packets.
 // All timestamps use Date.now() (ms). Rolling samples keep min/avg/max.
 
-const path = require("path");
-const readline = require("readline");
-const { io } = require(require.resolve("socket.io-client", { paths: [path.join(__dirname, "..")] }));
+const path = await import("path");
+const readline = await import("readline");
+const { fileURLToPath } = await import("url");
+const { io } = await import("socket.io-client");
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // WebRTC transport (optional). The server prefers WebRTC for game broadcasts
 // (broadcastToParty -> WebRTC-first, Socket.IO fallback). A pure Socket.IO
@@ -60,7 +64,8 @@ const { io } = require(require.resolve("socket.io-client", { paths: [path.join(_
 // and receive those broadcasts, mirroring public/clientNetwork.js.
 let wrtc = null;
 try {
-  wrtc = require(require.resolve("wrtc", { paths: [path.join(__dirname, "..")] }));
+  const wrtcModule = await import("wrtc");
+  wrtc = wrtcModule;
 } catch (e) {
   console.error("[webrtc] wrtc not available, falling back to Socket.IO only:", e.message);
 }
@@ -85,7 +90,7 @@ const state = {
   shopStock: [],
 };
 
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout, prompt: `${NAME}> ` });
+const rl = readline.default.createInterface({ input: process.stdin, output: process.stdout, prompt: `${NAME}> ` });
 
 // ── Latency instrumentation ──────────────────────────────────────────────
 // Rolling sample accumulator: keeps count + min/avg/max for a named metric.

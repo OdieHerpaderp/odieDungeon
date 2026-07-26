@@ -1,12 +1,14 @@
 {
-  "name": "socket-chat-example",
+  "name": "odieDungeon",
   "version": "0.0.1",
-  "description": "my first socket.io app",
+  "description": "A multiplayer dungeon crawler game",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@socket.io/cluster-adapter": "^0.2.2",
     "express": "^4.18.2",
-    "node-pre-gyp": "^0.17.0",
-    "simple-peer": "^9.11.1",
     "socket.io": "^4.7.2",
     "sqlite": "^5.0.1",
     "sqlite3": "^5.1.6",
@@ -15,8 +17,8 @@
   },
   "license": "MIT",
   "scripts": {
-    "lint": "eslint app.js characters.js database.js utils.js scripts/**/*.js",
-    "format": "prettier --write 'app.js' 'characters.js' 'database.js' 'utils.js' 'scripts/**/*.js'",
+    "lint": "eslint",
+    "format": "prettier --write .",
     "start": "node app.js"
   },
   "devDependencies": {

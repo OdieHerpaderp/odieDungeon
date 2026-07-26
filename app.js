@@ -1,19 +1,24 @@
 // odieDungeon
 // Global tuning: multiplier applied to all damage dealt BY enemies (1.0 = unchanged, 0.5 = -50%)
 const ENEMY_DAMAGE_MULTIPLIER = 0.8;
-const express = require("express");
-const http = require("http");
-const socketIo = require("socket.io");
-const utils = require("./utils");
-const { saveCharacter, loadCharacter } = require("./database.js");
-const characters = require("./characters");
-const WebRTCServer = require("./appWebRTC");
-const { extractDelta, buildSnapshot } = require("./utilities/deltaTracker");
-const { generateEnemies } = require("./enemies.js");
-const buffEngine = require("./public/skills/buffEngine");
-const skillEngine = require("./public/skills/skillEngine");
-const { loadAbilities } = require("./loadAbilities");
+import express from "express";
+import http from "http";
+import { Server } from "socket.io";
+import * as utils from "./utils.js";
+import { saveCharacter, loadCharacter } from "./database.js";
+import * as characters from "./characters.js";
+import { WebRTCServer } from "./appWebRTC.js";
+import { extractDelta, buildSnapshot } from "./utilities/deltaTracker.js";
+import { generateEnemies } from "./enemies.js";
+import * as buffEngine from "./public/skills/buffEngine.js";
+import * as skillEngine from "./public/skills/skillEngine.js";
+import { loadAbilities } from "./loadAbilities.js";
+import * as itemGenerator from "./public/gear/itemGenerator.js";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+
 const abilities = loadAbilities();
+
 const weaponMelee = require("./public/gear/weaponMelee.json");
 const weaponRanged = require("./public/gear/weaponRanged.json");
 const weaponMagic = require("./public/gear/weaponMagic.json");
@@ -30,14 +35,10 @@ const feetWearLight = require("./public/gear/feetWearLight.json");
 const feetWearMedium = require("./public/gear/feetWearMedium.json");
 const feetWearHeavy = require("./public/gear/feetWearHeavy.json");
 const feetWear = [...feetWearLight, ...feetWearMedium, ...feetWearHeavy];
-const itemGenerator = require("./public/gear/itemGenerator");
-
-function assert(condition, message) {
-  if (!condition) throw new Error(`[ASSERT] ${message}`);
-}
-
-// Load dungeons configuration
 const dungeons = require("./public/dungeons.json");
+
+export { app };
+export { server };
 
 // ═══════════════════════════════════════════════════════════════════
 // UNIFIED BROADCAST SYSTEM
@@ -668,7 +669,7 @@ function handleChangeDungeon(socket, data) {
 
   // Check if dungeon is unlocked
   if (!characters.isDungeonUnlocked(party, dungeon)) {
-    const dungeonOrder = Object.keys(require("./public/dungeons.json"));
+    const dungeonOrder = Object.keys(dungeons);
     const idx = dungeonOrder.indexOf(dungeon);
     if (idx > 0) {
       const prevDungeon = dungeonOrder[idx - 1];
@@ -1050,7 +1051,7 @@ function generateCombatSummary(partyId, party, message) {
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
+const io = new Server(server, {
   cors: { origin: "*" },
   compression: true,
   perMessageDeflate: { threshold: 1024 },
@@ -1865,7 +1866,8 @@ function performActionBarAttack(actor, partyId, party) {
         0.4 * Math.random() * (target.equipment?.armour?.defense || target.armour || 0) +
         0.4 * Math.random() * (target.equipment?.shoes?.defense || target.shoes || 0) +
         0.003 * Math.random() * target.vit +
-        0.001 * Math.random() * target.for) / 4;
+        0.001 * Math.random() * target.for) /
+      4;
     const defenseUp = buffEngine.sumEffectAmount(target.effects, "defenseUp", 0.5);
     const effectiveMitigation = (defenseDown > 0 ? mitigationTerm * (1 - defenseDown) : mitigationTerm) + defenseUp;
     const cappedMitigation = Math.min(effectiveMitigation, rawDamage * 0.85);

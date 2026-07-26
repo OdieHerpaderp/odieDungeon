@@ -1,3 +1,10 @@
+import ClientNetwork from "./clientNetwork.js";
+import * as itemGenerator from "./gear/itemGenerator.js";
+import * as skillUI from "./skills/skillUI.js";
+
+// Global variables for state - declared here to avoid TDZ issues
+let currentState;
+
 //Toast
 const toastFrame = new JSFrame();
 toastFrame.showToast({ html: "Henlo :)" });
@@ -22,8 +29,8 @@ Promise.all([
     const headgear = [...hgL, ...hgM, ...hgH];
     const armors = [...arL, ...arM, ...arH];
     const feetWear = [...ftL, ...ftM, ...ftH];
-    if (window.itemGenerator && typeof window.itemGenerator.updateCatalogs === "function") {
-      window.itemGenerator.updateCatalogs(weaponMelee, weaponRanged, weaponMagic, headgear, armors, feetWear);
+    if (itemGenerator && typeof itemGenerator.updateCatalogs === "function") {
+      itemGenerator.updateCatalogs(weaponMelee, weaponRanged, weaponMagic, headgear, armors, feetWear);
       console.log("Gear catalogs loaded and updated in itemGenerator");
     } else {
       console.warn("itemGenerator not available or updateCatalogs method missing");
@@ -66,7 +73,7 @@ function dungeonListSig(state) {
   const cd = state.completedDungeons || {};
   const df = state.dungeonFloors || {};
   const hvf = state.highestVisitedFloors || {};
-  const keys = new Set([...Object.keys(cd), ...Object.keys(df), ...Object.keys(hvf)]).sort();
+  const keys = Array.from(new Set([...Object.keys(cd), ...Object.keys(df), ...Object.keys(hvf)])).sort();
   return keys.map((k) => `${k}:${cd[k] ?? ""}|${df[k] ?? ""}|${hvf[k] ?? ""}`).join(",");
 }
 function refreshDungeonListIfChanged(state) {
@@ -171,7 +178,7 @@ function getPrerequisiteDungeon(dungeonKey) {
 }
 
 // Only select a dungeon in UI; actual start happens via Embark button (embarkDungeon)
-window.selectDungeon = function (dungeonKey) {
+export function selectDungeon(dungeonKey) {
   if (!dungeons[dungeonKey]) return;
   if (!isDungeonUnlocked(dungeonKey)) {
     addToEventLog(`Dungeon ${dungeonKey} is locked until you complete the previous dungeon.`, "error");
@@ -433,7 +440,7 @@ function buildGearTabsHtml(prefix) {
   ).join("")}</div>`;
 }
 
-window.selectGearTab = function (prefix, label) {
+export function selectGearTab(prefix, label) {
   if (prefix === "equip") _activeEquipCat = label;
   else _activeShopCat = label;
   if (prefix === "equip") _newEquipCats.delete(label);
@@ -463,7 +470,7 @@ function buildGearCategoryBody(prefix, category, equippedRow, rows) {
     </div>`;
 }
 
-window.unequipItem = function (slot) {
+export function unequipItem(slot) {
   window.equipInventoryItem(null, slot);
 };
 
@@ -596,7 +603,7 @@ const frameConfigs = [
     minHeight: 160,
     html: generateEquipmentHtml(),
   },
-  { name: "Shop", title: "🛒 Shop (town only)", left: 845, top: 285, width: 300, height: 260, minWidth: 180, minHeight: 160, html: generateShopHtml() },
+  { name: "Shop", title: "🛒 Shop (town only)", left: 865, top: 285, width: 300, height: 260, minWidth: 180, minHeight: 160, html: generateShopHtml() },
   {
     name: "Win1",
     title: "📜 Event Log",
@@ -611,7 +618,7 @@ const frameConfigs = [
   {
     name: "FloorControls",
     title: "🗺️ Floor Controls",
-    left: 1180,
+    left: 1220,
     top: 224,
     width: 200,
     height: 280,
@@ -707,7 +714,7 @@ const createWindowManagerFrame = () => {
     .create({
       name: "WindowManager",
       title: "Window Manager",
-      left: 1180,
+      left: 1220,
       top: 2,
       width: 200,
       height: 220,
@@ -752,8 +759,8 @@ const createWindowManagerFrame = () => {
 createWindowManagerFrame();
 
 // Global variables for state
-let currentState = {},
-  ownName,
+currentState = {};
+var ownName,
   ownId,
   clientNetwork,
   ownPlayerElement = null;
@@ -901,6 +908,7 @@ function buildClientCallbacks() {
 
 function initializeClientNetwork() {
   clientNetwork = new ClientNetwork(buildClientCallbacks());
+  skillUI.setClientNetwork(clientNetwork);
 }
 
 // Initialize networking when page loads
@@ -908,7 +916,7 @@ initializeClientNetwork();
 
 // Start the client-side cooldown countdown tick so ability cooldowns update
 // frequently during combat without waiting for server state pushes.
-if (window.startCooldownsTick) window.startCooldownsTick(150);
+if (skillUI.startCooldownsTick) skillUI.startCooldownsTick(150);
 
 // Start periodic network statistics updates
 setInterval(() => {
@@ -917,7 +925,7 @@ setInterval(() => {
   }
 }, 1000); // Update every second
 
-window.joinParty = function () {
+export function joinParty() {
   const name = document.getElementById("playerName").value || `Player${Math.floor(Math.random() * 1000)}`;
   ownName = name;
   const partyId = document.getElementById("partyId").value || `party${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
@@ -931,7 +939,7 @@ function embarkDungeon() {
 
 let autoEmbarkEnabled = false;
 
-window.toggleAutoEmbark = function () {
+export function toggleAutoEmbark() {
   autoEmbarkEnabled = !autoEmbarkEnabled;
   updateAutoEmbarkButton();
   clientNetwork.toggleAutoEmbark(autoEmbarkEnabled);
@@ -944,7 +952,7 @@ function updateAutoEmbarkButton() {
   btn.style.background = autoEmbarkEnabled ? "#5a5" : "#55a";
 }
 
-window.escapeDungeon = function () {
+export function escapeDungeon() {
   clientNetwork.escapeDungeon();
 };
 
@@ -1003,8 +1011,8 @@ function getCalculatedItem(item, slotKey) {
   }
   if (perSlot.has(slotKey)) return perSlot.get(slotKey);
   let result;
-  if (item.baseItem) result = window.itemGenerator?.calculateItemStats?.(item) || item;
-  else if (item.id) result = window.itemGenerator?.resolveItem?.(slotKey, item.id, item.level, item.rarity) || item;
+  if (item.baseItem) result = itemGenerator.calculateItemStats(item) || item;
+  else if (item.id) result = itemGenerator.resolveItem(slotKey, item.id, item.level, item.rarity) || item;
   else result = item;
   perSlot.set(slotKey, result);
   return result;
@@ -1016,7 +1024,7 @@ function getEquipmentStatBonus(player, statKey) {
   let total = 0;
   for (const [slot, ref] of Object.entries(equip)) {
     if (!ref || !ref.id) continue;
-    const item = window.itemGenerator?.resolveItem(slot, ref.id, ref.level, ref.rarity);
+    const item = itemGenerator.resolveItem(slot, ref.id, ref.level, ref.rarity);
     const b = item?.bonuses;
     if (b && typeof b[key] === "number") total += b[key];
   }
@@ -1071,7 +1079,7 @@ function getAverageItemTier(player) {
     const ref = player.equipment?.[s];
     if (!ref) continue;
     const item = getCalculatedItem(ref, s);
-    const tier = window.itemGenerator?.calculateItemTier?.(item);
+    const tier = itemGenerator.calculateItemTier(item);
     if (typeof tier === "number" && Number.isFinite(tier)) {
       sum += tier;
       count++;
@@ -1113,7 +1121,7 @@ function itemStatsHtml(calculatedItem, fontSize = "11px") {
 // Inline tier marker (e.g. "♔3.5"), shown next to the name/rarity on the card's
 // first line. Returns '' when no tier is available.
 function itemTierBadge(item) {
-  const tier = window.itemGenerator?.calculateItemTier?.(item);
+  const tier = itemGenerator.calculateItemTier(item);
   if (typeof tier !== "number") return "";
   return `<span class="gear-tier">♔${tier.toFixed(1)}</span>`;
 }
@@ -1138,7 +1146,7 @@ function getSellPrice(calculated) {
   const calc = calculated || {};
   let price;
   if (typeof calc.baseValue === "number") {
-    price = window.itemGenerator?.calculateItemPrice?.(calc.baseValue, calc.level, calc.rarity) ?? calc.baseValue;
+    price = itemGenerator.calculateItemPrice(calc.baseValue, calc.level, calc.rarity) ?? calc.baseValue;
   } else {
     price = calc.price ?? 40;
   }
@@ -1294,7 +1302,7 @@ function equipmentSig(player) {
 }
 
 let lastEquipmentSnapshot = null;
-function renderEquipmentPanel(player, force = false) {
+export function renderEquipmentPanel(player, force = false) {
   if (!player) return;
   const container = equipmentFrame?.$("#equipmentBodies");
   if (!container) return;
@@ -1351,7 +1359,7 @@ function shopStockSig(shopStock) {
 }
 
 let lastShopSnapshot = null;
-function renderShopStock(shopStock, force = false) {
+export function renderShopStock(shopStock, force = false) {
   if (!shopFrame) return;
 
   const container = shopFrame.$("#shopBodies");
@@ -1385,11 +1393,11 @@ function renderShopStock(shopStock, force = false) {
   const priceByKey = new Map();
   for (const g of groups) {
     const { item } = g[0];
-    const calc = window.itemGenerator?.calculateItemStats?.(item) || item;
+    const calc = itemGenerator.calculateItemStats(item) || item;
     const price = Math.max(
       1,
       typeof calc?.baseValue === "number"
-        ? (window.itemGenerator?.calculateItemPrice?.(calc.baseValue, calc.level, calc.rarity) ?? calc.price ?? 40)
+        ? (itemGenerator.calculateItemPrice(calc.baseValue, calc.level, calc.rarity) ?? calc.price ?? 40)
         : (calc?.price ?? 40)
     );
     priceByKey.set(`${item.baseItem || item.id}|${item.level ?? 1}|${item.rarity ?? 1}`, price);
@@ -1409,7 +1417,7 @@ function renderShopStock(shopStock, force = false) {
     const rows = catGroups.map((group) => {
       const { item, index } = group[0];
       const price = priceByKey.get(`${item.baseItem || item.id}|${item.level ?? 1}|${item.rarity ?? 1}`);
-      const calc = window.itemGenerator?.calculateItemStats?.(item) || item;
+      const calc = itemGenerator.calculateItemStats(item) || item;
       const action = `<button class="gear-act-btn gear-act-buy" onclick="buyGear('shop_${index}')">Buy</button>`;
       return itemRowCard(calc, group.length, "10px", `Price: ${price}g\n`, action, `${price}g`);
     });
@@ -1425,9 +1433,8 @@ function renderShopStock(shopStock, force = false) {
 }
 
 // Make functions available globally for clientNetwork access
-window.renderShopStock = renderShopStock;
 
-window.forceRefreshEquipment = function () {
+export function forceRefreshEquipment() {
   if (window.renderEquipmentPanel && currentState) {
     const me = (currentState.players || []).find((p) => p.name === ownName);
     if (me) window.renderEquipmentPanel(me, true);
@@ -1435,7 +1442,7 @@ window.forceRefreshEquipment = function () {
 };
 
 // Update party display function (moved after renderShopStock to ensure function availability)
-function updatePartyDisplay(data) {
+export function updatePartyDisplay(data) {
   if (!data || !Array.isArray(data.players) || !Array.isArray(data.enemies)) {
     console.warn("no data for updatePartydisplay!", { players: data?.players, enemies: data?.enemies });
     return;
@@ -1626,7 +1633,7 @@ function renderEquippedHtml(player) {
   return EQUIPMENT_CATEGORIES.map((c) => {
     const it = getCalculatedItem(eq[c.equippedKey], c.equippedKey);
     const name = it ? it.displayName || it.name || it.id : "Empty";
-    const tier = window.itemGenerator?.calculateItemTier?.(it);
+    const tier = itemGenerator.calculateItemTier(it);
     const meta = typeof tier === "number" ? ` ♔${tier.toFixed(1)}` : "";
     const colour = getColourFromRarity(it?.rarity);
     const bg = it ? colour.bg : "#1d1d1d";
@@ -1708,7 +1715,7 @@ function createPlayerElement(player, isOwn = false) {
   return div;
 }
 
-window.togglePlayerCard = function (btn) {
+export function togglePlayerCard(btn) {
   const el = btn.closest(".player");
   const collapsed = el.dataset.collapsed === "true";
   const newCollapsed = !collapsed;
@@ -1945,7 +1952,7 @@ const WEAPON_EMOJI_MAP = { melee: "⚔️", ranged: "🏹", magic: "🔮" };
 
 function getWeaponEmoji(weaponRef) {
   if (!weaponRef || !weaponRef.id) return "";
-  const calc = window.itemGenerator?.resolveItem?.("weapon", weaponRef.id, weaponRef.level, weaponRef.rarity);
+  const calc = itemGenerator.resolveItem("weapon", weaponRef.id, weaponRef.level, weaponRef.rarity);
   return calc && WEAPON_EMOJI_MAP[calc.type] ? WEAPON_EMOJI_MAP[calc.type] : "";
 }
 
@@ -2041,23 +2048,23 @@ function updateEnemyElement(el, enemy) {
   }
 }
 
-window.allocatePoints = function (stat, points) {
+export function allocatePoints(stat, points) {
   clientNetwork.allocatePoints(stat, points);
 };
 
-window.buyGear = function (type) {
+export function buyGear(type) {
   clientNetwork.buyGear(type);
 };
 
-window.equipInventoryItem = function (itemId, slot) {
+export function equipInventoryItem(itemId, slot) {
   clientNetwork.equipItem(slot, itemId);
 };
 
-window.sellInventoryItem = function (itemId) {
+export function sellInventoryItem(itemId) {
   clientNetwork.sellItem(itemId);
 };
 
-window.leaveParty = function () {
+export function leaveParty() {
   clientNetwork.leaveParty();
 };
 
@@ -2072,7 +2079,7 @@ clientNetwork.performCombatAction = function (actionData) {
 };
 
 // Global function to flash the player's own element on attack
-window.flashPlayerAttack = function (hit, crit) {
+export function flashPlayerAttack(hit, crit) {
   if (!ownPlayerElement) return;
 
   let cls;
@@ -2086,9 +2093,31 @@ window.flashPlayerAttack = function (hit, crit) {
 // Performance control functions
 function changePerformanceMode(mode) {
   clientNetwork.setPerformanceMode(mode);
-  clientNetwork.updatePerformanceStatus();
+   clientNetwork.updatePerformanceStatus();
 }
 
 function changeBatchSize(batchSize) {
   clientNetwork.changeBatchSize(batchSize);
+}
+
+// Make exported functions available as globals for onclick handlers in generated HTML
+if (typeof window !== "undefined") {
+  window.selectDungeon = selectDungeon;
+  window.selectGearTab = selectGearTab;
+  window.unequipItem = unequipItem;
+  window.joinParty = joinParty;
+  window.embarkDungeon = embarkDungeon;
+  window.toggleAutoEmbark = toggleAutoEmbark;
+  window.escapeDungeon = escapeDungeon;
+  window.renderShopStock = renderShopStock;
+  window.forceRefreshEquipment = forceRefreshEquipment;
+  window.renderEquipmentPanel = renderEquipmentPanel;
+  window.togglePlayerCard = togglePlayerCard;
+  window.updatePartyDisplay = updatePartyDisplay;
+  window.allocatePoints = allocatePoints;
+  window.buyGear = buyGear;
+  window.equipInventoryItem = equipInventoryItem;
+  window.sellInventoryItem = sellInventoryItem;
+  window.leaveParty = leaveParty;
+  window.flashPlayerAttack = flashPlayerAttack;
 }
