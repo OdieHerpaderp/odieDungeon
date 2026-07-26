@@ -571,10 +571,27 @@ window.toggleAvailableFilter = function(checked) {
   if (lastPlayerForSlots) window.renderAbilitySlotsPanel(lastPlayerForSlots);
 };
 
+// Skills state change signature - avoids JSON.stringify allocation
+function skillsStateSig(skillsState) {
+  if (!skillsState) return 'none';
+  return Object.entries(skillsState)
+    .filter(([, v]) => v && typeof v.xp === 'number')
+    .map(([k, v]) => `${k}:${v.xp}`)
+    .sort().join(',');
+}
+
+// Ability slots change signature - avoids JSON.stringify allocation
+function abilitySlotsSig(player) {
+  if (!player) return 'none';
+  const slots = player.abilitySlots || [];
+  const unlockedSig = getUnlockedAbilitySignature(player);
+  return `${slots.filter(Boolean).join(',')}|${selectedSlotIndex}|${showAvailableOnly}|${unlockedSig}`;
+}
+
 window.renderSkillsPanel = async function(player) {
   const el = document.getElementById('skillsPanel');
   if (!el) return;
-  const snapshot = JSON.stringify(player?.skillsState || {});
+  const snapshot = skillsStateSig(player?.skillsState);
   if (snapshot === lastSkillsSnapshot && el.innerHTML) {
     return;
   }
@@ -588,7 +605,7 @@ window.renderAbilitySlotsPanel = async function(player) {
   const el = document.getElementById('abilitySlotsPanel');
   if (!el) return;
   await loadAbilityDefinitions();
-  const snapshot = JSON.stringify({ slots: player?.abilitySlots || [], selection: selectedSlotIndex, filter: showAvailableOnly, unlocked: getUnlockedAbilitySignature(player) });
+  const snapshot = abilitySlotsSig(player);
   if (snapshot === lastSlotsSnapshot && el.innerHTML) {
     return;
   }

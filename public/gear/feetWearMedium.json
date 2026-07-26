@@ -8,7 +8,7 @@
     "bonuses": {
       "STR": 3,
       "DEX": 3,
-      "AGI": 3
+      "AGI": 2
     },
     "range": 1,
     "value": 24,
@@ -22,8 +22,8 @@
     "magicResist": 2,
     "bonuses": {
       "STR": 5,
-      "AGI": 3,
-      "HP": 8
+      "DEX": 3,
+      "VIT": 2
     },
     "range": 1,
     "value": 28,
@@ -38,7 +38,7 @@
     "bonuses": {
       "STR": 3,
       "DEX": 3,
-      "VIT": 3
+      "VIT": 2
     },
     "range": 1,
     "value": 26,
@@ -51,10 +51,9 @@
     "defense": 8,
     "magicResist": 3,
     "bonuses": {
-      "AGI": 4,
-      "DEX": 3,
-      "CNC": 3,
-      "HP": 8
+      "AGI": 2,
+      "DEX": 4,
+      "CNC": 3
     },
     "range": 1,
     "value": 28,

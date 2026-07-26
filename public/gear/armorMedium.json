@@ -21,9 +21,9 @@
     "defense": 13,
     "magicResist": 1,
     "bonuses": {
-      "STR": 5,
+      "STR": 6,
       "VIT": 3,
-      "HP": 12
+      "AGI": -0.5
     },
     "range": 1,
     "value": 36,
@@ -36,10 +36,10 @@
     "defense": 12,
     "magicResist": 2,
     "bonuses": {
-      "STR": 4,
+      "STR": 5,
       "DEX": 3,
       "VIT": 4,
-      "HP": 10
+      "AGI": -0.5
     },
     "range": 1,
     "value": 36,
@@ -49,13 +49,12 @@
     "id": "wyrmhideJerkin",
     "name": "Wyrmhide Jerkin",
     "type": "medium",
-    "defense": 15,
+    "defense": 13,
     "magicResist": 3,
     "bonuses": {
-      "AGI": 5,
-      "DEX": 3,
-      "CNC": 3,
-      "HP": 14
+      "AGI": 4,
+      "DEX": 5,
+      "CNC": 3
     },
     "range": 1,
     "value": 40,

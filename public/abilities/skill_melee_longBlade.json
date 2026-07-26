@@ -23,6 +23,7 @@
     "unlockSkillLevelMin": 3,
     "mpCostBase": 5,
     "cooldownMsBase": 2400,
+    "damageBase": 7,
     "maxTargets": 3,
     "allowedWeaponClasses": ["melee"],
     "requiredWeaponSubTypes": ["longBlade"],

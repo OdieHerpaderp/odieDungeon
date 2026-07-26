@@ -78,8 +78,7 @@
     "magicResist": 1,
     "bonuses": {
       "AGI": 5,
-      "DEX": 5,
-      "HP": 4
+      "DEX": 5
     },
     "range": 1,
     "value": 26,

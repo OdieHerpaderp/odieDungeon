@@ -550,6 +550,10 @@ class ClientNetwork {
             if (current && last) {
               Object.assign(current, enemy);
               Object.assign(last, enemy);
+            } else if (current && !last) {
+              // Backfill last-known snapshot so future deltas have a baseline
+              this.lastKnownState.enemies.set(enemy.id, { ...current, ...enemy });
+              Object.assign(current, enemy);
             } else if (enemy.id && enemy.name) {
               (this.currentState.enemies || (this.currentState.enemies = [])).push(enemy);
               this.lastKnownState.enemies.set(enemy.id, { ...enemy });
@@ -901,6 +905,11 @@ class ClientNetwork {
         const current = this.currentState.enemies?.find(e => e.id === enemy.id);
         const last = this.lastKnownState.enemies.get(enemy.id);
         if (current && last) { Object.assign(current, enemy); Object.assign(last, enemy); }
+        else if (current && !last) {
+            // Backfill last-known snapshot so future deltas have a baseline
+            this.lastKnownState.enemies.set(enemy.id, { ...current, ...enemy });
+            Object.assign(current, enemy);
+        }
         else if (enemy.id && enemy.name) {
             (this.currentState.enemies || (this.currentState.enemies = [])).push(enemy);
             this.lastKnownState.enemies.set(enemy.id, { ...enemy });
@@ -911,6 +920,11 @@ class ClientNetwork {
         const current = this.currentState.players?.find(p => p.id === delta.id);
         const last = this.lastKnownState.players.get(delta.id);
         if (current && last) { Object.assign(current, delta); Object.assign(last, delta); }
+        else if (current && !last) {
+            // Backfill last-known snapshot so future deltas have a baseline
+            this.lastKnownState.players.set(delta.id, { ...current, ...delta });
+            Object.assign(current, delta);
+        }
         else if (delta.id && delta.name) {
             (this.currentState.players || (this.currentState.players = [])).push(delta);
             this.lastKnownState.players.set(delta.id, { ...delta });
@@ -945,6 +959,15 @@ class ClientNetwork {
             const last = lastMap.get(id);
             if (cur && last) {
                 applyFn(cur, last, u);
+                if (!skipDisplay) this.uiCallbacks.updatePlayerDisplay(cur, cur.name === this.ownName, inTown, cur);
+                if (!isPlayer && cur.hp <= 0) {
+                    this.currentState.enemies = this.currentState.enemies.filter(e => e.id !== id);
+                    lastMap.delete(id);
+                }
+            } else if (cur && !last) {
+                // Backfill last-known snapshot so future deltas have a baseline
+                lastMap.set(id, { ...cur, ...u });
+                applyFn(cur, lastMap.get(id), u);
                 if (!skipDisplay) this.uiCallbacks.updatePlayerDisplay(cur, cur.name === this.ownName, inTown, cur);
                 if (!isPlayer && cur.hp <= 0) {
                     this.currentState.enemies = this.currentState.enemies.filter(e => e.id !== id);

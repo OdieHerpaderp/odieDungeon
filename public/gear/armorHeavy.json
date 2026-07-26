@@ -7,7 +7,7 @@
     "magicResist": 1,
     "bonuses": {
       "VIT": 6,
-      "STR": 2,
+      "STR": 4,
       "HP": 20,
       "AGI": -1,
       "INT": -1,

@@ -16,7 +16,7 @@
       "INT": 0.4
     },
     "range": 16,
-    "value": 22,
+    "value": 24,
     "description": "A powerful magic rod that casts spells with high damage."
   },
   {
@@ -24,7 +24,7 @@
     "name": "Magic Rod",
     "type": "magic",
     "subType": "rods",
-    "damage": 8,
+    "damage": 7,
     "spellPower": 9,
     "attackSpeed": 0.8,
     "bonuses": {
@@ -44,7 +44,7 @@
     "name": "Magic Staff",
     "type": "magic",
     "subType": "staves",
-    "damage": 9,
+    "damage": 8,
     "spellPower": 9,
     "attackSpeed": 0.7,
     "bonuses": {

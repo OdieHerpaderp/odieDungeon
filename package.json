@@ -15,9 +15,13 @@
   },
   "license": "MIT",
   "scripts": {
+    "lint": "eslint app.js characters.js database.js utils.js scripts/**/*.js",
+    "format": "prettier --write 'app.js' 'characters.js' 'database.js' 'utils.js' 'scripts/**/*.js'",
     "start": "node app.js"
   },
   "devDependencies": {
+    "eslint": "^10.7.0",
+    "prettier": "^3.9.6",
     "socket.io-client": "^4.8.3"
   }
 }

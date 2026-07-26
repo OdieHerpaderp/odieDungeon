@@ -8,7 +8,7 @@
     "bonuses": {
       "STR": 4,
       "DEX": 4,
-      "AGI": 4
+      "AGI": 2
     },
     "range": 1,
     "value": 28,
@@ -22,8 +22,7 @@
     "magicResist": 3,
     "bonuses": {
       "STR": 6,
-      "DEX": 4,
-      "HP": 9
+      "DEX": 4
     },
     "range": 1,
     "value": 30,
@@ -53,8 +52,7 @@
     "bonuses": {
       "AGI": 4,
       "DEX": 2,
-      "CNC": 3,
-      "HP": 6
+      "CNC": 3
     },
     "range": 1,
     "value": 30,

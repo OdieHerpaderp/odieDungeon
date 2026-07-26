@@ -1,14 +1,7 @@
 // Character Management Module
 
-const {
-  saveCharacter,
-  loadCharacter,
-} = require("./database.js");
-const {
-  getRandomEnemy,
-  getRandomEnemyName,
-  generateEnemies,
-} = require("./enemies.js");
+const { saveCharacter, loadCharacter } = require("./database.js");
+const { getRandomEnemy, getRandomEnemyName, generateEnemies } = require("./enemies.js");
 const {
   getDefaultSkillsState,
   getWeaponSkillId,
@@ -83,9 +76,7 @@ function restockShopWithDungeonScaling(party, dungeon, dungeonData) {
 
   const dungeonDifficulty = (dungeonData?.floorBase ?? 1) + (dungeonData?.floorMult ?? 1) * (dungeonData?.floorAmount ?? 100);
 
-  console.log(
-    `Restocked shop (now ${party.shopStock.length} items) after completing ${dungeon} (difficulty: ${dungeonDifficulty})`,
-  );
+  console.log(`Restocked shop (now ${party.shopStock.length} items) after completing ${dungeon} (difficulty: ${dungeonDifficulty})`);
 }
 
 // Give every character in the party one randomized item when the dungeon boss is
@@ -103,23 +94,33 @@ function rewardPlayersOnDungeonClear(party, dungeon, dungeonData) {
   const results = [];
 
   for (const player of party.players.values()) {
-    const name = player.name || 'a hero';
+    const name = player.name || "a hero";
 
     if (Math.random() < 0.3) {
-    const item = itemGenerator.generateScaledItem(dungeonData, categoryPool);
+      const item = itemGenerator.generateScaledItem(dungeonData, categoryPool);
       player.inventory = Array.isArray(player.inventory) ? player.inventory : [];
       player.inventory.push(toInventoryItem(item, item.slot));
       player.inventory = [...player.inventory];
       if (player.name) saveCharacter(player.name, player);
 
-      const displayName = item.displayName || item.name || item.id || 'gear';
-      const rarityText = item.rarity ? ` (${item.rarity}★)` : '';
-      results.push({ name, type: 'item', message: `🎁 ${name} found ${displayName}${rarityText}!`, detail: `${displayName}${rarityText}` });
+      const displayName = item.displayName || item.name || item.id || "gear";
+      const rarityText = item.rarity ? ` (${item.rarity}★)` : "";
+      results.push({
+        name,
+        type: "item",
+        message: `🎁 ${name} found ${displayName}${rarityText}!`,
+        detail: `${displayName}${rarityText}`,
+      });
     } else {
       let dungeonReward = Math.round(Math.pow(3 + dungeonDifficulty, 0.5));
       player.gold = (player.gold || 0) + dungeonReward;
       if (player.name) saveCharacter(player.name, player);
-      results.push({ name, type: 'gold', message: `💰 ${name} found ${dungeonReward} gold!`, detail: `${dungeonReward} gold` });
+      results.push({
+        name,
+        type: "gold",
+        message: `💰 ${name} found ${dungeonReward} gold!`,
+        detail: `${dungeonReward} gold`,
+      });
     }
   }
 
@@ -144,7 +145,11 @@ function normalizeEquipment(equipment) {
   const refs = {};
   for (const slot of EQUIPMENT_SLOTS) {
     const ref = toCompactRef(equipment[slot], slot);
-    refs[slot] = ref || { id: slot === "armour" ? "rags" : slot === "helmet" ? "strawHat" : slot === "shoes" ? "sandals" : "newspaper", level: 1, rarity: 1 };
+    refs[slot] = ref || {
+      id: slot === "armour" ? "rags" : slot === "helmet" ? "strawHat" : slot === "shoes" ? "sandals" : "newspaper",
+      level: 1,
+      rarity: 1,
+    };
   }
   return compactEquipment(refs);
 }
@@ -158,24 +163,13 @@ function ensureSkillAndAbilityState(character) {
   character.abilityCooldowns = character.abilityCooldowns || {};
   const slotCount = 8;
   const normalizedSlots = Array.from({ length: slotCount }, (_, index) => {
-    const existing = Array.isArray(character.abilitySlots)
-      ? character.abilitySlots[index]
-      : null;
+    const existing = Array.isArray(character.abilitySlots) ? character.abilitySlots[index] : null;
     if (existing) return existing;
     return null; // Always return null for empty slots, don't auto-assign abilities
   });
-  character.abilitySlots = normalizedSlots
-    .filter(Boolean)
-    .concat(
-      Array.from(
-        { length: slotCount - normalizedSlots.filter(Boolean).length },
-        () => null,
-      ),
-    );
+  character.abilitySlots = normalizedSlots.filter(Boolean).concat(Array.from({ length: slotCount - normalizedSlots.filter(Boolean).length }, () => null));
   character.equipment = normalizeEquipment(character.equipment || {});
-  character.inventory = (Array.isArray(character.inventory)
-    ? character.inventory
-    : []).map(item => toInventoryItem(item, item && item.slot)).filter(Boolean);
+  character.inventory = (Array.isArray(character.inventory) ? character.inventory : []).map((item) => toInventoryItem(item, item && item.slot)).filter(Boolean);
   return character;
 }
 
@@ -185,21 +179,21 @@ function getEquipmentBonus(player, statName) {
   return mapped[statName.toLowerCase()] || 0;
 }
 
-function logGearBonuses(player, changeType = 'calculated') {
+function logGearBonuses(player, changeType = "calculated") {
   const mapped = getMappedEquipmentBonuses(player);
   const bonusList = [
-    { stat: 'STR', val: mapped.str || 0 },
-    { stat: 'DEX', val: mapped.dex || 0 },
-    { stat: 'AGI', val: mapped.agi || 0 },
-    { stat: 'VIT', val: mapped.vit || 0 },
-    { stat: 'INT', val: mapped.int || 0 },
-    { stat: 'CNC', val: mapped.cnc || 0 },
-    { stat: 'HP',  val: mapped.hp || 0 },
-    { stat: 'MP',  val: mapped.mp || 0 }
+    { stat: "STR", val: mapped.str || 0 },
+    { stat: "DEX", val: mapped.dex || 0 },
+    { stat: "AGI", val: mapped.agi || 0 },
+    { stat: "VIT", val: mapped.vit || 0 },
+    { stat: "INT", val: mapped.int || 0 },
+    { stat: "CNC", val: mapped.cnc || 0 },
+    { stat: "HP", val: mapped.hp || 0 },
+    { stat: "MP", val: mapped.mp || 0 },
   ];
-  
-  const withSign = bonusList.map(b => `${b.stat}: ${b.val >= 0 ? '+' : ''}${b.val}`).join(', ');
-  console.log(`[${changeType}] ${player?.name || 'Unknown'} gear bonuses: [${withSign}]`);
+
+  const withSign = bonusList.map((b) => `${b.stat}: ${b.val >= 0 ? "+" : ""}${b.val}`).join(", ");
+  console.log(`[${changeType}] ${player?.name || "Unknown"} gear bonuses: [${withSign}]`);
 }
 
 // Compact equipment refs persist only { id, level, rarity } and carry no bonuses
@@ -291,8 +285,8 @@ function getUnlockedDungeons(party) {
 
 function getStartingInventory() {
   return [
-    { id: 'pebble', level: 1, rarity: 1, slot: 'weapon' },
-    { id: 'magicRune', level: 1, rarity: 1, slot: 'weapon' },
+    { id: "pebble", level: 1, rarity: 1, slot: "weapon" },
+    { id: "magicRune", level: 1, rarity: 1, slot: "weapon" },
   ];
 }
 
@@ -324,31 +318,33 @@ function calcMiscStats(player) {
 
   const intEff = (player.int || 0) + (equip.int || 0);
   const cncEff = (player.cnc || 0) + (equip.cnc || 0);
-  player.wis =
-    (intEff / 1.9 + cncEff / 1.7 + player.level / 2.3) * 0.48 +
-    (equip.wis || 0);
+  player.wis = (intEff / 1.9 + cncEff / 1.7 + player.level / 2.3) * 0.48 + (equip.wis || 0);
 
   const vitEff = (player.vit || 0) + (equip.vit || 0);
   const strEff = (player.str || 0) + (equip.str || 0);
-  player.for =
-    (player.level / 77 + 0.2 + vitEff / 1.4 + strEff / 2.2) * 0.42 +
-    (equip.for || 0);
+  player.for = (player.level / 77 + 0.2 + vitEff / 1.4 + strEff / 2.2) * 0.42 + (equip.for || 0);
 
   player.luk = (player.level / 16 + 0.2) * 0.36 + (equip.luk || 0);
-  player.pie =
-    (5 + player.donated / 48 - player.gold / 128000) * 0.38 +
-    (equip.pie || 0);
-
+  player.pie = (5 + player.donated / 48 - player.gold / 128000) * 0.38 + (equip.pie || 0);
 }
 
 function calcMaxHp(player) {
   calcMiscStats(player);
 
   // Get base HP from core stats
-  let baseHP = 170 + player.level * 7 + (player.vit + getEquipmentBonus(player, 'vit')) * 7 + (player.str + getEquipmentBonus(player, 'str')) * 3 + player.for * 0.5 + player.wis * 0.1;
-  baseHP += ((player.level / 9 + 35) * (0.8 + (player.vit + getEquipmentBonus(player, 'vit')) / 2 + (player.str + getEquipmentBonus(player, 'str')) / 9 + player.for / 11)) / 17;
+  let baseHP =
+    170 +
+    player.level * 7 +
+    (player.vit + getEquipmentBonus(player, "vit")) * 7 +
+    (player.str + getEquipmentBonus(player, "str")) * 3 +
+    player.for * 0.5 +
+    player.wis * 0.1;
+  baseHP +=
+    ((player.level / 9 + 35) *
+      (0.8 + (player.vit + getEquipmentBonus(player, "vit")) / 2 + (player.str + getEquipmentBonus(player, "str")) / 9 + player.for / 11)) /
+    17;
   // Add HP equipment bonuses from every slot (weapon/armour/helmet/shoes)
-  baseHP += getEquipmentBonus(player, 'hp');
+  baseHP += getEquipmentBonus(player, "hp");
 
   return Math.round(baseHP);
 }
@@ -359,10 +355,10 @@ function calcMaxMp(player) {
   let output =
     24 +
     (player.level * 0.6 +
-      (player.int + getEquipmentBonus(player, 'int')) * 1.4 +
-      (player.cnc + getEquipmentBonus(player, 'cnc')) * 0.6 +
+      (player.int + getEquipmentBonus(player, "int")) * 1.4 +
+      (player.cnc + getEquipmentBonus(player, "cnc")) * 0.6 +
       player.wis * 0.6 +
-      getEquipmentBonus(player, 'mp'));
+      getEquipmentBonus(player, "mp"));
   return Math.round(Math.pow(output * 1.3, 0.96));
 }
 
@@ -371,9 +367,7 @@ function calcMaxAp(player) {
   const helmetDef = player?.equipment?.helmet?.defense || 3;
   const shoesDef = player?.equipment?.shoes?.defense || 3;
 
-  const gearBonus = Math.floor(
-    armourDef * 3 + helmetDef * 5 + shoesDef * 1,
-  );
+  const gearBonus = Math.floor(armourDef * 3 + helmetDef * 5 + shoesDef * 1);
 
   // Reduced non-gear contributions (minor source)
   const levelBonus = Math.floor(player.level);
@@ -382,13 +376,7 @@ function calcMaxAp(player) {
   // HP contribution (minimal)
   const hpBonus = Math.floor(player.maxHp * 0.006); // Reduced from 0.15
 
-  return Math.floor(
-    (gearBonus +
-      levelBonus +
-      statBonus +
-      hpBonus) *
-      0.6,
-  );
+  return Math.floor((gearBonus + levelBonus + statBonus + hpBonus) * 0.6);
 }
 
 function getEffectiveAttribute(player, statName) {
