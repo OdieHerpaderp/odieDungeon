@@ -1,18 +1,11 @@
-import { v4 as uuidv4 } from "uuid";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const skillCurve = JSON.parse(fs.readFileSync(path.join(__dirname, "public", "skills", "skillCurve.json"), "utf8"));
+import { v4 as uuidv4 } from 'uuid';
+import skillCurve from './public/skills/skillCurve.json' with { type: 'json' };
 
 export function deepEqual(obj1, obj2) {
   if (obj1 === obj2) return true;
   if (obj1 == null || obj2 == null) return false;
   if (typeof obj1 !== typeof obj2) return false;
-  if (typeof obj1 !== "object") return obj1 === obj2;
+  if (typeof obj1 !== 'object') return obj1 === obj2;
   const keys1 = Object.keys(obj1),
     keys2 = Object.keys(obj2);
   if (keys1.length !== keys2.length) return false;
@@ -34,7 +27,7 @@ export const socketIoPacketTracker = {
 };
 
 export function trackSocketIoSent(type, data) {
-  const size = Buffer.byteLength(JSON.stringify(data), "utf8");
+  const size = Buffer.byteLength(JSON.stringify(data), 'utf8');
   socketIoPacketTracker.sent.total.count++;
   socketIoPacketTracker.sent.total.bytes += size;
   if (!socketIoPacketTracker.sent.byType[type]) {
@@ -46,7 +39,7 @@ export function trackSocketIoSent(type, data) {
 
 export function trackSocketIoReceived(type, data) {
   const jsonString = JSON.stringify(data || {});
-  const size = Buffer.byteLength(jsonString, "utf8");
+  const size = Buffer.byteLength(jsonString, 'utf8');
   socketIoPacketTracker.received.total.count++;
   socketIoPacketTracker.received.total.bytes += size;
   if (!socketIoPacketTracker.received.byType[type]) {
@@ -56,7 +49,7 @@ export function trackSocketIoReceived(type, data) {
   socketIoPacketTracker.received.byType[type].bytes += size;
 }
 
-export function formatPacketStats(prefix = "", stats) {
+export function formatPacketStats(prefix = '', stats) {
   const formatType = (typeStats) => {
     const lines = [];
     const types = Object.keys(typeStats).sort((a, b) => typeStats[b].count - typeStats[a].count);
@@ -64,7 +57,7 @@ export function formatPacketStats(prefix = "", stats) {
       const stat = typeStats[type];
       lines.push(`    ${type}: ${stat.count} packets, ${formatBytes(stat.bytes)}`);
     }
-    return lines.length > 0 ? lines.join("\n") : "    (none)";
+    return lines.length > 0 ? lines.join('\n') : '    (none)';
   };
 
   return `${prefix}Sent: ${stats.sent.total.count} packets, ${formatBytes(stats.sent.total.bytes)}
@@ -123,13 +116,13 @@ export function createDefaultCharacter(name) {
 }
 
 export function compactEquipment(equipment) {
-  const slots = ["weapon", "armour", "helmet", "shoes"];
+  const slots = ['weapon', 'armour', 'helmet', 'shoes'];
   const out = {};
   for (const slot of slots) {
     const item = equipment ? equipment[slot] : undefined;
-    if (item && typeof item === "object") {
+    if (item && typeof item === 'object') {
       const id = item.baseItem || item.id;
-      if (typeof id === "string" && id) {
+      if (typeof id === 'string' && id) {
         out[slot] = {
           id,
           level: Number.isFinite(Number(item.level)) ? Number(item.level) : 1,
@@ -142,23 +135,23 @@ export function compactEquipment(equipment) {
 }
 
 export function toCompactRef(raw, slot) {
-  if (!raw || typeof raw !== "object") return null;
+  if (!raw || typeof raw !== 'object') return null;
   const id = raw.baseItem || raw.id;
-  if (typeof id !== "string" || !id) return null;
+  if (typeof id !== 'string' || !id) return null;
   const level = Number.isFinite(Number(raw.level)) ? Number(raw.level) : 1;
   const rarity = Number.isFinite(Number(raw.rarity)) ? Number(raw.rarity) : 1;
   return { id, level, rarity };
 }
 
 export function toInventoryItem(raw, slot) {
-  if (!raw || typeof raw !== "object") return null;
-  const id = String(raw.baseItem || raw.id || raw.name || "");
+  if (!raw || typeof raw !== 'object') return null;
+  const id = String(raw.baseItem || raw.id || raw.name || '');
   if (!id) return null;
   const level = Number.isFinite(Number(raw.level)) ? Number(raw.level) : 1;
   const rarity = Number.isFinite(Number(raw.rarity)) ? Number(raw.rarity) : 1;
-  let itemSlot = raw.slot || slot || "";
-  if (itemSlot === "helmet") itemSlot = "headgear";
-  if (itemSlot === "armour") itemSlot = "armor";
+  let itemSlot = raw.slot || slot || '';
+  if (itemSlot === 'helmet') itemSlot = 'headgear';
+  if (itemSlot === 'armour') itemSlot = 'armor';
   return { id, level, rarity, slot: itemSlot };
 }
 
@@ -176,15 +169,15 @@ export function getEffectiveAttribute(player, statName) {
 }
 
 export function getAttributeDamageModifier(player, weapon) {
-  if (!weapon || typeof weapon !== "object") return 1;
+  if (!weapon || typeof weapon !== 'object') return 1;
   const modifiers = weapon.damageModifiers;
-  if (!modifiers || typeof modifiers !== "object") return 1;
+  if (!modifiers || typeof modifiers !== 'object') return 1;
   const entries = Object.entries(modifiers);
   if (entries.length === 0) return 1;
 
   let sum = 0;
   for (const [stat, weight] of entries) {
-    if (typeof weight !== "number") continue;
+    if (typeof weight !== 'number') continue;
     sum += getEffectiveAttribute(player, stat) * weight;
   }
   return 1 + sum * 0.03;

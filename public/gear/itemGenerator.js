@@ -7,17 +7,19 @@ export const SLOT_CATEGORY = {
   armor: 'armor',
   helmet: 'headgear',
   headgear: 'headgear',
-  shoes: 'shoes'
+  shoes: 'shoes',
 };
 
 let defaultCatalog = {
   weapon: [],
   headgear: [],
   armor: [],
-  shoes: []
+  shoes: [],
 };
 
-export function getCatalog() { return defaultCatalog; }
+export function getCatalog() {
+  return defaultCatalog;
+}
 
 // Server-side: load JSON catalogs synchronously via dynamic import().
 // This block uses await which is valid as top-level-await in ESM modules.
@@ -30,38 +32,41 @@ export function getCatalog() { return defaultCatalog; }
       const path = await import('path');
       const { fileURLToPath } = await import('url');
       const __filename = fileURLToPath(import.meta.url);
-      const __dirname = path.dirname(__filename);
-      const require = (await import('module')).createRequire(import.meta.url);
+      const __dirname = path.default.dirname(__filename);
 
       defaultCatalog.weapon = [
-        ...require(path.join(__dirname, './weaponMelee.json')),
-        ...require(path.join(__dirname, './weaponRanged.json')),
-        ...require(path.join(__dirname, './weaponMagic.json'))
+        ...JSON.parse(fs.default.readFileSync(path.default.join(__dirname, './weaponMelee.json'), 'utf8')),
+        ...JSON.parse(fs.default.readFileSync(path.default.join(__dirname, './weaponRanged.json'), 'utf8')),
+        ...JSON.parse(fs.default.readFileSync(path.default.join(__dirname, './weaponMagic.json'), 'utf8')),
       ];
       defaultCatalog.headgear = [
-        ...require(path.join(__dirname, './headgearLight.json')),
-        ...require(path.join(__dirname, './headgearMedium.json')),
-        ...require(path.join(__dirname, './headgearHeavy.json'))
+        ...JSON.parse(fs.default.readFileSync(path.default.join(__dirname, './headgearLight.json'), 'utf8')),
+        ...JSON.parse(fs.default.readFileSync(path.default.join(__dirname, './headgearMedium.json'), 'utf8')),
+        ...JSON.parse(fs.default.readFileSync(path.default.join(__dirname, './headgearHeavy.json'), 'utf8')),
       ];
       defaultCatalog.armor = [
-        ...require(path.join(__dirname, './armorLight.json')),
-        ...require(path.join(__dirname, './armorMedium.json')),
-        ...require(path.join(__dirname, './armorHeavy.json'))
+        ...JSON.parse(fs.default.readFileSync(path.default.join(__dirname, './armorLight.json'), 'utf8')),
+        ...JSON.parse(fs.default.readFileSync(path.default.join(__dirname, './armorMedium.json'), 'utf8')),
+        ...JSON.parse(fs.default.readFileSync(path.default.join(__dirname, './armorHeavy.json'), 'utf8')),
       ];
       defaultCatalog.shoes = [
-        ...require(path.join(__dirname, './feetWearLight.json')),
-        ...require(path.join(__dirname, './feetWearMedium.json')),
-        ...require(path.join(__dirname, './feetWearHeavy.json'))
+        ...JSON.parse(fs.default.readFileSync(path.default.join(__dirname, './feetWearLight.json'), 'utf8')),
+        ...JSON.parse(fs.default.readFileSync(path.default.join(__dirname, './feetWearMedium.json'), 'utf8')),
+        ...JSON.parse(fs.default.readFileSync(path.default.join(__dirname, './feetWearHeavy.json'), 'utf8')),
       ];
-    } catch(e) {
+    } catch (e) {
       // If loading fails in server context, proceed with empty catalogs
       // (will be populated by index.js fetch + updateCatalogs if needed)
     }
   }
 })();
 
-function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-function randomFloat(min, max) { return Math.random() * (max - min) + min; }
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+function randomFloat(min, max) {
+  return Math.random() * (max - min) + min;
+}
 
 function pickRandom(items) {
   if (!items || !items.length) return null;
@@ -72,14 +77,19 @@ export function normalizeCategory(category) {
   if (!category) return pickRandom(Object.keys(defaultCatalog));
   var normalized = String(category).toLowerCase();
   var aliases = {
-    weapons: 'weapon', weapon: 'weapon',
-    headgear: 'headgear', helmet: 'headgear',
-    armor: 'armor', armors: 'armor'
+    weapons: 'weapon',
+    weapon: 'weapon',
+    headgear: 'headgear',
+    helmet: 'headgear',
+    armor: 'armor',
+    armors: 'armor',
   };
   return aliases[normalized] || normalized;
 }
 
-function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
 
 export function calculateItemStat(baseValue, level, rarity) {
   if (typeof baseValue !== 'number') return baseValue;
@@ -113,8 +123,9 @@ function calculateBonuses(baseBonuses, level, rarity) {
 
 export function generateRandomItem(category, options, catalog) {
   var normalizedCategory = normalizeCategory(category);
-  var itemCatalog = catalog && catalog[normalizedCategory] ? catalog[normalizedCategory] : defaultCatalog[normalizedCategory];
-  if (!itemCatalog || !itemCatalog.length) throw new Error("No items available for category: " + normalizedCategory);
+  var itemCatalog =
+    catalog && catalog[normalizedCategory] ? catalog[normalizedCategory] : defaultCatalog[normalizedCategory];
+  if (!itemCatalog || !itemCatalog.length) throw new Error('No items available for category: ' + normalizedCategory);
 
   var baseItem = pickRandom(itemCatalog);
   var level = options && Number.isFinite(options.level) ? clamp(options.level, 1, 99) : randomInt(1, 30);
@@ -122,14 +133,23 @@ export function generateRandomItem(category, options, catalog) {
 
   return {
     id: baseItem.id + '-' + Math.random().toString(36).slice(2, 8),
-    slot: normalizedCategory, name: baseItem.id, displayName: baseItem.name,
-    level: level, rarity: Number(rarity.toFixed(2)),
-    baseItem: baseItem.id, type: baseItem.type,
-    baseBonuses: baseItem.bonuses, baseDamage: baseItem.damage,
-    baseSpellPower: baseItem.spellPower, baseAttackSpeed: baseItem.attackSpeed,
-    baseDefense: baseItem.defense, baseMagicResist: baseItem.magicResist,
-    baseDamageModifiers: baseItem.damageModifiers, baseValue: baseItem.value,
-    baseRange: baseItem.range, description: baseItem.description
+    slot: normalizedCategory,
+    name: baseItem.id,
+    displayName: baseItem.name,
+    level: level,
+    rarity: Number(rarity.toFixed(2)),
+    baseItem: baseItem.id,
+    type: baseItem.type,
+    baseBonuses: baseItem.bonuses,
+    baseDamage: baseItem.damage,
+    baseSpellPower: baseItem.spellPower,
+    baseAttackSpeed: baseItem.attackSpeed,
+    baseDefense: baseItem.defense,
+    baseMagicResist: baseItem.magicResist,
+    baseDamageModifiers: baseItem.damageModifiers,
+    baseValue: baseItem.value,
+    baseRange: baseItem.range,
+    description: baseItem.description,
   };
 }
 
@@ -137,7 +157,11 @@ export function findBaseItem(slot, id) {
   var cat = SLOT_CATEGORY[slot] || normalizeCategory(slot);
   var list = defaultCatalog[cat];
   if (!list || !list.length) return null;
-  return list.find(function (i) { return i.id === id; }) || null;
+  return (
+    list.find(function (i) {
+      return i.id === id;
+    }) || null
+  );
 }
 
 export function calculateItemStats(item) {
@@ -150,12 +174,17 @@ export function calculateItemStats(item) {
   if (!baseItem) return item;
 
   var calculatedItem = Object.assign({}, item);
-  if (typeof item.baseDamage === 'number') calculatedItem.damage = calculateItemStat(item.baseDamage, item.level, item.rarity);
-  if (typeof item.baseSpellPower === 'number') calculatedItem.spellPower = calculateItemStat(item.baseSpellPower, item.level, item.rarity);
+  if (typeof item.baseDamage === 'number')
+    calculatedItem.damage = calculateItemStat(item.baseDamage, item.level, item.rarity);
+  if (typeof item.baseSpellPower === 'number')
+    calculatedItem.spellPower = calculateItemStat(item.baseSpellPower, item.level, item.rarity);
   if (typeof item.baseAttackSpeed === 'number') calculatedItem.attackSpeed = item.baseAttackSpeed;
-  if (typeof item.baseDefense === 'number') calculatedItem.defense = calculateItemStat(item.baseDefense, item.level, item.rarity);
-  if (typeof item.baseMagicResist === 'number') calculatedItem.magicResist = calculateItemStat(item.baseMagicResist, item.level, item.rarity);
-  if (typeof item.baseValue === 'number') calculatedItem.value = calculateItemPrice(item.baseValue, item.level, item.rarity);
+  if (typeof item.baseDefense === 'number')
+    calculatedItem.defense = calculateItemStat(item.baseDefense, item.level, item.rarity);
+  if (typeof item.baseMagicResist === 'number')
+    calculatedItem.magicResist = calculateItemStat(item.baseMagicResist, item.level, item.rarity);
+  if (typeof item.baseValue === 'number')
+    calculatedItem.value = calculateItemPrice(item.baseValue, item.level, item.rarity);
   if (typeof item.baseRange === 'number') calculatedItem.range = item.baseRange;
   if (item.baseBonuses) calculatedItem.bonuses = calculateBonuses(item.baseBonuses, item.level, item.rarity);
 
@@ -172,10 +201,18 @@ export function generateScaledItem(dungeonData, categoryPool) {
   var dungeonDifficulty = floorBase + floorMult * floorAmount;
   var baseLevel = Math.max(0.1, 0.5 + dungeonDifficulty / 2);
   var category = categoryPool[Math.floor(Math.random() * categoryPool.length)];
-  var itemLevel = 0.4 + Math.pow(0.3 + (baseLevel / 1.2 + floorAmount / 13) + Math.random() * (baseLevel * 3.8 + 3), 0.9) / 1.8;
+  var itemLevel =
+    0.4 + Math.pow(0.3 + (baseLevel / 1.2 + floorAmount / 13) + Math.random() * (baseLevel * 3.8 + 3), 0.9) / 1.8;
   var itemRarity = 0.6 + Math.pow(0.9 + Math.random() * (baseLevel * 2.3 + 7), 0.65) / 2.5;
   itemRarity = Number(itemRarity.toFixed(1));
-  console.log(`Generating item for dungeon difficulty ${dungeonDifficulty.toFixed(2)}: level ${itemLevel.toFixed(2)}, rarity ${itemRarity}, category ${category}`);
+  var logMsg = `Generating item for dungeon difficulty ${dungeonDifficulty.toFixed(2)}: level ${itemLevel.toFixed(2)}, rarity ${itemRarity}, category ${category}`;
+  if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+    import('../../logger.js')
+      .then((mod) => mod.default.debug(logMsg))
+      .catch(() => console.log(logMsg));
+  } else {
+    console.log(logMsg);
+  }
 
   var generatedItem = generateRandomItem(category, { level: Math.round(itemLevel), rarity: itemRarity });
   var calculatedValue = calculateItemPrice(generatedItem.baseValue, generatedItem.level, generatedItem.rarity);
@@ -184,7 +221,7 @@ export function generateScaledItem(dungeonData, categoryPool) {
 }
 
 export function updateCatalogs(weaponMelee, weaponRanged, weaponMagic, headgear, armors, shoes) {
-  defaultCatalog.weapon = [...(weaponMelee||[]), ...(weaponRanged||[]), ...(weaponMagic||[])];
+  defaultCatalog.weapon = [...(weaponMelee || []), ...(weaponRanged || []), ...(weaponMagic || [])];
   defaultCatalog.headgear = headgear || [];
   defaultCatalog.armor = armors || [];
   defaultCatalog.shoes = shoes || [];
@@ -195,12 +232,24 @@ export function resolveItem(slot, id, level, rarity) {
   if (!base) return null;
   var cat = SLOT_CATEGORY[slot] || normalizeCategory(slot);
   var ref = {
-    id: id, baseItem: id, slot: cat, name: base.id, displayName: base.name,
-    level: level, rarity: rarity, type: base.type, description: base.description,
-    baseDamage: base.damage, baseAttackSpeed: base.attackSpeed, baseSpellPower: base.spellPower,
-    baseDefense: base.defense, baseMagicResist: base.magicResist,
-    baseDamageModifiers: base.damageModifiers, baseValue: base.value,
-    baseRange: base.range, baseBonuses: base.bonuses
+    id: id,
+    baseItem: id,
+    slot: cat,
+    name: base.id,
+    displayName: base.name,
+    level: level,
+    rarity: rarity,
+    type: base.type,
+    description: base.description,
+    baseDamage: base.damage,
+    baseAttackSpeed: base.attackSpeed,
+    baseSpellPower: base.spellPower,
+    baseDefense: base.defense,
+    baseMagicResist: base.magicResist,
+    baseDamageModifiers: base.damageModifiers,
+    baseValue: base.value,
+    baseRange: base.range,
+    baseBonuses: base.bonuses,
   };
   return calculateItemStats(ref);
 }

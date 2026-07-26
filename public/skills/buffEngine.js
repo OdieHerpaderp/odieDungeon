@@ -1,17 +1,15 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { createRequire } from "module";
-import { calcSkillLv, calcXpForLevel, calcXpForNextLevel, getEffectiveAttribute } from "../../utils.js";
-import * as itemGenerator from "../gear/itemGenerator.js";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { calcSkillLv, calcXpForLevel, calcXpForNextLevel, getEffectiveAttribute } from '../../utils.js';
+import * as itemGenerator from '../gear/itemGenerator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const require = createRequire(import.meta.url);
 
-const weaponMelee = require(path.join(__dirname, "..", "gear", "weaponMelee.json"));
-const weaponRanged = require(path.join(__dirname, "..", "gear", "weaponRanged.json"));
-const weaponMagic = require(path.join(__dirname, "..", "gear", "weaponMagic.json"));
+import weaponMelee from '../gear/weaponMelee.json' with { type: 'json' };
+import weaponRanged from '../gear/weaponRanged.json' with { type: 'json' };
+import weaponMagic from '../gear/weaponMagic.json' with { type: 'json' };
 const weapons = [...weaponMelee, ...weaponRanged, ...weaponMagic];
 
 export function getSkillLevel(skillsState, skillId) {
@@ -20,10 +18,10 @@ export function getSkillLevel(skillsState, skillId) {
 }
 
 export function calculateAttributeScaling(player, attributeDamageScale) {
-  if (!attributeDamageScale || typeof attributeDamageScale !== "object") return 1;
+  if (!attributeDamageScale || typeof attributeDamageScale !== 'object') return 1;
   let sum = 0;
   for (const [stat, weight] of Object.entries(attributeDamageScale)) {
-    if (typeof weight !== "number") continue;
+    if (typeof weight !== 'number') continue;
     sum += getEffectiveAttribute(player, stat) * weight;
   }
   return 1 + sum * 0.01;
@@ -38,10 +36,12 @@ export const EFFECT_HANDLERS = {
       const skillLevel = getSkillLevel(caster.skillsState, ability.skillId);
       const skillMultiplier = 1 + (skillLevel - 1) * 0.05;
       const attributeMultiplier = calculateAttributeScaling(caster, ability.attributeDamageScale);
-      const damagePerTick = Math.floor((ability.damagePerTick || ability.dotDamagePerTick || 0) * skillMultiplier * attributeMultiplier);
+      const damagePerTick = Math.floor(
+        (ability.damagePerTick || ability.dotDamagePerTick || 0) * skillMultiplier * attributeMultiplier,
+      );
       const duration = ability.duration || ability.dotDuration || 3;
       return {
-        type: "dot",
+        type: 'dot',
         amount: damagePerTick,
         duration: duration,
         sourceId: caster.id,
@@ -77,7 +77,9 @@ export const EFFECT_HANDLERS = {
       const skillLevel = getSkillLevel(caster.skillsState, ability.skillId);
       const skillMultiplier = 1 + (skillLevel - 1) * 0.05;
       const attributeMultiplier = calculateAttributeScaling(caster, ability.attributeDamageScale);
-      const healPerTick = Math.floor((ability.healPerTick || ability.hotHealPerTick || 0) * skillMultiplier * attributeMultiplier);
+      const healPerTick = Math.floor(
+        (ability.healPerTick || ability.hotHealPerTick || 0) * skillMultiplier * attributeMultiplier,
+      );
       const duration = ability.duration || ability.hotDuration || 3;
       if (caster.combatStats) {
         const stats = caster.combatStats.get(caster.id);
@@ -87,7 +89,7 @@ export const EFFECT_HANDLERS = {
         }
       }
       return {
-        type: "hot",
+        type: 'hot',
         amount: healPerTick,
         duration: duration,
         sourceId: caster.id,
@@ -121,7 +123,7 @@ export const EFFECT_HANDLERS = {
     maxStack: 9,
     apply(caster, target, ability) {
       return {
-        type: "weaken",
+        type: 'weaken',
         amount: ability.amount || ability.weakenAmount || 0,
         duration: ability.duration || ability.weakenDuration || 3,
         sourceId: caster.id,
@@ -138,7 +140,7 @@ export const EFFECT_HANDLERS = {
     maxStack: 9,
     apply(caster, target, ability) {
       return {
-        type: "vulnerability",
+        type: 'vulnerability',
         amount: ability.amount || ability.vulnerabilityAmount || 0,
         duration: ability.duration || ability.vulnerabilityDuration || 3,
         sourceId: caster.id,
@@ -155,7 +157,7 @@ export const EFFECT_HANDLERS = {
     maxStack: 9,
     apply(caster, target, ability) {
       return {
-        type: "defenseDown",
+        type: 'defenseDown',
         amount: ability.amount || ability.defenseDownAmount || 0,
         duration: ability.duration || ability.defenseDownDuration || 3,
         sourceId: caster.id,
@@ -172,7 +174,7 @@ export const EFFECT_HANDLERS = {
     maxStack: 9,
     apply(caster, target, ability) {
       return {
-        type: "defenseUp",
+        type: 'defenseUp',
         amount: ability.amount || ability.defenseUpAmount || 0,
         duration: ability.duration || ability.defenseUpDuration || 3,
         sourceId: caster.id,
@@ -191,7 +193,7 @@ export const EFFECT_HANDLERS = {
       const slowAmount = ability.amount || ability.actionBarSlowAmount || 0;
       target.actionBar = Math.max(0, target.actionBar - slowAmount);
       return {
-        type: "actionSlow",
+        type: 'actionSlow',
         amount: slowAmount,
         duration: ability.duration || ability.actionBarSlowDuration || 0,
         sourceId: caster.id,
@@ -226,13 +228,13 @@ export function applyEffect(caster, target, ability) {
 
   for (const [type, handler] of Object.entries(EFFECT_HANDLERS)) {
     const oldFieldMap = {
-      dot: ["dotDamagePerTick", "dotDuration"],
-      hot: ["hotHealPerTick", "hotDuration"],
-      weaken: ["weakenAmount", "weakenDuration"],
-      vulnerability: ["vulnerabilityAmount", "vulnerabilityDuration"],
-      defenseDown: ["defenseDownAmount", "defenseDownDuration"],
-      defenseUp: ["defenseUpAmount", "defenseUpDuration"],
-      actionSlow: ["actionBarSlowAmount", "actionBarSlowDuration"],
+      dot: ['dotDamagePerTick', 'dotDuration'],
+      hot: ['hotHealPerTick', 'hotDuration'],
+      weaken: ['weakenAmount', 'weakenDuration'],
+      vulnerability: ['vulnerabilityAmount', 'vulnerabilityDuration'],
+      defenseDown: ['defenseDownAmount', 'defenseDownDuration'],
+      defenseUp: ['defenseUpAmount', 'defenseUpDuration'],
+      actionSlow: ['actionBarSlowAmount', 'actionBarSlowDuration'],
     };
     const fields = oldFieldMap[type];
     if (fields && ability[fields[0]] && ability[fields[1]]) {
@@ -265,7 +267,7 @@ export function processEffects(party) {
       effect.tickCount++;
       effect.duration--;
 
-      if (effect.type === "dot" || effect.type === "hot") {
+      if (effect.type === 'dot' || effect.type === 'hot') {
         handler.tick(effect, target, party);
       }
 

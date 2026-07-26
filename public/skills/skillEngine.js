@@ -1,21 +1,19 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { createRequire } from "module";
-import { calcSkillLv, calcXpForLevel, calcXpForNextLevel, getEffectiveAttribute } from "../../utils.js";
-import * as itemGenerator from "../gear/itemGenerator.js";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { calcSkillLv, calcXpForLevel, calcXpForNextLevel, getEffectiveAttribute } from '../../utils.js';
+import * as itemGenerator from '../gear/itemGenerator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const require = createRequire(import.meta.url);
 
-const weaponMelee = require(path.join(__dirname, "..", "gear", "weaponMelee.json"));
-const weaponRanged = require(path.join(__dirname, "..", "gear", "weaponRanged.json"));
-const weaponMagic = require(path.join(__dirname, "..", "gear", "weaponMagic.json"));
+import weaponMelee from '../gear/weaponMelee.json' with { type: 'json' };
+import weaponRanged from '../gear/weaponRanged.json' with { type: 'json' };
+import weaponMagic from '../gear/weaponMagic.json' with { type: 'json' };
 const weapons = [...weaponMelee, ...weaponRanged, ...weaponMagic];
 
 // Load skill definitions from skills.json file
-const skillDefinitionsRaw = JSON.parse(fs.readFileSync(path.join(__dirname, "skills.json"), "utf8"));
+const skillDefinitionsRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'skills.json'), 'utf8'));
 
 // Add xpCurve function to each skill definition for backward compatibility
 const skillDefinitions = skillDefinitionsRaw.map((skill) => ({
@@ -50,30 +48,30 @@ function resolveFullWeapon(weapon) {
 // Map a melee weapon `subType` to its proficiency skill id. Derived from the
 // subTypes declared in public/gear/weaponMelee.json so each melee subtype is its own skill.
 const MELEE_SUBTYPE_TO_SKILL = {
-  blunt: "skill_melee_blunt",
-  longblade: "skill_melee_longBlade",
-  shortblade: "skill_melee_shortBlade",
-  polearms: "skill_melee_polearms",
-  pugilism: "skill_melee_pugilism",
+  blunt: 'skill_melee_blunt',
+  longblade: 'skill_melee_longBlade',
+  shortblade: 'skill_melee_shortBlade',
+  polearms: 'skill_melee_polearms',
+  pugilism: 'skill_melee_pugilism',
 };
 
 export function getWeaponSkillId(weapon) {
-  if (!weapon) return "skill_melee_blunt";
+  if (!weapon) return 'skill_melee_blunt';
   if (weapon.defaultSkillIdOnHit) return weapon.defaultSkillIdOnHit;
   const resolved = resolveFullWeapon(weapon);
-  const weaponClass = (resolved?.weaponClass || resolved?.type || "").toLowerCase();
-  if (weaponClass === "ranged") {
-    const subType = (resolved?.subType || "").toLowerCase();
-    if (subType === "thrown") return "skill_thrown";
+  const weaponClass = (resolved?.weaponClass || resolved?.type || '').toLowerCase();
+  if (weaponClass === 'ranged') {
+    const subType = (resolved?.subType || '').toLowerCase();
+    if (subType === 'thrown') return 'skill_thrown';
     // slings, bows, or any other ranged subType → archery
-    return "skill_archery";
+    return 'skill_archery';
   }
-  if (weaponClass === "magic") return "skill_magic";
-  if (weaponClass === "melee") {
-    const subType = (resolved?.subType || "").toLowerCase();
-    return MELEE_SUBTYPE_TO_SKILL[subType] || "skill_melee_blunt";
+  if (weaponClass === 'magic') return 'skill_magic';
+  if (weaponClass === 'melee') {
+    const subType = (resolved?.subType || '').toLowerCase();
+    return MELEE_SUBTYPE_TO_SKILL[subType] || 'skill_melee_blunt';
   }
-  return "skill_melee_blunt";
+  return 'skill_melee_blunt';
 }
 
 export function awardSkillXp(skillsState, skillId, xpAmount) {
@@ -87,9 +85,9 @@ export function awardSkillXp(skillsState, skillId, xpAmount) {
 
 // Map an armor `type` to its proficiency skill id.
 const ARMOR_TYPE_TO_SKILL = {
-  light: "skill_armor_light",
-  medium: "skill_armor_medium",
-  heavy: "skill_armor_heavy",
+  light: 'skill_armor_light',
+  medium: 'skill_armor_medium',
+  heavy: 'skill_armor_heavy',
 };
 
 // Resolve the armor `type` (light/medium/heavy) for an equipped piece, handling both
@@ -97,7 +95,7 @@ const ARMOR_TYPE_TO_SKILL = {
 function getArmorPieceType(slot, piece) {
   if (!piece) return null;
   if (piece.type) return String(piece.type).toLowerCase();
-  if (piece.id && itemGenerator && typeof itemGenerator.resolveItem === "function") {
+  if (piece.id && itemGenerator && typeof itemGenerator.resolveItem === 'function') {
     const resolved = itemGenerator.resolveItem(slot, piece.id, piece.level, piece.rarity);
     if (resolved && resolved.type) return String(resolved.type).toLowerCase();
   }
@@ -110,7 +108,7 @@ function getArmorPieceType(slot, piece) {
 export function awardArmorProficiencyXp(skillsState, mitigatedAmount, player) {
   if (!skillsState || !player || !(mitigatedAmount > 0)) return skillsState;
 
-  const SLOTS = ["armour", "helmet", "shoes"];
+  const SLOTS = ['armour', 'helmet', 'shoes'];
   const equipment = player.equipment || {};
   const typeCounts = {};
   let total = 0;
@@ -148,12 +146,12 @@ export function getEquippedItem(player, slot) {
 
 export function getEquippedWeaponClass(weapon) {
   const resolved = resolveFullWeapon(weapon);
-  return (resolved?.weaponClass || resolved?.type || "").toLowerCase();
+  return (resolved?.weaponClass || resolved?.type || '').toLowerCase();
 }
 
 export function getEquippedWeaponSubType(weapon) {
   const resolved = resolveFullWeapon(weapon);
-  return (resolved?.subType || "").toLowerCase() || null;
+  return (resolved?.subType || '').toLowerCase() || null;
 }
 
 export function getAbilityUnlockState(ability, player) {
@@ -176,7 +174,7 @@ export function selectAbilityToCast(player, abilities, now, liveTargets) {
       const needsHealing = liveTargets.some((t) => !t.isEnemy && t.hp > 0 && t.hp < 0.75 * (t.maxHp || 1));
       if (!needsHealing) return false;
     }
-    const weapon = getEquippedItem(player, "weapon");
+    const weapon = getEquippedItem(player, 'weapon');
     const weaponClass = getEquippedWeaponClass(weapon);
     if (ability.allowedWeaponClasses && ability.allowedWeaponClasses.length > 0) {
       if (ability.requiresWeaponEquipped && !weapon) return false;
@@ -203,10 +201,10 @@ export function applyAbilityCast(player, ability, now) {
 }
 
 export function calculateAttributeScaling(player, attributeDamageScale) {
-  if (!attributeDamageScale || typeof attributeDamageScale !== "object") return 1;
+  if (!attributeDamageScale || typeof attributeDamageScale !== 'object') return 1;
   let sum = 0;
   for (const [stat, weight] of Object.entries(attributeDamageScale)) {
-    if (typeof weight !== "number") continue;
+    if (typeof weight !== 'number') continue;
     sum += getEffectiveAttribute(player, stat) * weight;
   }
   return 1 + sum * 0.01;
@@ -221,8 +219,10 @@ export function calculateHealAmount(ability, player) {
   const skillMultiplier = 1 + skillLevel * 0.01;
 
   if (!ability.castUsesWeaponDamageModel) {
-    const weapon = getEquippedItem(player, "weapon");
-    const resolvedWeapon = weapon?.id ? itemGenerator.resolveItem("weapon", weapon.id, weapon.level || 1, weapon.rarity || 1) : null;
+    const weapon = getEquippedItem(player, 'weapon');
+    const resolvedWeapon = weapon?.id
+      ? itemGenerator.resolveItem('weapon', weapon.id, weapon.level || 1, weapon.rarity || 1)
+      : null;
     healAmount += resolvedWeapon?.spellPower || 0;
   }
 
@@ -238,9 +238,9 @@ export function awardHealXp(skillsState, amountHealed, skillId) {
 }
 
 // New function to calculate damage scaling for multi-target attacks
-export function calculateDamageScalingForMultipleTargets(baseDamage, numTargets, abilityType = "damage", player) {
+export function calculateDamageScalingForMultipleTargets(baseDamage, numTargets, abilityType = 'damage', player) {
   if (numTargets <= 1) return baseDamage;
-  const weapon = getEquippedItem(player, "weapon");
+  const weapon = getEquippedItem(player, 'weapon');
   const fullWeapon = weapon?.id ? weapons.find((w) => w.id === weapon.id) : null;
   const damageModifiers = fullWeapon?.damageModifiers || {};
   const entries = Object.entries(damageModifiers);
@@ -248,7 +248,7 @@ export function calculateDamageScalingForMultipleTargets(baseDamage, numTargets,
 
   let sum = 0;
   for (const [stat, weight] of entries) {
-    if (typeof weight !== "number") continue;
+    if (typeof weight !== 'number') continue;
     sum += getEffectiveAttribute(player, stat) * weight;
   }
 
@@ -256,11 +256,11 @@ export function calculateDamageScalingForMultipleTargets(baseDamage, numTargets,
   const scaled = baseDamage * attributeMultiplier;
 
   switch (abilityType) {
-    case "aoe":
+    case 'aoe':
       return scaled * Math.pow(0.85, numTargets - 1);
-    case "cone":
+    case 'cone':
       return scaled * Math.pow(0.9, numTargets - 1);
-    case "damage":
+    case 'damage':
     default:
       return scaled * Math.pow(0.75, numTargets - 1);
   }

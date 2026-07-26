@@ -1,7 +1,5 @@
 // Load dungeons configuration for enemy scaling
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const dungeons = require("./public/dungeons.json");
+import dungeons from './public/dungeons.json' with { type: 'json' };
 
 /**
  * Generate enemies for a party.
@@ -46,8 +44,9 @@ export function generateEnemies(party) {
     let enemyName = enemyData.name;
     let floorBonus =
       Math.pow(
-        (enemyBonus * 0.8 + (0.1 + enemyBonus / 1.3) * effectiveFloor * 1.1) / (0.8 + enemyCount / 18) + Math.random() * (0.1 + effectiveFloor / 44),
-        1.15
+        (enemyBonus * 0.8 + (0.1 + enemyBonus / 1.3) * effectiveFloor * 1.1) / (0.8 + enemyCount / 18) +
+          Math.random() * (0.1 + effectiveFloor / 44),
+        1.15,
       ) *
         0.34 +
       0.2;
@@ -60,8 +59,8 @@ export function generateEnemies(party) {
           effectiveFloor * 5 +
           36 +
           Math.random() * (calcVit * 0.05 + 0.02 + floorBonus / 55),
-        1.03
-      )
+        1.03,
+      ),
     );
     calcHp = Math.round(((1.1 * calcHp) / (1.1 + enemyCount / 16)) * (0.65 + enemyBonus / 2.1));
     let enemyAp = Math.floor(calcHp * 0.06 + floorBonus + Math.random() * (floorBonus + calcHp * 0.1));
@@ -106,7 +105,7 @@ export function generateEnemies(party) {
       maxActionBar: 115 + enemyCount * 6,
       equipment: {
         weapon: {
-          id: ["newspaper", "pebble", "magicRune"][Math.floor(Math.random() * 3)],
+          id: ['newspaper', 'pebble', 'magicRune'][Math.floor(Math.random() * 3)],
           level: boss ? 2 : 1,
           rarity: boss ? 1.5 : 1,
         },
@@ -119,14 +118,40 @@ export function generateEnemies(party) {
 export const enemyTiers = {
   // Weak enemies (Floors 1-10)
   weak: {
-    names: ["\uD83E\uDDEBSlime", "\uD83D\uDC00Rat", "\uD83E\uDDEBPoring", "\uD83E\uDE80Bat", "\u2603\uFE0FSnowMan", "\uD83D\uDF3AGoblin", "\uD83C\uDF85Santa", "\uD83D\uDC0DDangerNoodle", "\uD83D\uDE08Kobold", "\uD83E\uDDDCElf", "\uD83D\uDC0CSnail", "\uD83E\uDDD7Bug", "\uD83D\uDC38Frog"],
+    names: [
+      '\uD83E\uDDEBSlime',
+      '\uD83D\uDC00Rat',
+      '\uD83E\uDDEBPoring',
+      '\uD83E\uDE80Bat',
+      '\u2603\uFE0FSnowMan',
+      '\uD83D\uDF3AGoblin',
+      '\uD83C\uDF85Santa',
+      '\uD83D\uDC0DDangerNoodle',
+      '\uD83D\uDE08Kobold',
+      '\uD83E\uDDDCElf',
+      '\uD83D\uDC0CSnail',
+      '\uD83E\uDDD7Bug',
+      '\uD83D\uDC38Frog',
+    ],
     floorRange: [1, 10],
     weight: 60, // Higher weight for lower floors
   },
 
   // Medium enemies (Floors 11-40)
   medium: {
-    names: ["\uD83E\uDED8Rhino", "\uD83D\uDC7DAyylmao", "\uD83E\uDDD8livingImpaired", "\uD83C\uDF42\uD83D\uDEA9KnightSlime", "\uD83E\uDDDCAbroseidon", "\uD83E\uDDDFTroll", "\uD83D\uDC79Ogre", "\uD83D\uDC80Skeleton", "\uD83D\uDC3AWolf", "\uD83E\uDD81Lion", "\uD83E\uDD82Scorpion"],
+    names: [
+      '\uD83E\uDED8Rhino',
+      '\uD83D\uDC7DAyylmao',
+      '\uD83E\uDDD8livingImpaired',
+      '\uD83C\uDF42\uD83D\uDEA9KnightSlime',
+      '\uD83E\uDDDCAbroseidon',
+      '\uD83E\uDDDFTroll',
+      '\uD83D\uDC79Ogre',
+      '\uD83D\uDC80Skeleton',
+      '\uD83D\uDC3AWolf',
+      '\uD83E\uDD81Lion',
+      '\uD83E\uDD82Scorpion',
+    ],
     floorRange: [11, 40],
     weight: 30,
   },
@@ -134,18 +159,18 @@ export const enemyTiers = {
   // Strong enemies (Floors 41-150)
   strong: {
     names: [
-      "\uD83D\uDC19Kraken",
-      "\uD83E\uDD96T-Rex",
-      "\uD83D\uDC7EInvader",
-      "\uD83E\uDDDCVampire",
-      "\uD83E\uDD16Robit",
-      "\uD83DD\uDDFFMoai",
-      "\uD83E\uDD8DGiantCrab",
-      "\uD83E\uDD0DHarambe",
-      "\uD83E\uDDCCYeti",
-      "\uD83D\uDC3AWerewolf",
-      "\uD83E\uDD84Unicorn",
-      "\uD83E\uDD91Leviathan",
+      '\uD83D\uDC19Kraken',
+      '\uD83E\uDD96T-Rex',
+      '\uD83D\uDC7EInvader',
+      '\uD83E\uDDDCVampire',
+      '\uD83E\uDD16Robit',
+      '\uD83DD\uDDFFMoai',
+      '\uD83E\uDD8DGiantCrab',
+      '\uD83E\uDD0DHarambe',
+      '\uD83E\uDDCCYeti',
+      '\uD83D\uDC3AWerewolf',
+      '\uD83E\uDD84Unicorn',
+      '\uD83E\uDD91Leviathan',
     ],
     floorRange: [41, 150],
     weight: 10,
@@ -153,7 +178,18 @@ export const enemyTiers = {
 
   // Boss enemies (Floors 150+ or boss floors)
   boss: {
-    names: ["\uD83D\uDC51KingSlime", "\u2620\uFE0FLich", "\uD83D\uDC09Dragon", "\uD83D\uDEEBUFO", "\u2620\uFE0FBoneLord", "\uD83C\uDF1AMoonLord", "\uD83D\uDC32KingDragon", "\uD83D\uDC0DMedusa", "\uD83E\uDD88SharkLord", "\uD83E\uDD85Griffin"],
+    names: [
+      '\uD83D\uDC51KingSlime',
+      '\u2620\uFE0FLich',
+      '\uD83D\uDC09Dragon',
+      '\uD83D\uDEEBUFO',
+      '\u2620\uFE0FBoneLord',
+      '\uD83C\uDF1AMoonLord',
+      '\uD83D\uDC32KingDragon',
+      '\uD83D\uDC0DMedusa',
+      '\uD83E\uDD88SharkLord',
+      '\uD83E\uDD85Griffin',
+    ],
     floorRange: [150, 300],
     weight: 5,
     bossOnly: true, // Only appear on boss floors (50, 100, 150, 200, 250, 300)

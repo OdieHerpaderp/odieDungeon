@@ -1,41 +1,41 @@
 // odieDungeon
 // Global tuning: multiplier applied to all damage dealt BY enemies (1.0 = unchanged, 0.5 = -50%)
 const ENEMY_DAMAGE_MULTIPLIER = 0.8;
-import express from "express";
-import http from "http";
-import { Server } from "socket.io";
-import * as utils from "./utils.js";
-import { saveCharacter, loadCharacter } from "./database.js";
-import * as characters from "./characters.js";
-import { WebRTCServer } from "./appWebRTC.js";
-import { extractDelta, buildSnapshot } from "./utilities/deltaTracker.js";
-import { generateEnemies } from "./enemies.js";
-import * as buffEngine from "./public/skills/buffEngine.js";
-import * as skillEngine from "./public/skills/skillEngine.js";
-import { loadAbilities } from "./loadAbilities.js";
-import * as itemGenerator from "./public/gear/itemGenerator.js";
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
+import assert from 'node:assert';
+import express from 'express';
+import http from 'http';
+import { Server } from 'socket.io';
+import * as utils from './utils.js';
+import { saveCharacter, loadCharacter } from './database.js';
+import * as characters from './characters.js';
+import { WebRTCServer } from './appWebRTC.js';
+import { extractDelta, buildSnapshot } from './utilities/deltaTracker.js';
+import { generateEnemies } from './enemies.js';
+import * as buffEngine from './public/skills/buffEngine.js';
+import * as skillEngine from './public/skills/skillEngine.js';
+import { loadAbilities } from './loadAbilities.js';
+import * as itemGenerator from './public/gear/itemGenerator.js';
+import logger from './logger.js';
 
 const abilities = loadAbilities();
 
-const weaponMelee = require("./public/gear/weaponMelee.json");
-const weaponRanged = require("./public/gear/weaponRanged.json");
-const weaponMagic = require("./public/gear/weaponMagic.json");
+import weaponMelee from './public/gear/weaponMelee.json' with { type: 'json' };
+import weaponRanged from './public/gear/weaponRanged.json' with { type: 'json' };
+import weaponMagic from './public/gear/weaponMagic.json' with { type: 'json' };
 const weapons = [...weaponMelee, ...weaponRanged, ...weaponMagic];
-const armorLight = require("./public/gear/armorLight.json");
-const armorMedium = require("./public/gear/armorMedium.json");
-const armorHeavy = require("./public/gear/armorHeavy.json");
+import armorLight from './public/gear/armorLight.json' with { type: 'json' };
+import armorMedium from './public/gear/armorMedium.json' with { type: 'json' };
+import armorHeavy from './public/gear/armorHeavy.json' with { type: 'json' };
 const armors = [...armorLight, ...armorMedium, ...armorHeavy];
-const headgearLight = require("./public/gear/headgearLight.json");
-const headgearMedium = require("./public/gear/headgearMedium.json");
-const headgearHeavy = require("./public/gear/headgearHeavy.json");
+import headgearLight from './public/gear/headgearLight.json' with { type: 'json' };
+import headgearMedium from './public/gear/headgearMedium.json' with { type: 'json' };
+import headgearHeavy from './public/gear/headgearHeavy.json' with { type: 'json' };
 const headgear = [...headgearLight, ...headgearMedium, ...headgearHeavy];
-const feetWearLight = require("./public/gear/feetWearLight.json");
-const feetWearMedium = require("./public/gear/feetWearMedium.json");
-const feetWearHeavy = require("./public/gear/feetWearHeavy.json");
+import feetWearLight from './public/gear/feetWearLight.json' with { type: 'json' };
+import feetWearMedium from './public/gear/feetWearMedium.json' with { type: 'json' };
+import feetWearHeavy from './public/gear/feetWearHeavy.json' with { type: 'json' };
 const feetWear = [...feetWearLight, ...feetWearMedium, ...feetWearHeavy];
-const dungeons = require("./public/dungeons.json");
+import dungeons from './public/dungeons.json' with { type: 'json' };
 
 export { app };
 export { server };
@@ -53,7 +53,16 @@ export { server };
 // TCP packet (~14-28 pkt/s in combat). Coalesce batchable event types into a
 // single `batchUpdate` envelope flushed on a ~50ms window, mirroring the
 // WebRTC path so the client handler is identical.
-const BATCHABLE_TYPES = new Set(["gameDelta", "combatEvent", "eventLog", "dungeonChange", "combatStart", "combatEnd", "nextFloor", "autoEmbark"]);
+const BATCHABLE_TYPES = new Set([
+  'gameDelta',
+  'combatEvent',
+  'eventLog',
+  'dungeonChange',
+  'combatStart',
+  'combatEnd',
+  'nextFloor',
+  'autoEmbark',
+]);
 const SOCKET_BATCH_INTERVAL = 50;
 const socketBatchQueues = new Map(); // partyId -> { messages: [{type,data}], timer }
 const socketBatchTimers = new Set();
@@ -63,9 +72,9 @@ function flushSocketBatch(partyId) {
   socketBatchTimers.delete(q?.timer);
   socketBatchQueues.delete(partyId);
   if (!q || q.messages.length === 0) return;
-  const envelope = { priority: "default", messages: q.messages };
-  utils.trackSocketIoSent("batchUpdate", envelope);
-  io.to(partyId).emit("batchUpdate", envelope);
+  const envelope = { priority: 'default', messages: q.messages };
+  utils.trackSocketIoSent('batchUpdate', envelope);
+  io.to(partyId).emit('batchUpdate', envelope);
 }
 
 function enqueueSocketBatch(partyId, eventType, packet) {
@@ -86,7 +95,7 @@ function broadcastToParty(partyId, eventType, packet, options = {}) {
   if (sent === 0) {
     // Full-state syncs and explicitly no-batch one-shots must arrive
     // immediately and reliably (not coalesced with other traffic).
-    if (eventType === "partyUpdate" || options.noBatch) {
+    if (eventType === 'partyUpdate' || options.noBatch) {
       utils.trackSocketIoSent(eventType, packet);
       io.to(partyId).emit(eventType, packet);
     } else if (BATCHABLE_TYPES.has(eventType)) {
@@ -107,7 +116,7 @@ function buildFullStatePacket(party, partyId) {
   packet.players = Array.from(party.players, ([socketId, p]) => ({ ...p, id: socketId }));
   packet.enemies = party.enemies || [];
   packet.floor = party.floor;
-  packet.dungeon = party.dungeon || "field";
+  packet.dungeon = party.dungeon || 'field';
   packet.dungeonFloors = party.dungeonFloors || {};
   packet.highestVisitedFloors = party.highestVisitedFloors || {};
   packet.completedDungeons = party.completedDungeons || {};
@@ -120,7 +129,7 @@ function buildFullStatePacket(party, partyId) {
 }
 
 function broadcastFullState(partyId, party) {
-  broadcastToParty(partyId, "partyUpdate", buildFullStatePacket(party, partyId));
+  broadcastToParty(partyId, 'partyUpdate', buildFullStatePacket(party, partyId));
 }
 
 function broadcastCriticalUpdate(partyId, party, targetInfo = null) {
@@ -157,7 +166,7 @@ function broadcastCriticalUpdate(partyId, party, targetInfo = null) {
     if (targetInfo.damage !== undefined) packet.damage = targetInfo.damage;
     if (targetInfo.roll !== undefined) packet.roll = targetInfo.roll;
     if (targetInfo.leveledUp) packet.leveledUp = targetInfo.leveledUp;
-    broadcastToParty(partyId, "combatEvent", packet);
+    broadcastToParty(partyId, 'combatEvent', packet);
     return;
   }
 
@@ -197,7 +206,7 @@ function broadcastCriticalGearUpdate(partyId, party) {
   // overwrite playerUpdates, silently dropping the inventory/equipment/gold
   // payload and leaving the frames unrefreshed. Gear changes are structural
   // and low-frequency, so immediate delivery is correct and cheap.
-  broadcastToParty(partyId, "gameDelta", packet, { noBatch: true });
+  broadcastToParty(partyId, 'gameDelta', packet, { noBatch: true });
 }
 
 // Rebuild a shop-stock-compatible item from a compact inventory entry so a
@@ -206,8 +215,13 @@ function broadcastCriticalGearUpdate(partyId, party) {
 // and a timestamp), which the client already renders via calculateItemStats.
 function makeShopItemFromInventory(inventoryItem) {
   if (!inventoryItem || !inventoryItem.id) return null;
-  const resolved = itemGenerator.resolveItem(inventoryItem.slot, inventoryItem.id, inventoryItem.level, inventoryItem.rarity);
-  if (!resolved || typeof resolved.baseValue !== "number") return null;
+  const resolved = itemGenerator.resolveItem(
+    inventoryItem.slot,
+    inventoryItem.id,
+    inventoryItem.level,
+    inventoryItem.rarity,
+  );
+  if (!resolved || typeof resolved.baseValue !== 'number') return null;
 
   // List at full value (same formula as the dungeon restock), min 10g.
   resolved.price = Math.max(10, itemGenerator.calculateItemPrice(resolved.baseValue, resolved.level, resolved.rarity));
@@ -218,8 +232,8 @@ function makeShopItemFromInventory(inventoryItem) {
 function handleGearPurchase(socket, gearType, partyId) {
   const party = parties.get(partyId);
   if (!party || party.combatActive || party.floor !== 0) {
-    const errorMsg = !party ? "Party not found!" : "You can only buy gear in town!";
-    socket.emit("eventLog", { message: errorMsg, type: "error" });
+    const errorMsg = !party ? 'Party not found!' : 'You can only buy gear in town!';
+    socket.emit('eventLog', { message: errorMsg, type: 'error' });
     return;
   }
   const player = party.players.get(socket.id);
@@ -232,20 +246,21 @@ function handleGearPurchase(socket, gearType, partyId) {
   let cost = 30;
   let itemIndex = -1; // For identifying items from shop stock
 
-  if (gearType === "randomGear") {
-    const categoryPool = ["weapon", "armor", "headgear", "shoes"];
+  if (gearType === 'randomGear') {
+    const categoryPool = ['weapon', 'armor', 'headgear', 'shoes'];
     const category = categoryPool[Math.floor(Math.random() * categoryPool.length)];
     const level = Math.max(1, Math.min(99, (player.level || 1) + Math.floor(Math.random() * 5) - 2));
     const rarity = 1 + Math.floor(Math.random() * 6);
     item = itemGenerator.generateRandomItem(category, { level, rarity });
-    slot = category === "weapon" ? "weapon" : category === "armor" ? "armour" : category === "shoes" ? "shoes" : "helmet";
+    slot =
+      category === 'weapon' ? 'weapon' : category === 'armor' ? 'armour' : category === 'shoes' ? 'shoes' : 'helmet';
     const calculatedValue = itemGenerator.calculateItemPrice(item.baseValue, item.level, item.rarity);
     cost = Math.max(10, Number.isFinite(calculatedValue) ? calculatedValue : 10);
-  } else if (gearType.startsWith("shop_")) {
+  } else if (gearType.startsWith('shop_')) {
     // Handle purchase from shop stock
-    const index = parseInt(gearType.split("_")[1]);
+    const index = parseInt(gearType.split('_')[1]);
     if (isNaN(index) || index < 0 || index >= party.shopStock.length) {
-      socket.emit("eventLog", { message: "Invalid item selection.", type: "error" });
+      socket.emit('eventLog', { message: 'Invalid item selection.', type: 'error' });
       return;
     }
 
@@ -265,24 +280,24 @@ function handleGearPurchase(socket, gearType, partyId) {
     const itemPool = catalog[gearType] || [];
     item = itemPool[0];
     slot =
-      gearType === "weapon" || gearType === "weaponMelee" || gearType === "weaponRanged" || gearType === "weaponMagic"
-        ? "weapon"
-        : gearType === "armour"
-          ? "armour"
-          : gearType === "helmet"
-            ? "helmet"
-            : gearType === "shoes"
-              ? "shoes"
+      gearType === 'weapon' || gearType === 'weaponMelee' || gearType === 'weaponRanged' || gearType === 'weaponMagic'
+        ? 'weapon'
+        : gearType === 'armour'
+          ? 'armour'
+          : gearType === 'helmet'
+            ? 'helmet'
+            : gearType === 'shoes'
+              ? 'shoes'
               : null;
   }
 
   if (!item) {
-    socket.emit("eventLog", { message: "No gear available for that slot.", type: "error" });
+    socket.emit('eventLog', { message: 'No gear available for that slot.', type: 'error' });
     return;
   }
 
   if (player.gold < cost) {
-    socket.emit("eventLog", { message: `Not enough gold for ${gearType}!`, type: "error" });
+    socket.emit('eventLog', { message: `Not enough gold for ${gearType}!`, type: 'error' });
     return;
   }
 
@@ -303,18 +318,18 @@ function handleGearPurchase(socket, gearType, partyId) {
 
   saveCharacter(player.name, player);
 
-  const displayName = item.displayName || item.name || item.id || "gear";
-  const rarityText = item.rarity ? ` (${item.rarity}★)` : "";
-  socket.emit("eventLog", { message: `Added ${displayName}${rarityText} to inventory.`, type: "success" });
+  const displayName = item.displayName || item.name || item.id || 'gear';
+  const rarityText = item.rarity ? ` (${item.rarity}★)` : '';
+  socket.emit('eventLog', { message: `Added ${displayName}${rarityText} to inventory.`, type: 'success' });
 
-  assert(player.gold >= 0, "gold negative after purchase");
+  assert(player.gold >= 0, 'gold negative after purchase');
 
   // Send gear/inventory on the critical path so the client refreshes panels immediately.
   broadcastCriticalGearUpdate(partyId, party);
 }
 
 function handleEquipItem(socket, data) {
-  utils.trackSocketIoReceived("equipItem", data);
+  utils.trackSocketIoReceived('equipItem', data);
   const { partyId, slot, itemId } = data || {};
   const party = parties.get(partyId);
   if (!party) return;
@@ -323,14 +338,16 @@ function handleEquipItem(socket, data) {
 
   player.inventory = Array.isArray(player.inventory) ? player.inventory : [];
   const inventoryItem = player.inventory.find(
-    (entry) => entry && (entry.id === itemId || entry.baseItem === itemId || entry.name === itemId || entry.displayName === itemId)
+    (entry) =>
+      entry &&
+      (entry.id === itemId || entry.baseItem === itemId || entry.name === itemId || entry.displayName === itemId),
   );
   if (!inventoryItem) {
-    socket.emit("eventLog", { message: "You do not own that item.", type: "error" });
+    socket.emit('eventLog', { message: 'You do not own that item.', type: 'error' });
     return;
   }
 
-  const normalizedSlot = slot === "headgear" ? "helmet" : slot === "armor" ? "armour" : slot;
+  const normalizedSlot = slot === 'headgear' ? 'helmet' : slot === 'armor' ? 'armour' : slot;
   player.equipment = player.equipment || {};
 
   // Get the currently equipped item in this slot (if any) to put back in inventory
@@ -341,7 +358,9 @@ function handleEquipItem(socket, data) {
 
   // Put the currently equipped item back into inventory if it exists
   if (currentlyEquippedItem) {
-    const targetSlot = itemGenerator.normalizeCategory ? itemGenerator.normalizeCategory(normalizedSlot) : normalizedSlot;
+    const targetSlot = itemGenerator.normalizeCategory
+      ? itemGenerator.normalizeCategory(normalizedSlot)
+      : normalizedSlot;
     const restoredItem = utils.toInventoryItem(currentlyEquippedItem, targetSlot);
     if (restoredItem) {
       player.inventory.push(restoredItem);
@@ -355,7 +374,7 @@ function handleEquipItem(socket, data) {
   player.equipment[normalizedSlot] = calculatedItem;
 
   characters.calcMiscStats(player);
-  characters.logGearBonuses(player, "equipItem");
+  characters.logGearBonuses(player, 'equipItem');
 
   const oldMax = { ap: player.maxAp, hp: player.maxHp, mp: player.maxMp };
   player.maxAp = characters.calcMaxAp(player);
@@ -364,9 +383,11 @@ function handleEquipItem(socket, data) {
   player.hp = Math.min(player.maxHp, player.hp + (player.maxHp - oldMax.hp));
   player.maxMp = characters.calcMaxMp(player);
   player.mp = Math.min(player.maxMp, player.mp + (player.maxMp - oldMax.mp));
-  console.log("[equipItem]", {
+  logger.debug('[equipItem]', {
     slot: normalizedSlot,
-    oldItem: currentlyEquippedItem ? currentlyEquippedItem.displayName || currentlyEquippedItem.name || currentlyEquippedItem.id : null,
+    oldItem: currentlyEquippedItem
+      ? currentlyEquippedItem.displayName || currentlyEquippedItem.name || currentlyEquippedItem.id
+      : null,
     newItem: calculatedItem.displayName || calculatedItem.name || calculatedItem.id,
     oldMaxHp: oldMax.hp,
     newMaxHp: player.maxHp,
@@ -376,14 +397,14 @@ function handleEquipItem(socket, data) {
   saveCharacter(player.name, player);
   // Send gear/inventory on the critical path so the client refreshes panels immediately.
   broadcastCriticalGearUpdate(partyId, party);
-  socket.emit("eventLog", {
+  socket.emit('eventLog', {
     message: `Equipped ${calculatedItem.displayName || calculatedItem.name || calculatedItem.id}.`,
-    type: "success",
+    type: 'success',
   });
 }
 
 function handleSellItem(socket, data) {
-  utils.trackSocketIoReceived("sellItem", data);
+  utils.trackSocketIoReceived('sellItem', data);
   const { partyId, itemId } = data || {};
   const party = parties.get(partyId);
   if (!party) return;
@@ -392,22 +413,33 @@ function handleSellItem(socket, data) {
 
   player.inventory = Array.isArray(player.inventory) ? player.inventory : [];
   const inventoryItem = player.inventory.find(
-    (entry) => entry && (entry.id === itemId || entry.baseItem === itemId || entry.name === itemId || entry.displayName === itemId)
+    (entry) =>
+      entry &&
+      (entry.id === itemId || entry.baseItem === itemId || entry.name === itemId || entry.displayName === itemId),
   );
 
   if (!inventoryItem) {
-    socket.emit("eventLog", { message: "You do not own that item.", type: "error" });
+    socket.emit('eventLog', { message: 'You do not own that item.', type: 'error' });
     return;
   }
 
   // Resolve item to get baseValue for pricing
-  const resolvedItem = itemGenerator.resolveItem(inventoryItem.slot, inventoryItem.id, inventoryItem.level, inventoryItem.rarity);
-  if (!resolvedItem || typeof resolvedItem.baseValue !== "number") {
-    socket.emit("eventLog", { message: "Cannot determine value for this item.", type: "error" });
+  const resolvedItem = itemGenerator.resolveItem(
+    inventoryItem.slot,
+    inventoryItem.id,
+    inventoryItem.level,
+    inventoryItem.rarity,
+  );
+  if (!resolvedItem || typeof resolvedItem.baseValue !== 'number') {
+    socket.emit('eventLog', { message: 'Cannot determine value for this item.', type: 'error' });
     return;
   }
 
-  const calculatedValue = itemGenerator.calculateItemPrice(resolvedItem.baseValue, resolvedItem.level, resolvedItem.rarity);
+  const calculatedValue = itemGenerator.calculateItemPrice(
+    resolvedItem.baseValue,
+    resolvedItem.level,
+    resolvedItem.rarity,
+  );
   const sellPrice = Math.max(1, Math.floor(calculatedValue * 0.75));
 
   // Remove from inventory
@@ -430,18 +462,18 @@ function handleSellItem(socket, data) {
   broadcastCriticalGearUpdate(partyId, party);
 
   const name = resolvedItem.displayName || resolvedItem.name || inventoryItem.id;
-  socket.emit("eventLog", { message: `Sold ${name} for ${sellPrice}g.`, type: "success" });
+  socket.emit('eventLog', { message: `Sold ${name} for ${sellPrice}g.`, type: 'success' });
 }
 
 function handleUnequipItem(socket, data) {
-  utils.trackSocketIoReceived("unequipItem", data);
+  utils.trackSocketIoReceived('unequipItem', data);
   const { partyId, slot } = data || {};
   const party = parties.get(partyId);
   if (!party) return;
   const player = party.players.get(socket.id);
   if (!player) return;
 
-  const normalizedSlot = slot === "headgear" ? "helmet" : slot === "armor" ? "armour" : slot;
+  const normalizedSlot = slot === 'headgear' ? 'helmet' : slot === 'armor' ? 'armour' : slot;
   player.equipment = player.equipment || {};
   const unequippedItem = player.equipment[normalizedSlot];
 
@@ -457,7 +489,7 @@ function handleUnequipItem(socket, data) {
   delete player.equipment[normalizedSlot];
 
   characters.calcMiscStats(player);
-  characters.logGearBonuses(player, "unequipItem");
+  characters.logGearBonuses(player, 'unequipItem');
 
   const oldMax = { ap: player.maxAp, hp: player.maxHp, mp: player.maxMp };
   player.maxAp = characters.calcMaxAp(player);
@@ -468,14 +500,14 @@ function handleUnequipItem(socket, data) {
   player.mp = Math.min(player.maxMp, player.mp + (player.maxMp - oldMax.mp));
   saveCharacter(player.name, player);
   broadcastCriticalGearUpdate(partyId, party);
-  socket.emit("eventLog", {
-    message: `Unequipped ${unequippedItem ? unequippedItem.displayName || unequippedItem.name || unequippedItem.id : "nothing"}.`,
-    type: "success",
+  socket.emit('eventLog', {
+    message: `Unequipped ${unequippedItem ? unequippedItem.displayName || unequippedItem.name || unequippedItem.id : 'nothing'}.`,
+    type: 'success',
   });
 }
 
 function handleUseItem(socket, data) {
-  utils.trackSocketIoReceived("useItem", data);
+  utils.trackSocketIoReceived('useItem', data);
   const { partyId, itemId } = data || {};
   const party = parties.get(partyId);
   if (!party) return;
@@ -484,25 +516,27 @@ function handleUseItem(socket, data) {
 
   player.inventory = Array.isArray(player.inventory) ? player.inventory : [];
   const inventoryItem = player.inventory.find(
-    (entry) => entry && (entry.id === itemId || entry.baseItem === itemId || entry.name === itemId || entry.displayName === itemId)
+    (entry) =>
+      entry &&
+      (entry.id === itemId || entry.baseItem === itemId || entry.name === itemId || entry.displayName === itemId),
   );
   if (!inventoryItem) {
-    socket.emit("eventLog", { message: "You do not own that item.", type: "error" });
+    socket.emit('eventLog', { message: 'You do not own that item.', type: 'error' });
     return;
   }
 
-  if (inventoryItem.type !== "consumable") {
-    socket.emit("eventLog", { message: "That item is not consumable.", type: "error" });
+  if (inventoryItem.type !== 'consumable') {
+    socket.emit('eventLog', { message: 'That item is not consumable.', type: 'error' });
     return;
   }
 
   const effect = inventoryItem.effect;
   if (effect) {
-    if (effect.type === "heal") {
+    if (effect.type === 'heal') {
       player.hp = Math.min(player.maxHp, player.hp + (effect.amount || 0));
-    } else if (effect.type === "mana") {
+    } else if (effect.type === 'mana') {
       player.ap = Math.min(player.maxAp, player.ap + (effect.amount || 0));
-    } else if (effect.type === "stat") {
+    } else if (effect.type === 'stat') {
       player[effect.stat] = (player[effect.stat] || 0) + (effect.amount || 0);
     }
   }
@@ -510,14 +544,14 @@ function handleUseItem(socket, data) {
   player.inventory = player.inventory.filter((entry) => entry !== inventoryItem);
   saveCharacter(player.name, player);
   broadcastCriticalGearUpdate(partyId, party);
-  socket.emit("eventLog", {
+  socket.emit('eventLog', {
     message: `Used ${inventoryItem.displayName || inventoryItem.name || inventoryItem.id}.`,
-    type: "success",
+    type: 'success',
   });
 }
 
 function handleLeaveParty(socket, partyId) {
-  utils.trackSocketIoReceived("leaveParty", { partyId });
+  utils.trackSocketIoReceived('leaveParty', { partyId });
   const party = parties.get(partyId);
   if (party) {
     const player = party.players.get(socket.id);
@@ -541,16 +575,16 @@ function handleLeaveParty(socket, partyId) {
 }
 
 function handleEscapeDungeon(socket, data) {
-  utils.trackSocketIoReceived("escapeDungeon", data);
+  utils.trackSocketIoReceived('escapeDungeon', data);
   const { partyId } = data;
   const party = parties.get(partyId);
   if (!party) {
-    socket.emit("eventLog", { message: "Party not found!", type: "error" });
+    socket.emit('eventLog', { message: 'Party not found!', type: 'error' });
     return;
   }
 
   if (party.floor === 0) {
-    socket.emit("eventLog", { message: "Already in Town!", type: "info" });
+    socket.emit('eventLog', { message: 'Already in Town!', type: 'info' });
     return;
   }
 
@@ -603,19 +637,19 @@ function handleEscapeDungeon(socket, data) {
     timestamp: Date.now(),
   };
   seedEnemyFullSent(party);
-  broadcastToParty(partyId, "dungeonChange", dungeonChangePacket);
-  broadcastToParty(partyId, "eventLog", { message: "🏠 Escaped to Town! Dungeon progress reset.", type: "info" });
+  broadcastToParty(partyId, 'dungeonChange', dungeonChangePacket);
+  broadcastToParty(partyId, 'eventLog', { message: '🏠 Escaped to Town! Dungeon progress reset.', type: 'info' });
   broadcastFullState(partyId, party);
 
-  console.log(`[ESCAPE] Party ${partyId} escaped from ${oldDungeon} to Town`);
+  logger.debug(`[ESCAPE] Party ${partyId} escaped from ${oldDungeon} to Town`);
 }
 
 function handleEmbarkDungeon(socket, data) {
-  utils.trackSocketIoReceived("embarkDungeon", data);
+  utils.trackSocketIoReceived('embarkDungeon', data);
   const { partyId, dungeon } = data;
   const party = parties.get(partyId);
   if (!party) {
-    socket.emit("eventLog", { message: "Party not found!", type: "error" });
+    socket.emit('eventLog', { message: 'Party not found!', type: 'error' });
     return;
   }
 
@@ -624,7 +658,7 @@ function handleEmbarkDungeon(socket, data) {
 }
 
 function handleToggleAutoEmbark(socket, data) {
-  utils.trackSocketIoReceived("toggleAutoEmbark", data);
+  utils.trackSocketIoReceived('toggleAutoEmbark', data);
   const { partyId, enabled } = data;
   const party = parties.get(partyId);
   if (!party) return;
@@ -633,7 +667,7 @@ function handleToggleAutoEmbark(socket, data) {
 
   // If enabling while already in Town, embark immediately on the current dungeon
   if (party.autoEmbark && party.floor === 0 && !party.combatActive) {
-    embarkParty(partyId, party, party.dungeon || "field");
+    embarkParty(partyId, party, party.dungeon || 'field');
   }
 
   const autoEmbarkPacket = {
@@ -641,15 +675,15 @@ function handleToggleAutoEmbark(socket, data) {
     autoEmbark: party.autoEmbark,
     timestamp: Date.now(),
   };
-  broadcastToParty(partyId, "gameDelta", autoEmbarkPacket);
+  broadcastToParty(partyId, 'gameDelta', autoEmbarkPacket);
 }
 
 function handleChangeDungeon(socket, data) {
-  utils.trackSocketIoReceived("changeDungeon", data);
+  utils.trackSocketIoReceived('changeDungeon', data);
   const { partyId, dungeon } = data;
   const party = parties.get(partyId);
   if (!party) {
-    socket.emit("eventLog", { message: "Party not found!", type: "error" });
+    socket.emit('eventLog', { message: 'Party not found!', type: 'error' });
     return;
   }
 
@@ -657,13 +691,13 @@ function handleChangeDungeon(socket, data) {
 
   // Check if dungeon exists
   if (!dungeons[dungeon]) {
-    socket.emit("eventLog", { message: `Unknown dungeon: ${dungeon}`, type: "error" });
+    socket.emit('eventLog', { message: `Unknown dungeon: ${dungeon}`, type: 'error' });
     return;
   }
 
   // Check if already in this dungeon
   if (party.dungeon === dungeon) {
-    socket.emit("eventLog", { message: `Already in ${dungeon}!`, type: "info" });
+    socket.emit('eventLog', { message: `Already in ${dungeon}!`, type: 'info' });
     return;
   }
 
@@ -673,16 +707,16 @@ function handleChangeDungeon(socket, data) {
     const idx = dungeonOrder.indexOf(dungeon);
     if (idx > 0) {
       const prevDungeon = dungeonOrder[idx - 1];
-      socket.emit("eventLog", { message: `Reach floor 101 in ${prevDungeon} first!`, type: "error" });
+      socket.emit('eventLog', { message: `Reach floor 101 in ${prevDungeon} first!`, type: 'error' });
     } else {
-      socket.emit("eventLog", { message: `Dungeon ${dungeon} is locked!`, type: "error" });
+      socket.emit('eventLog', { message: `Dungeon ${dungeon} is locked!`, type: 'error' });
     }
     return;
   }
 
   // Check if in combat
   if (party.combatActive) {
-    socket.emit("eventLog", { message: "Cannot change dungeons during combat!", type: "error" });
+    socket.emit('eventLog', { message: 'Cannot change dungeons during combat!', type: 'error' });
     return;
   }
 
@@ -737,18 +771,19 @@ function handleChangeDungeon(socket, data) {
   };
 
   seedEnemyFullSent(party);
-  broadcastToParty(partyId, "dungeonChange", dungeonChangePacket);
+  broadcastToParty(partyId, 'dungeonChange', dungeonChangePacket);
 
   // Also emit to event log
-  const eventMsg = party.floor >= 1 ? `Entered ${dungeon}! ⚔️ Action Bars filling!` : `Entered ${dungeon}! 🏠 Safe in town!`;
-  broadcastToParty(partyId, "eventLog", { message: eventMsg, type: "info" });
+  const eventMsg =
+    party.floor >= 1 ? `Entered ${dungeon}! ⚔️ Action Bars filling!` : `Entered ${dungeon}! 🏠 Safe in town!`;
+  broadcastToParty(partyId, 'eventLog', { message: eventMsg, type: 'info' });
 
-  console.log(`[DUNGEON] Party ${partyId} changed from ${oldDungeon} to ${dungeon}`);
+  logger.debug(`[DUNGEON] Party ${partyId} changed from ${oldDungeon} to ${dungeon}`);
 }
 
 function handleJoinParty(socket, data) {
-  utils.trackSocketIoReceived("joinParty", data);
-  console.log("[SERVER] Received joinParty:", data);
+  utils.trackSocketIoReceived('joinParty', data);
+  logger.debug('[SERVER] Received joinParty:', data);
   const { partyId, name } = data;
   let party = parties.get(partyId);
 
@@ -758,7 +793,7 @@ function handleJoinParty(socket, data) {
       players: new Map(),
       enemies: [],
       floor: 0,
-      dungeon: "field",
+      dungeon: 'field',
       dungeonFloors: { field: 1 },
       highestVisitedFloors: { field: 0 },
       completedDungeons: { field: false },
@@ -769,13 +804,17 @@ function handleJoinParty(socket, data) {
     };
     parties.set(partyId, party);
 
-    characters.restockShopWithDungeonScaling(party, party.dungeon || "field", characters.getDungeonData(party.dungeon || "field"));
+    characters.restockShopWithDungeonScaling(
+      party,
+      party.dungeon || 'field',
+      characters.getDungeonData(party.dungeon || 'field'),
+    );
   }
 
   if (party.players.size < party.maxPlayers) {
-    console.log("[SERVER] Loading character for name:", name);
+    logger.debug('[SERVER] Loading character for name:', name);
     const savedData = loadCharacter(name);
-    console.log("[SERVER] Loaded character data:", savedData ? "exists" : "null");
+    logger.debug('[SERVER] Loaded character data:', savedData ? 'exists' : 'null');
 
     let character = savedData || utils.createDefaultCharacter(name);
     character = characters.ensureSkillAndAbilityState(character);
@@ -810,7 +849,9 @@ function handleJoinParty(socket, data) {
       const ref = equipmentObj[slot];
       if (ref && ref.id && ref.level && ref.rarity && !ref.baseItem) {
         const targetSlot = itemGenerator.normalizeCategory ? itemGenerator.normalizeCategory(slot) : slot;
-        const resolved = itemGenerator.resolveItem ? itemGenerator.resolveItem(targetSlot, ref.id, ref.level, ref.rarity) : null;
+        const resolved = itemGenerator.resolveItem
+          ? itemGenerator.resolveItem(targetSlot, ref.id, ref.level, ref.rarity)
+          : null;
         if (resolved && resolved.baseItem) {
           resolvedEquipment[slot] = { ...resolved, slot: targetSlot };
         } else {
@@ -825,19 +866,19 @@ function handleJoinParty(socket, data) {
     character.maxHp = characters.calcMaxHp(character) || 60;
     character.maxMp = characters.calcMaxMp(character) || 40;
 
-    if (savedData && typeof savedHp === "number" && !isNaN(savedHp)) {
+    if (savedData && typeof savedHp === 'number' && !isNaN(savedHp)) {
       character.hp = Math.max(0, Math.min(character.maxHp, savedHp));
     } else {
       character.hp = character.maxHp;
     }
 
-    if (savedData && typeof savedMp === "number" && !isNaN(savedMp)) {
+    if (savedData && typeof savedMp === 'number' && !isNaN(savedMp)) {
       character.mp = Math.max(0, Math.min(character.maxMp, savedMp));
     } else {
       character.mp = character.maxMp;
     }
 
-    if (savedData && typeof savedAp === "number" && !isNaN(savedAp)) {
+    if (savedData && typeof savedAp === 'number' && !isNaN(savedAp)) {
       character.ap = Math.max(0, Math.min(character.maxAp, savedAp));
     } else {
       character.ap = character.maxAp;
@@ -849,19 +890,16 @@ function handleJoinParty(socket, data) {
 
     party.players.set(socket.id, character);
     socket.join(partyId);
-    console.log(`[SERVER] Player ${name} joined with socket.id: ${socket.id} to party ${partyId}`);
-    console.log("[SERVER] Saving character for name:", name);
+    logger.info(`[SERVER] Player ${name} joined with socket.id: ${socket.id} to party ${partyId}`);
     saveCharacter(name, character);
-    console.log("[SERVER] Character saved");
 
     const fullState = buildFullStatePacket(party, partyId);
     broadcastFullState(partyId, party);
-    console.log("[SERVER] Emitting joinedParty to client");
-    utils.trackSocketIoSent("joinedParty", { partyId, player: character, fullState });
-    socket.emit("joinedParty", { partyId, player: character, fullState });
+    utils.trackSocketIoSent('joinedParty', { partyId, player: character, fullState });
+    socket.emit('joinedParty', { partyId, player: character, fullState });
   } else {
-    utils.trackSocketIoSent("partyFull", null);
-    socket.emit("partyFull");
+    utils.trackSocketIoSent('partyFull', null);
+    socket.emit('partyFull');
   }
 }
 
@@ -881,18 +919,25 @@ function normalizeCharacterStats(character) {
 }
 
 function handleAllocatePoints(socket, data) {
-  utils.trackSocketIoReceived("allocatePoints", data);
-  console.log("[SERVER] Received allocatePoints:", data, "socket.id:", socket.id);
+  utils.trackSocketIoReceived('allocatePoints', data);
+  logger.debug('[SERVER] Received allocatePoints:', data, 'socket.id:', socket.id);
   const { partyId, stat, points } = data;
   const party = parties.get(partyId);
   if (!party) {
-    console.log("[SERVER] Party not found:", partyId);
+    logger.debug('[SERVER] Party not found:', partyId);
     return;
   }
   const player = party.players.get(socket.id);
-  console.log("[SERVER] Player found:", !!player, "player name:", player ? player.name : "none");
+  logger.debug('[SERVER] Player found:', !!player, 'player name:', player ? player.name : 'none');
   if (!player || player.pointsToAllocate < points || points <= 0) {
-    console.log("[SERVER] Invalid allocation: player exists?", !!player, "pointsToAllocate:", player ? player.pointsToAllocate : "N/A", "requested:", points);
+    logger.debug(
+      '[SERVER] Invalid allocation: player exists?',
+      !!player,
+      'pointsToAllocate:',
+      player ? player.pointsToAllocate : 'N/A',
+      'requested:',
+      points,
+    );
     return;
   }
 
@@ -900,14 +945,14 @@ function handleAllocatePoints(socket, data) {
   player.pointsToAllocate -= points;
 
   // 🩸 If vit or str increased, boost max HP and heal
-  if (stat === "vit" || stat === "str") {
+  if (stat === 'vit' || stat === 'str') {
     const newMaxHp = characters.calcMaxHp(player);
     const hpDiff = newMaxHp - player.maxHp;
     player.maxHp = newMaxHp;
     player.hp = Math.min(player.maxHp, player.hp + hpDiff);
   }
   // 🩸 If int or cnc increased, boost max MP
-  if (stat === "int" || stat === "cnc") {
+  if (stat === 'int' || stat === 'cnc') {
     const newMaxMp = characters.calcMaxMp(player);
     const mpDiff = newMaxMp - player.maxMp;
     player.maxMp = newMaxMp;
@@ -915,7 +960,7 @@ function handleAllocatePoints(socket, data) {
   }
 
   // 🛡️ If vit, str, or for increased, boost max AP
-  if (stat === "vit" || stat === "str" || stat === "for") {
+  if (stat === 'vit' || stat === 'str' || stat === 'for') {
     const newMaxAp = characters.calcMaxAp(player);
     const apDiff = newMaxAp - player.maxAp;
     player.maxAp = newMaxAp;
@@ -923,12 +968,10 @@ function handleAllocatePoints(socket, data) {
   }
 
   // Log the stat allocation to the event log
-  utils.trackSocketIoSent("eventLog", { message: `Allocated ${points} points to ${stat}.`, type: "info" });
-  socket.emit("eventLog", { message: `Allocated ${points} points to ${stat}.`, type: "info" });
+  utils.trackSocketIoSent('eventLog', { message: `Allocated ${points} points to ${stat}.`, type: 'info' });
+  socket.emit('eventLog', { message: `Allocated ${points} points to ${stat}.`, type: 'info' });
 
-  console.log("[SERVER] Saving character after allocatePoints for:", player.name);
   saveCharacter(player.name, player);
-  console.log("[SERVER] Character saved after allocatePoints");
 
   // OPTIMIZATION: Use targeted broadcast instead of full state
   broadcastFullState(partyId, party);
@@ -970,7 +1013,7 @@ function handleDisconnect(socket, reason) {
 }
 
 function handleLateDisconnect(socket) {
-  utils.trackSocketIoReceived("disconnect");
+  utils.trackSocketIoReceived('disconnect');
   const party = Array.from(parties.values()).find((party) => party.players.has(socket.id));
   if (!party) return;
   const player = party.players.get(socket.id);
@@ -978,7 +1021,7 @@ function handleLateDisconnect(socket) {
 
   party.players.delete(socket.id);
   broadcastPlayerUpdate(party.id, party, socket.id);
-  socket.emit("eventLog", { message: "Disconnected.", type: "info" });
+  socket.emit('eventLog', { message: 'Disconnected.', type: 'info' });
 }
 
 // Event-driven single-player sync. Forces an immediate flush through the
@@ -995,7 +1038,7 @@ function broadcastPlayerUpdate(partyId, party, socketId) {
 
 // Helper function to generate combat summary
 function generateCombatSummary(partyId, party, message) {
-  let summary = "";
+  let summary = '';
   let totalDamage = 0;
   let totalAttacks = 0;
   let totalHits = 0;
@@ -1007,9 +1050,9 @@ function generateCombatSummary(partyId, party, message) {
   for (const [playerId, stats] of party.combatStats) {
     if (stats.attacks > 0) {
       const hitRate = ((stats.hits / stats.attacks) * 100).toFixed(1);
-      const critRate = stats.hits > 0 ? ((stats.crits / stats.hits) * 100).toFixed(1) : "0";
-      const avgDamage = stats.hits > 0 ? (stats.totalDamage / stats.hits).toFixed(1) : "0";
-      const avgRoll = stats.hits > 0 ? (stats.rollSum / stats.hits).toFixed(1) : "0";
+      const critRate = stats.hits > 0 ? ((stats.crits / stats.hits) * 100).toFixed(1) : '0';
+      const avgDamage = stats.hits > 0 ? (stats.totalDamage / stats.hits).toFixed(1) : '0';
+      const avgRoll = stats.hits > 0 ? (stats.rollSum / stats.hits).toFixed(1) : '0';
       const player = party.players.get(playerId);
       if (player) {
         playerSummaries.push({
@@ -1028,18 +1071,18 @@ function generateCombatSummary(partyId, party, message) {
   }
 
   playerSummaries.sort((a, b) => b.totalDamage - a.totalDamage);
-  summary = playerSummaries.map((p) => p.html).join("");
+  summary = playerSummaries.map((p) => p.html).join('');
 
   if (totalAttacks > 0) {
     const overallHitRate = ((totalHits / totalAttacks) * 100).toFixed(1);
-    const overallCritRate = totalHits > 0 ? ((totalCrits / totalHits) * 100).toFixed(1) : "0";
-    const overallAvgDamage = totalHits > 0 ? (totalDamage / totalHits).toFixed(1) : "0";
-    const overallAvgRoll = totalHits > 0 ? (totalRollSum / totalHits).toFixed(1) : "0";
+    const overallCritRate = totalHits > 0 ? ((totalCrits / totalHits) * 100).toFixed(1) : '0';
+    const overallAvgDamage = totalHits > 0 ? (totalDamage / totalHits).toFixed(1) : '0';
+    const overallAvgRoll = totalHits > 0 ? (totalRollSum / totalHits).toFixed(1) : '0';
     summary += `<div class="total-summary">Total: Damage ${totalDamage.toFixed(1)}, Healed ${totalHealed.toFixed(1)}<br> Hit Rate ${overallHitRate}%, Crit Rate ${overallCritRate}%, Avg Damage ${overallAvgDamage}, Avg Roll ${overallAvgRoll}</div>`;
   }
 
   // Emit combat end via the single combatEnd channel (WebRTC-preferred, Socket.IO fallback).
-  broadcastToParty(partyId, "combatEnd", {
+  broadcastToParty(partyId, 'combatEnd', {
     message,
     summary,
     combatActive: false,
@@ -1052,15 +1095,15 @@ function generateCombatSummary(partyId, party, message) {
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "*" },
+  cors: { origin: '*' },
   compression: true,
   perMessageDeflate: { threshold: 1024 },
 });
 
-app.use(express.static("public"));
+app.use(express.static('public'));
 
 // Merged ability definitions (auto-discovered per-skill JSON files).
-app.get("/api/abilities", (req, res) => res.json(loadAbilities()));
+app.get('/api/abilities', (req, res) => res.json(loadAbilities()));
 
 // 60-second packet statistics logging
 setInterval(() => {
@@ -1077,23 +1120,18 @@ setInterval(() => {
   const combinedReceived = utils.socketIoPacketTracker.received.total.count + webrtcStats.received.total.count;
   const combinedReceivedBytes = utils.socketIoPacketTracker.received.total.bytes + webrtcStats.received.total.bytes;
 
-  console.log("\n" + "=".repeat(70));
-  console.log("=== PACKET STATISTICS (Last 60 seconds) =======================");
-  console.log("=".repeat(70));
-
-  console.log("\nSocket.IO:");
-  console.log(utils.formatPacketStats("  ", socketIoTotal));
-
-  console.log("\nWebRTC:");
-  console.log(utils.formatPacketStats("  ", webrtcTotal));
-
-  console.log("\n" + "-".repeat(70));
-  console.log(
-    "Combined Total:",
-    `\n  Sent: ${combinedSent} packets, ${utils.formatBytes(combinedSentBytes)}`,
-    `\n  Received: ${combinedReceived} packets, ${utils.formatBytes(combinedReceivedBytes)}`,
-    `\n  Total: ${combinedSent + combinedReceived} packets, ${utils.formatBytes(combinedSentBytes + combinedReceivedBytes)}\n` + "=".repeat(70) + "\n"
-  );
+  logger.info({
+    type: 'packet_stats',
+    duration: '60s',
+    socketIoSent: utils.socketIoPacketTracker.sent,
+    socketIoReceived: utils.socketIoPacketTracker.received,
+    webrtcSent: webrtcStats.sent,
+    webrtcReceived: webrtcStats.received,
+    combinedSentPackets: combinedSent,
+    combinedSentBytes: combinedSentBytes,
+    combinedReceivedPackets: combinedReceived,
+    combinedReceivedBytes: combinedReceivedBytes,
+  });
 
   // Reset Socket.IO stats (WebRTC stats are reset externally if needed)
   utils.socketIoPacketTracker.sent = { total: { count: 0, bytes: 0 }, byType: {} };
@@ -1115,7 +1153,7 @@ webrtcServer.setupSocketIOHandlers(io);
 // When a WebRTC data channel re-establishes (reconnect), push a fresh full state
 // over the newly opened channel and re-baseline the server-side delta tracker so
 // the client can restore its view cleanly after the interruption.
-webrtcServer.on("webrtcStateRestore", (socketId) => {
+webrtcServer.on('webrtcStateRestore', (socketId) => {
   let targetPartyId = null;
   let targetParty = null;
   for (const [partyId, party] of parties.entries()) {
@@ -1126,15 +1164,15 @@ webrtcServer.on("webrtcStateRestore", (socketId) => {
     }
   }
   if (!targetParty) {
-    console.log(`[WebRTC Restore] No party found for reconnected socket ${socketId} - nothing to restore`);
+    logger.debug(`[WebRTC Restore] No party found for reconnected socket ${socketId} - nothing to restore`);
     return;
   }
 
   // Re-baseline deltas so the freshly pushed full state becomes the new reference.
   webrtcServer.resetDeltaStateForSocket(socketId);
   const fullState = buildFullStatePacket(targetParty, targetPartyId);
-  const sent = webrtcServer.sendMessage(socketId, "partyUpdate", fullState);
-  console.log(`[WebRTC Restore] Sent full state to reconnected socket ${socketId}: ${sent ? "ok" : "failed"}`);
+  const sent = webrtcServer.sendMessage(socketId, 'partyUpdate', fullState);
+  logger.debug(`[WebRTC Restore] Sent full state to reconnected socket ${socketId}: ${sent ? 'ok' : 'failed'}`);
 
   // Re-apply the delta baseline now that the client has the canonical state.
   webrtcServer.initializePlayerDeltaState(targetPartyId, targetParty, socketId);
@@ -1174,37 +1212,37 @@ function seedEnemyFullSent(party) {
 }
 // Fields tracked for per-player broadcast deltas (server-authoritative state).
 const PLAYER_DELTA_FIELDS = [
-  "hp",
-  "ap",
-  "maxHp",
-  "maxAp",
-  "level",
-  "xp",
-  "xpToNext",
-  "gold",
-  "mp",
-  "maxMp",
-  "pointsToAllocate",
-  "abilityCooldowns",
-  "str",
-  "dex",
-  "agi",
-  "vit",
-  "int",
-  "cnc",
-  "wis",
-  "for",
-  "luk",
-  "pie",
-  "actionBar",
-  "maxActionBar",
-  "equipment",
-  "inventory",
-  "skillsState",
+  'hp',
+  'ap',
+  'maxHp',
+  'maxAp',
+  'level',
+  'xp',
+  'xpToNext',
+  'gold',
+  'mp',
+  'maxMp',
+  'pointsToAllocate',
+  'abilityCooldowns',
+  'str',
+  'dex',
+  'agi',
+  'vit',
+  'int',
+  'cnc',
+  'wis',
+  'for',
+  'luk',
+  'pie',
+  'actionBar',
+  'maxActionBar',
+  'equipment',
+  'inventory',
+  'skillsState',
 ];
 
 // Fields tracked for per-enemy broadcast deltas.
-const ENEMY_DELTA_FIELDS = ["hp", "maxHp", "ap", "maxAp", "mp", "maxMp"];
+const ENEMY_DELTA_FIELDS = ['hp', 'maxHp', 'ap', 'maxAp', 'mp', 'maxMp'];
 
 // Get delta for a single player - only return changed fields.
 // consumeFields: list of field names this pass actually transmits. Only those
@@ -1284,7 +1322,7 @@ function startSpawnTimer(partyId, party) {
       // Prefer WebRTC over TCP
       const combatPacket = { floor: party.floor, enemies: party.enemies };
       seedEnemyFullSent(party);
-      broadcastToParty(partyId, "combatStart", combatPacket);
+      broadcastToParty(partyId, 'combatStart', combatPacket);
       startActionBarSystem(partyId, party);
     }
     spawnTimers.delete(partyId);
@@ -1359,7 +1397,7 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
   const alivePlayers = livePlayers(party);
 
   // Handle defense-up self-buff abilities (armor proficiencies) before all others.
-  if (ability.effects?.some((e) => e.type === "defenseUp")) {
+  if (ability.effects?.some((e) => e.type === 'defenseUp')) {
     buffEngine.applyEffect(combatant, combatant, ability);
     combatant.skillsState = skillEngine.awardSkillXp(combatant.skillsState, ability.skillId, 3);
     broadcastCriticalUpdate(partyId, party, {
@@ -1386,7 +1424,7 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
       totalHealed += target.hp - before;
 
       // Apply HoT effect if specified in ability
-      if (ability.effects?.some((e) => e.type === "hot")) {
+      if (ability.effects?.some((e) => e.type === 'hot')) {
         buffEngine.applyEffect(combatant, target, ability);
       }
     });
@@ -1418,7 +1456,9 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
 
       if (!ability.castUsesWeaponDamageModel) {
         const weapon = characters.getActiveWeapon(combatant);
-        const resolvedWeapon = weapon?.id ? itemGenerator.resolveItem("weapon", weapon.id, weapon.level || 1, weapon.rarity || 1) : null;
+        const resolvedWeapon = weapon?.id
+          ? itemGenerator.resolveItem('weapon', weapon.id, weapon.level || 1, weapon.rarity || 1)
+          : null;
         baseDamage += resolvedWeapon?.spellPower || 0;
       }
 
@@ -1427,30 +1467,35 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
     }
 
     // Apply damage scaling for multiple targets
-    const scaledDamage = skillEngine.calculateDamageScalingForMultipleTargets(baseDamage, damageTargets.length, ability.abilityType || "damage", combatant);
+    const scaledDamage = skillEngine.calculateDamageScalingForMultipleTargets(
+      baseDamage,
+      damageTargets.length,
+      ability.abilityType || 'damage',
+      combatant,
+    );
 
     // Apply damage to each target
     damageTargets.forEach((target) => {
       applyDamage(target, scaledDamage, partyId, party);
 
       // Apply DoT effect if specified in ability
-      if (ability.effects?.some((e) => e.type === "dot")) {
+      if (ability.effects?.some((e) => e.type === 'dot')) {
         buffEngine.applyEffect(combatant, target, ability);
       }
 
       // Apply action bar slow effect if specified in ability
-      if (ability.effects?.some((e) => e.type === "actionSlow")) {
+      if (ability.effects?.some((e) => e.type === 'actionSlow')) {
         buffEngine.applyEffect(combatant, target, ability);
       }
 
       // Apply witchcraft debuff effects if specified in ability
-      if (ability.effects?.some((e) => e.type === "weaken")) {
+      if (ability.effects?.some((e) => e.type === 'weaken')) {
         buffEngine.applyEffect(combatant, target, ability);
       }
-      if (ability.effects?.some((e) => e.type === "vulnerability")) {
+      if (ability.effects?.some((e) => e.type === 'vulnerability')) {
         buffEngine.applyEffect(combatant, target, ability);
       }
-      if (ability.effects?.some((e) => e.type === "defenseDown")) {
+      if (ability.effects?.some((e) => e.type === 'defenseDown')) {
         buffEngine.applyEffect(combatant, target, ability);
       }
 
@@ -1468,7 +1513,11 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
 
     // Award XP to the associated skill - bonus for hitting multiple targets
     const xpPerTarget = 3;
-    combatant.skillsState = skillEngine.awardSkillXp(combatant.skillsState, ability.skillId, xpPerTarget * damageTargets.length);
+    combatant.skillsState = skillEngine.awardSkillXp(
+      combatant.skillsState,
+      ability.skillId,
+      xpPerTarget * damageTargets.length,
+    );
 
     // Check for enemy deaths and award party XP/gold, remove dead enemies
     if (damageTargets.some((t) => t.isEnemy && t.hp <= 0)) {
@@ -1543,16 +1592,16 @@ function startActionBarSystem(partyId, party) {
           clearTimeout(spawnTimers.get(partyId));
           spawnTimers.delete(partyId);
         }
-        generateCombatSummary(partyId, party, "All players have fallen! Party disbanded.");
+        generateCombatSummary(partyId, party, 'All players have fallen! Party disbanded.');
       } else {
         // Some players survived - respawn timer for remaining players
         startSpawnTimer(partyId, party);
         // Prefer WebRTC for event log
         const deathLogPacket = {
-          message: "Some players died, but the party continues!",
-          type: "info",
+          message: 'Some players died, but the party continues!',
+          type: 'info',
         };
-        broadcastToParty(partyId, "eventLog", deathLogPacket);
+        broadcastToParty(partyId, 'eventLog', deathLogPacket);
       }
       return;
     }
@@ -1567,7 +1616,7 @@ function startActionBarSystem(partyId, party) {
       resetPartyDeltaBaseline(partyId);
 
       // Generate combat summary using shared function
-      generateCombatSummary(partyId, party, "Victory! You can move now!");
+      generateCombatSummary(partyId, party, 'Victory! You can move now!');
 
       // Mark dungeon completion when the party defeats the boss on the last floor (per floorAmount)
       const dungeonDataForCompletion = party.dungeon ? characters.getDungeonData(party.dungeon) : null;
@@ -1579,14 +1628,14 @@ function startActionBarSystem(partyId, party) {
           party.completedDungeons[party.dungeon] = true;
         }
 
-        console.log(`🏁 ${party.dungeon} completed!`);
+        logger.info(`🏁 ${party.dungeon} completed!`);
 
         // Broadcast the 🏁 completion line. These one-shot, critical
         // messages must reach the client reliably, so emit on Socket.IO
         // directly (TCP) AND over WebRTC without batching.
-        const completionPacket = { message: `🏁 ${party.dungeon} completed!`, type: "success" };
-        io.to(partyId).emit("eventLog", completionPacket);
-        broadcastToParty(partyId, "eventLog", completionPacket, { noBatch: true });
+        const completionPacket = { message: `🏁 ${party.dungeon} completed!`, type: 'success' };
+        io.to(partyId).emit('eventLog', completionPacket);
+        broadcastToParty(partyId, 'eventLog', completionPacket, { noBatch: true });
 
         // Restock shop with items scaled to dungeon difficulty — runs on every boss clear
         characters.restockShopWithDungeonScaling(party, party.dungeon, dungeonDataForCompletion);
@@ -1594,9 +1643,9 @@ function startActionBarSystem(partyId, party) {
         // Reward every character with one scaled item or gold fallback for clearing the dungeon
         const lootResults = characters.rewardPlayersOnDungeonClear(party, party.dungeon, dungeonDataForCompletion);
         for (const result of lootResults) {
-          const awardPacket = { message: result.message, type: result.type === "item" ? "success" : "info" };
-          io.to(partyId).emit("eventLog", awardPacket);
-          broadcastToParty(partyId, "eventLog", awardPacket, { noBatch: true });
+          const awardPacket = { message: result.message, type: result.type === 'item' ? 'success' : 'info' };
+          io.to(partyId).emit('eventLog', awardPacket);
+          broadcastToParty(partyId, 'eventLog', awardPacket, { noBatch: true });
         }
 
         // Return to town immediately after boss defeat so UI reflects completion
@@ -1609,13 +1658,13 @@ function startActionBarSystem(partyId, party) {
 
         broadcastFullState(partyId, party);
 
-        const returnPacket = { message: "🏠 Returned to Town!", type: "info" };
-        io.to(partyId).emit("eventLog", returnPacket);
-        broadcastToParty(partyId, "eventLog", returnPacket, { noBatch: true });
+        const returnPacket = { message: '🏠 Returned to Town!', type: 'info' };
+        io.to(partyId).emit('eventLog', returnPacket);
+        broadcastToParty(partyId, 'eventLog', returnPacket, { noBatch: true });
 
         // 🔁 Auto-Embark: if enabled, immediately re-embark on the same dungeon
         if (party.autoEmbark) {
-          embarkParty(partyId, party, party.dungeon || "field");
+          embarkParty(partyId, party, party.dungeon || 'field');
         }
 
         return;
@@ -1624,10 +1673,10 @@ function startActionBarSystem(partyId, party) {
       // 🆕 AUTO-PROGRESS: always advance to the next floor after a clear
       // Prefer WebRTC for event log
       const floorAdvancePacket = {
-        message: "✅ Auto-progressing to next floor...",
-        type: "info",
+        message: '✅ Auto-progressing to next floor...',
+        type: 'info',
       };
-      broadcastToParty(partyId, "eventLog", floorAdvancePacket);
+      broadcastToParty(partyId, 'eventLog', floorAdvancePacket);
 
       // Initialize dungeonFloors and highestVisitedFloors if not exists
       if (!party.dungeonFloors) party.dungeonFloors = {};
@@ -1654,7 +1703,7 @@ function startActionBarSystem(partyId, party) {
       setTimeout(() => {
         // Prefer WebRTC for nextFloor event
         const nextFloorPacket = { partyId: party.partyId };
-        broadcastToParty(partyId, "nextFloor", nextFloorPacket);
+        broadcastToParty(partyId, 'nextFloor', nextFloorPacket);
       }, 1000);
 
       Array.from(party.players.values()).forEach((p) => saveCharacter(p.name, p));
@@ -1668,11 +1717,16 @@ function startActionBarSystem(partyId, party) {
     combatants.forEach((combatant) => {
       if (combatant.hp > 0) {
         const weaponRef = combatant.equipment?.weapon;
-        const resolvedWeapon = weaponRef?.id ? itemGenerator.resolveItem("weapon", weaponRef.id, weaponRef.level || 1, weaponRef.rarity || 1) : null;
+        const resolvedWeapon = weaponRef?.id
+          ? itemGenerator.resolveItem('weapon', weaponRef.id, weaponRef.level || 1, weaponRef.rarity || 1)
+          : null;
         const weaponAspd = resolvedWeapon?.attackSpeed ?? 1.0;
         let fillAmount =
           (0.7 + agiFillRate * weaponAspd) *
-          (1.1 + combatant.agi / 244 + weaponAspd / 20 + (combatant.equipment?.shoes?.defense || combatant.shoes || 3) / 122);
+          (1.1 +
+            combatant.agi / 244 +
+            weaponAspd / 20 +
+            (combatant.equipment?.shoes?.defense || combatant.shoes || 3) / 122);
         combatant.actionBar = Math.min(combatant.maxActionBar, combatant.actionBar + fillAmount);
 
         if (combatant.actionBar >= combatant.maxActionBar) {
@@ -1713,9 +1767,9 @@ function calculateAttackMods(actor) {
 
   let accuracyMod = 2;
   const classWeights = {
-    melee: { primary: "dex", secondary: "agi", pWeight: 0.8, sWeight: 0.2 },
-    ranged: { primary: "dex", secondary: "cnc", pWeight: 0.8, sWeight: 0.2 },
-    magic: { primary: "cnc", secondary: "dex", pWeight: 0.8, sWeight: 0.2 },
+    melee: { primary: 'dex', secondary: 'agi', pWeight: 0.8, sWeight: 0.2 },
+    ranged: { primary: 'dex', secondary: 'cnc', pWeight: 0.8, sWeight: 0.2 },
+    magic: { primary: 'cnc', secondary: 'dex', pWeight: 0.8, sWeight: 0.2 },
   };
   const weights = classWeights[weaponClass] || classWeights.melee;
   const primary = characters.getEffectiveAttribute(actor, weights.primary);
@@ -1726,8 +1780,10 @@ function calculateAttackMods(actor) {
 }
 
 function calculateRoll(actor, target, accuracyMod, party, partyId) {
-  const luk = characters.getEffectiveAttribute(actor, "luk");
-  let roll = Math.floor(Math.random() * (80 + accuracyMod / 2 + luk * 2) + 1 + accuracyMod / 6 + luk * Math.random() * 0.3);
+  const luk = characters.getEffectiveAttribute(actor, 'luk');
+  let roll = Math.floor(
+    Math.random() * (80 + accuracyMod / 2 + luk * 2) + 1 + accuracyMod / 6 + luk * Math.random() * 0.3,
+  );
   roll = roll * (0.2 + Math.random() * 3);
   roll -= Math.floor(target.agi / 9 + target.agi * Math.random() * 1.4);
   roll = roll > 70 ? Math.round(Math.pow(roll, 0.9)) : Math.round(roll);
@@ -1737,7 +1793,9 @@ function calculateRoll(actor, target, accuracyMod, party, partyId) {
 function calculateDamage(actor, damageMod, roll) {
   const weaponClass = characters.getActiveWeaponClass(actor);
   const activeWeapon = characters.getActiveWeapon(actor);
-  const resolvedWeapon = activeWeapon?.id ? itemGenerator.resolveItem("weapon", activeWeapon.id, activeWeapon.level || 1, activeWeapon.rarity || 1) : null;
+  const resolvedWeapon = activeWeapon?.id
+    ? itemGenerator.resolveItem('weapon', activeWeapon.id, activeWeapon.level || 1, activeWeapon.rarity || 1)
+    : null;
   const effectiveDamage = resolvedWeapon?.damage || 3;
   const damMod = damageMod / 1.1 + effectiveDamage / 1.1;
   let damage = Math.random() * (0.5 + damageMod * 0.3) + damMod * 1.2 + damageMod * 1.2;
@@ -1801,7 +1859,7 @@ function handlePlayerDeath(partyId, party, player) {
 
 function applyDamage(target, damage, partyId, party) {
   // Vulnerability debuff: target takes increased incoming damage
-  const vulnerability = buffEngine.sumEffectAmount(target.effects, "vulnerability", 2.0);
+  const vulnerability = buffEngine.sumEffectAmount(target.effects, 'vulnerability', 2.0);
   if (vulnerability > 0) {
     damage = damage * (1 + vulnerability);
   }
@@ -1823,14 +1881,14 @@ function applyDamage(target, damage, partyId, party) {
     const deathMsg = `${target.name} has fallen and lost their gear! 💥`;
     // Send death event as critical update - prefer WebRTC
     const deathPacket = {
-      type: "death",
+      type: 'death',
       playerId: target.id,
       playerName: target.name,
       message: deathMsg,
     };
-    broadcastToParty(partyId, "combatEvent", deathPacket);
+    broadcastToParty(partyId, 'combatEvent', deathPacket);
     // Also send event log via WebRTC
-    broadcastToParty(partyId, "eventLog", { message: deathMsg, type: "death" });
+    broadcastToParty(partyId, 'eventLog', { message: deathMsg, type: 'death' });
   }
 }
 
@@ -1852,7 +1910,7 @@ function performActionBarAttack(actor, partyId, party) {
     damage = calculateDamage(actor, damageMod, roll);
 
     // Weaken debuff: the attacker's outgoing damage is reduced
-    const weaken = buffEngine.sumEffectAmount(actor.effects, "weaken", 0.9);
+    const weaken = buffEngine.sumEffectAmount(actor.effects, 'weaken', 0.9);
     if (weaken > 0) {
       damage = damage * (1 - weaken);
     }
@@ -1860,7 +1918,7 @@ function performActionBarAttack(actor, partyId, party) {
     const rawDamage = damage; // pre-mitigation damage
 
     // Defense-Down debuff: the target's damage mitigation is reduced
-    const defenseDown = buffEngine.sumEffectAmount(target.effects, "defenseDown", 0.9);
+    const defenseDown = buffEngine.sumEffectAmount(target.effects, 'defenseDown', 0.9);
     const mitigationTerm =
       (0.4 * Math.random() * (target.equipment?.helmet?.defense || target.helmet || 1) +
         0.4 * Math.random() * (target.equipment?.armour?.defense || target.armour || 0) +
@@ -1868,7 +1926,7 @@ function performActionBarAttack(actor, partyId, party) {
         0.003 * Math.random() * target.vit +
         0.001 * Math.random() * target.for) /
       4;
-    const defenseUp = buffEngine.sumEffectAmount(target.effects, "defenseUp", 0.5);
+    const defenseUp = buffEngine.sumEffectAmount(target.effects, 'defenseUp', 0.5);
     const effectiveMitigation = (defenseDown > 0 ? mitigationTerm * (1 - defenseDown) : mitigationTerm) + defenseUp;
     const cappedMitigation = Math.min(effectiveMitigation, rawDamage * 0.85);
     damage = Math.max(0, Math.round(damage - cappedMitigation));
@@ -1878,7 +1936,11 @@ function performActionBarAttack(actor, partyId, party) {
 
     const weaponSkillId = skillEngine.getWeaponSkillId(characters.getActiveWeapon(actor));
     if (!actor.isEnemy && actor.skillsState) {
-      actor.skillsState = skillEngine.awardSkillXp(actor.skillsState, weaponSkillId, Math.max(1, Math.round(damage / 24)));
+      actor.skillsState = skillEngine.awardSkillXp(
+        actor.skillsState,
+        weaponSkillId,
+        Math.max(1, Math.round(damage / 24)),
+      );
     }
 
     // Award armor proficiency XP to the player being hit, based on damage mitigated,
@@ -1954,10 +2016,10 @@ function awardXP(partyId, party) {
 
           // Send level up event via WebRTC preferred
           const levelUpPacket = {
-            message: player.name + " advanced to level " + player.level + "!",
-            type: "success",
+            message: player.name + ' advanced to level ' + player.level + '!',
+            type: 'success',
           };
-          broadcastToParty(partyId, "eventLog", levelUpPacket);
+          broadcastToParty(partyId, 'eventLog', levelUpPacket);
         }
         characters.calcMiscStats(player);
         saveCharacter(player.name, player);
@@ -1983,31 +2045,26 @@ const spellCastIntervals = new Map();
 
 // Debug function: Poll server stats every 30 seconds
 setInterval(() => {
-  console.log("=== Server Stats ===");
-  console.log(`Total connected clients: ${io.sockets.sockets.size}`);
-  console.log(`Total parties: ${parties.size}`);
   const mem = process.memoryUsage();
-  console.log(
-    `Memory: RSS ${Math.round(mem.rss / 1024 / 1024)}MB, Heap Used ${Math.round(mem.heapUsed / 1024 / 1024)}MB, Heap Total ${Math.round(mem.heapTotal / 1024 / 1024)}MB`
-  );
-  console.log(`Uptime: ${Math.round(process.uptime())} seconds`);
-  console.log(`Active action intervals: ${actionIntervals.size}`);
-  console.log(`Active spawn timers: ${spawnTimers.size}`);
-  for (const [partyId, party] of parties) {
-    const room = io.sockets.adapter.rooms.get(partyId);
-    const connectedSockets = room ? room.size : 0;
-    console.log(`Party ${partyId}: ${party.players.size} players, ${connectedSockets} connected, Floor ${party.floor}, Combat: ${party.combatActive}`);
-    if (room) {
-      const socketList = Array.from(room)
-        .map((id) => {
-          const sock = io.sockets.sockets.get(id);
-          return `${id}(${sock ? sock.ping : "unknown"}ms)`;
-        })
-        .join(", ");
-      console.log(`  Connected sockets: ${socketList}`);
-    }
-  }
-  console.log("===================");
+  logger.info({
+    type: 'server_stats',
+    connectedClients: io.sockets.sockets.size,
+    totalParties: parties.size,
+    memory: {
+      rss: Math.round(mem.rss / 1024 / 1024),
+      heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
+      heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
+    },
+    uptime: Math.round(process.uptime()),
+    actionIntervals: actionIntervals.size,
+    spawnTimers: spawnTimers.size,
+    parties: Array.from(parties.values()).map((p) => ({
+      partyId: p.partyId,
+      players: p.players.size,
+      floor: p.floor,
+      combatActive: p.combatActive,
+    })),
+  });
 }, 8000);
 
 // Periodic shop sweep: every 5 minutes, drop any shop item older than
@@ -2035,10 +2092,10 @@ setInterval(
     }
 
     if (itemsRemoved > 0 || partiesScanned > 0) {
-      console.log(`[Shop Sweep] Scanned ${partiesScanned} parties, removed ${itemsRemoved} expired items.`);
+      logger.debug(`[Shop Sweep] Scanned ${partiesScanned} parties, removed ${itemsRemoved} expired items.`);
     }
   },
-  5 * 60 * 1000
+  5 * 60 * 1000,
 );
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2057,25 +2114,25 @@ function startRegenSystem() {
         // HP Regen (effective attributes include equipment bonuses)
         let hpRegen =
           (inCombat ? 0.08 : 0.17) +
-          characters.getEffectiveAttribute(p, "vit") / 288 +
-          characters.getEffectiveAttribute(p, "str") / 344 +
-          characters.getEffectiveAttribute(p, "for") / 677;
+          characters.getEffectiveAttribute(p, 'vit') / 288 +
+          characters.getEffectiveAttribute(p, 'str') / 344 +
+          characters.getEffectiveAttribute(p, 'for') / 677;
         p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 1.8 : 3.5));
 
         // MP Regen (effective attributes include equipment bonuses)
         let mpRegen =
           (inCombat ? 0.07 : 0.21) +
-          characters.getEffectiveAttribute(p, "int") / 422 +
-          characters.getEffectiveAttribute(p, "cnc") / 311 +
-          characters.getEffectiveAttribute(p, "wis") / 677;
+          characters.getEffectiveAttribute(p, 'int') / 422 +
+          characters.getEffectiveAttribute(p, 'cnc') / 311 +
+          characters.getEffectiveAttribute(p, 'wis') / 677;
         p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 1.3 : 2.3));
 
         // AP Regen (effective attributes include equipment bonuses)
         let apRegen =
           (inCombat ? 0.01 : 0.25) +
-          characters.getEffectiveAttribute(p, "int") / 422 +
-          characters.getEffectiveAttribute(p, "cnc") / 311 +
-          characters.getEffectiveAttribute(p, "wis") / 677;
+          characters.getEffectiveAttribute(p, 'int') / 422 +
+          characters.getEffectiveAttribute(p, 'cnc') / 311 +
+          characters.getEffectiveAttribute(p, 'wis') / 677;
         p.ap = Math.min(p.maxAp, p.ap + apRegen * (inCombat ? 0.01 : 1.8));
 
         // HP/MP changes are emitted by the consolidated delta broadcaster
@@ -2147,14 +2204,32 @@ function emitPartyDeltas(partyId, party, now) {
   // Party-level fields: only include a field when it differs from the last
   // sent value. Advances the baseline per field so unchanged fields are not
   // re-shipped every tick (the three map fields are large and change rarely).
-  const PARTY_DELTA_FIELDS = ["combatActive", "combatTurn", "floor", "dungeon", "dungeonFloors", "highestVisitedFloors", "completedDungeons", "autoEmbark"];
+  const PARTY_DELTA_FIELDS = [
+    'combatActive',
+    'combatTurn',
+    'floor',
+    'dungeon',
+    'dungeonFloors',
+    'highestVisitedFloors',
+    'completedDungeons',
+    'autoEmbark',
+  ];
   const partyPrev = partyLastState.get(partyId) || {};
   const partyNext = {};
   let partyDirty = false;
   for (const f of PARTY_DELTA_FIELDS) {
-    const cur = party[f] !== undefined ? party[f] : f === "dungeonFloors" || f === "highestVisitedFloors" || f === "completedDungeons" ? {} : undefined;
+    const cur =
+      party[f] !== undefined
+        ? party[f]
+        : f === 'dungeonFloors' || f === 'highestVisitedFloors' || f === 'completedDungeons'
+          ? {}
+          : undefined;
     const prev =
-      partyPrev[f] !== undefined ? partyPrev[f] : f === "dungeonFloors" || f === "highestVisitedFloors" || f === "completedDungeons" ? {} : undefined;
+      partyPrev[f] !== undefined
+        ? partyPrev[f]
+        : f === 'dungeonFloors' || f === 'highestVisitedFloors' || f === 'completedDungeons'
+          ? {}
+          : undefined;
     partyNext[f] = cur;
     if (utils.deepEqual(cur, prev)) continue;
     delta[f] = cur;
@@ -2196,7 +2271,7 @@ function emitPartyDeltas(partyId, party, now) {
   // Advance the party-level baseline for every field we tracked.
   partyLastState.set(partyId, partyNext);
 
-  broadcastToParty(partyId, "gameDelta", delta);
+  broadcastToParty(partyId, 'gameDelta', delta);
 }
 
 // ⚑ Embark Dungeon helper (starts at relative floor 1 and only runs floor-by-floor)
@@ -2204,21 +2279,21 @@ function emitPartyDeltas(partyId, party, now) {
 function embarkParty(partyId, party, dungeon) {
   // Only embark from town and not in combat
   if (party.combatActive || party.floor !== 0) {
-    broadcastToParty(partyId, "eventLog", { message: "You can only embark from Town (floor 0).", type: "error" });
+    broadcastToParty(partyId, 'eventLog', { message: 'You can only embark from Town (floor 0).', type: 'error' });
     return false;
   }
 
   // Check if dungeon exists
   if (!dungeons[dungeon]) {
-    broadcastToParty(partyId, "eventLog", { message: `Unknown dungeon: ${dungeon}`, type: "error" });
+    broadcastToParty(partyId, 'eventLog', { message: `Unknown dungeon: ${dungeon}`, type: 'error' });
     return false;
   }
 
   // Check if dungeon is unlocked
   if (!characters.isDungeonUnlocked(party, dungeon)) {
-    broadcastToParty(partyId, "eventLog", {
+    broadcastToParty(partyId, 'eventLog', {
       message: `Dungeon ${dungeon} is locked until you complete the previous dungeon.`,
-      type: "error",
+      type: 'error',
     });
     return false;
   }
@@ -2267,16 +2342,16 @@ function embarkParty(partyId, party, dungeon) {
   };
 
   seedEnemyFullSent(party);
-  broadcastToParty(partyId, "dungeonChange", embarkPacket);
-  broadcastToParty(partyId, "eventLog", { message: `🚀 Embarked on ${dungeon} (Floor 1)!`, type: "success" });
+  broadcastToParty(partyId, 'dungeonChange', embarkPacket);
+  broadcastToParty(partyId, 'eventLog', { message: `🚀 Embarked on ${dungeon} (Floor 1)!`, type: 'success' });
   return true;
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // CONNECTION HANDLER - Centralized socket connection management
 // ═══════════════════════════════════════════════════════════════════
-io.on("connection", (socket) => {
-  console.log(`[CONNECTION] New socket connected: ${socket.id} from ${socket.handshake.address}`);
+io.on('connection', (socket) => {
+  logger.info(`[CONNECTION] New socket connected: ${socket.id} from ${socket.handshake.address}`);
 
   // Performance optimization: Track socket
   socketMap.set(socket.id, socket);
@@ -2284,42 +2359,42 @@ io.on("connection", (socket) => {
   // Ping measurement - send pings every 2 seconds for faster initial measurement
   socket.ping = 0;
   socket.pingInterval = setInterval(() => {
-    utils.trackSocketIoSent("ping", Date.now());
-    socket.emit("ping", Date.now());
+    utils.trackSocketIoSent('ping', Date.now());
+    socket.emit('ping', Date.now());
   }, 2000);
-  socket.on("pong", (timestamp) => {
-    utils.trackSocketIoReceived("pong", { timestamp });
+  socket.on('pong', (timestamp) => {
+    utils.trackSocketIoReceived('pong', { timestamp });
     socket.ping = Date.now() - timestamp;
     // Send server-measured ping to client for display
-    utils.trackSocketIoSent("pingUpdate", socket.ping);
-    socket.emit("pingUpdate", socket.ping);
+    utils.trackSocketIoSent('pingUpdate', socket.ping);
+    socket.emit('pingUpdate', socket.ping);
   });
-  socket.on("disconnect", (reason) => handleDisconnect(socket, reason));
+  socket.on('disconnect', (reason) => handleDisconnect(socket, reason));
 
   // Note: WebRTC signaling handlers (webrtc-offer, webrtc-signal, batchPreference)
   // are now handled by webrtcServer.setupSocketIOHandlers(io) called at initialization
 
-  socket.on("joinParty", (data) => handleJoinParty(socket, data));
+  socket.on('joinParty', (data) => handleJoinParty(socket, data));
 
-  socket.on("allocatePoints", (data) => handleAllocatePoints(socket, data));
+  socket.on('allocatePoints', (data) => handleAllocatePoints(socket, data));
 
   // 🏃 Escape Dungeon handler (return to Town after combat, reset progress)
-  socket.on("escapeDungeon", (data) => handleEscapeDungeon(socket, data));
+  socket.on('escapeDungeon', (data) => handleEscapeDungeon(socket, data));
 
   // ⚑ Embark Dungeon handler (starts at relative floor 1 and only runs floor-by-floor)
-  socket.on("embarkDungeon", (data) => handleEmbarkDungeon(socket, data));
+  socket.on('embarkDungeon', (data) => handleEmbarkDungeon(socket, data));
 
   // 🔁 Toggle Auto-Embark (re-embark on the same dungeon automatically when returning to Town)
-  socket.on("toggleAutoEmbark", (data) => handleToggleAutoEmbark(socket, data));
+  socket.on('toggleAutoEmbark', (data) => handleToggleAutoEmbark(socket, data));
 
   // 🎲 Change Dungeon handler
-  socket.on("changeDungeon", (data) => handleChangeDungeon(socket, data));
+  socket.on('changeDungeon', (data) => handleChangeDungeon(socket, data));
 
-  socket.on("leaveParty", (partyId) => handleLeaveParty(socket, partyId));
-  socket.on("equipItem", (data) => handleEquipItem(socket, data));
+  socket.on('leaveParty', (partyId) => handleLeaveParty(socket, partyId));
+  socket.on('equipItem', (data) => handleEquipItem(socket, data));
 
-  socket.on("assignAbilitySlot", (data) => {
-    utils.trackSocketIoReceived("assignAbilitySlot", data);
+  socket.on('assignAbilitySlot', (data) => {
+    utils.trackSocketIoReceived('assignAbilitySlot', data);
     const { partyId, slotIndex, abilityId } = data || {};
     const party = parties.get(partyId);
     if (!party) return;
@@ -2328,12 +2403,12 @@ io.on("connection", (socket) => {
 
     const slot = Number(slotIndex);
     if (!Number.isInteger(slot) || slot < 0 || slot >= 8) {
-      socket.emit("eventLog", { message: "Invalid ability slot.", type: "error" });
+      socket.emit('eventLog', { message: 'Invalid ability slot.', type: 'error' });
       return;
     }
 
     if (abilityId && !abilities.some((ability) => ability.id === abilityId)) {
-      socket.emit("eventLog", { message: "Unknown ability.", type: "error" });
+      socket.emit('eventLog', { message: 'Unknown ability.', type: 'error' });
       return;
     }
 
@@ -2349,9 +2424,9 @@ io.on("connection", (socket) => {
         const playerSkillLevel = utils.calcSkillLv(playerSkillXp);
 
         if (playerSkillLevel < requiredSkillLevel) {
-          socket.emit("eventLog", {
-            message: `Cannot assign ${ability.name}: Requires level ${requiredSkillLevel} ${skillId.replace("skill_", "").replace("_", " ")}`,
-            type: "error",
+          socket.emit('eventLog', {
+            message: `Cannot assign ${ability.name}: Requires level ${requiredSkillLevel} ${skillId.replace('skill_', '').replace('_', ' ')}`,
+            type: 'error',
           });
           return;
         }
@@ -2369,26 +2444,26 @@ io.on("connection", (socket) => {
     player.abilitySlots = nextSlots;
     saveCharacter(player.name, player);
     broadcastPlayerUpdate(partyId, party, socket.id);
-    socket.emit("eventLog", { message: `Assigned ${abilityId || "nothing"} to slot ${slot + 1}.`, type: "success" });
+    socket.emit('eventLog', { message: `Assigned ${abilityId || 'nothing'} to slot ${slot + 1}.`, type: 'success' });
   });
 
-  socket.on("unequipItem", (data) => handleUnequipItem(socket, data));
-  socket.on("useItem", (data) => handleUseItem(socket, data));
-  socket.on("sellItem", (data) => handleSellItem(socket, data));
-  socket.on("disconnect", () => handleLateDisconnect(socket));
+  socket.on('unequipItem', (data) => handleUnequipItem(socket, data));
+  socket.on('useItem', (data) => handleUseItem(socket, data));
+  socket.on('sellItem', (data) => handleSellItem(socket, data));
+  socket.on('disconnect', () => handleLateDisconnect(socket));
 
   // Register shop purchase handlers
-  socket.on("buyRandomGear", (partyId) => handleGearPurchase(socket, "randomGear", partyId));
-  socket.on("buyArmour", (partyId) => handleGearPurchase(socket, "armour", partyId));
-  socket.on("buyWeapon", (partyId) => handleGearPurchase(socket, "weapon", partyId));
-  socket.on("buyWeaponMelee", (partyId) => handleGearPurchase(socket, "weaponMelee", partyId));
-  socket.on("buyWeaponRanged", (partyId) => handleGearPurchase(socket, "weaponRanged", partyId));
-  socket.on("buyWeaponMagic", (partyId) => handleGearPurchase(socket, "weaponMagic", partyId));
-  socket.on("buyShoes", (partyId) => handleGearPurchase(socket, "shoes", partyId));
-  socket.on("buyHelmet", (partyId) => handleGearPurchase(socket, "helmet", partyId));
+  socket.on('buyRandomGear', (partyId) => handleGearPurchase(socket, 'randomGear', partyId));
+  socket.on('buyArmour', (partyId) => handleGearPurchase(socket, 'armour', partyId));
+  socket.on('buyWeapon', (partyId) => handleGearPurchase(socket, 'weapon', partyId));
+  socket.on('buyWeaponMelee', (partyId) => handleGearPurchase(socket, 'weaponMelee', partyId));
+  socket.on('buyWeaponRanged', (partyId) => handleGearPurchase(socket, 'weaponRanged', partyId));
+  socket.on('buyWeaponMagic', (partyId) => handleGearPurchase(socket, 'weaponMagic', partyId));
+  socket.on('buyShoes', (partyId) => handleGearPurchase(socket, 'shoes', partyId));
+  socket.on('buyHelmet', (partyId) => handleGearPurchase(socket, 'helmet', partyId));
 
   // Handle purchases from shop stock
-  socket.on("buyShopItem", (data) => {
+  socket.on('buyShopItem', (data) => {
     if (data && data.partyId && data.index !== undefined) {
       handleGearPurchase(socket, `shop_${data.index}`, data.partyId);
     }
@@ -2401,7 +2476,7 @@ const broadcastIntervalId = startBroadcastSystem();
 
 // Initialize DoT system
 function initDotSystem() {
-  const EFFECT_FIELDS = ["effects"];
+  const EFFECT_FIELDS = ['effects'];
   const hasActiveEffects = (party) => {
     const combatants = [...party.players.values(), ...(party.enemies || [])];
     return combatants.some((c) => EFFECT_FIELDS.some((f) => Array.isArray(c[f]) && c[f].length > 0));
@@ -2423,5 +2498,5 @@ function initDotSystem() {
 const dotIntervalId = initDotSystem();
 
 server.listen(25561, () => {
-  console.log("🩸 AGI Action Bar RPG with VIT Regeneration on port 25561");
+  logger.info('AGI Action Bar RPG with VIT Regeneration on port 25561');
 });

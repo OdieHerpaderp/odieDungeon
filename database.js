@@ -1,19 +1,20 @@
 // database.js - Character Save/Load Module
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { compactEquipment } from "./utils.js";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import logger from './logger.js';
+import { compactEquipment } from './utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const CHARACTERS_DIR = path.join(__dirname, "characters");
+const CHARACTERS_DIR = path.join(__dirname, 'characters');
 if (!fs.existsSync(CHARACTERS_DIR)) {
   fs.mkdirSync(CHARACTERS_DIR);
 }
 
 export function sanitizeName(name) {
-  return (name || "").replace(/[^a-zA-Z0-9]/g, "_");
+  return (name || '').replace(/[^a-zA-Z0-9]/g, '_');
 }
 
 function canonicalKey(name) {
@@ -73,7 +74,7 @@ export function saveCharacter(name, character) {
     fs.writeFileSync(filePath, JSON.stringify(characterData, null, 2));
     // console.log(`Saved character ${name} to ${filePath}`);
   } catch (error) {
-    console.error(`Failed to save ${name}:`, error);
+    logger.error({ err: error.message, name }, `Failed to save character ${name}`);
   }
 }
 
@@ -83,7 +84,7 @@ export function loadCharacter(name) {
 
   if (fs.existsSync(filePath)) {
     try {
-      const data = fs.readFileSync(filePath, "utf8");
+      const data = fs.readFileSync(filePath, 'utf8');
       const characterData = JSON.parse(data);
       // Initialize missing fields
       characterData.gold = characterData.gold || 0;
@@ -101,11 +102,11 @@ export function loadCharacter(name) {
       delete characterData.currentVenture;
       delete characterData.ventures;
 
-      console.log(`Loaded character ${name} (Gold: ${characterData.gold}) from ${filePath}`);
+      logger.debug(`Loaded character ${name} (Gold: ${characterData.gold}) from ${filePath}`);
 
       return characterData;
     } catch (error) {
-      console.error(`Failed to load ${name}:`, error);
+      logger.error({ err: error.message, name }, `Failed to load character ${name}`);
     }
   }
   return null;
@@ -114,7 +115,7 @@ export function loadCharacter(name) {
 export function graveyardCharacter(name) {
   const key = canonicalKey(name);
   const primarySource = path.join(CHARACTERS_DIR, `${key}.json`);
-  const graveyardDir = path.join(__dirname, "graveyard");
+  const graveyardDir = path.join(__dirname, 'graveyard');
   if (!fs.existsSync(graveyardDir)) {
     fs.mkdirSync(graveyardDir);
   }
@@ -122,6 +123,6 @@ export function graveyardCharacter(name) {
 
   if (fs.existsSync(primarySource)) {
     fs.renameSync(primarySource, destPath);
-    console.log(`Moved ${name} to graveyard as ${key}.json`);
+    logger.debug(`Moved ${name} to graveyard as ${key}.json`);
   }
 }

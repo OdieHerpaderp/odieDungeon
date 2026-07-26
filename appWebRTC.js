@@ -4,6 +4,7 @@ import wrtc from "wrtc";
 const { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate } = wrtc;
 import { deepEqual } from "./utils.js";
 import { buildSnapshot } from "./utilities/deltaTracker.js";
+import logger from "./logger.js";
 
 // Batching configuration - a single coalescing pool for all periodic state.
 // maxBatchSize only bounds memory; flushes are driven by the time interval
@@ -207,7 +208,7 @@ export class WebRTCServer extends EventEmitter {
 
       // Check if connection is stale
       if (peerData.connected && !peerData.dataChannel) {
-        console.warn(`WebRTC peer ${socketId} has no data channel despite being marked connected`);
+        logger.warn(`WebRTC peer ${socketId} has no data channel despite being marked connected`);
         health.dataChannelState = "missing";
       }
 
@@ -502,7 +503,7 @@ export class WebRTCServer extends EventEmitter {
         this.packetTracker.trackSent("batchUpdate", batchMessage);
         accumulator.clear();
       } catch (error) {
-        console.error(`[WebRTC Batch] Flush error for ${socketId}:`, error.message, `(${accumulator.count} pending messages cleared)`);
+        logger.error({ socketId, pending: accumulator.count }, `[WebRTC Batch] Flush error for ${socketId}`);
 
         // Always clear on error to prevent memory growth
         accumulator.clear();
@@ -530,7 +531,7 @@ export class WebRTCServer extends EventEmitter {
       this.packetTracker.trackSent("batchUpdate", batchMessage);
       accumulator.clear();
     } catch (error) {
-      console.error(`Failed to flush batch to ${socketId}:`, error);
+      logger.error({ socketId }, `Failed to flush batch to ${socketId}`);
       accumulator.clear();
     }
   }
@@ -601,7 +602,7 @@ export class WebRTCServer extends EventEmitter {
         peerData.dataChannel.send(JSON.stringify(message));
         return true;
       } catch (error) {
-        console.error(`[WebRTC Send Error] Failed to send ${type} to ${socketId}:`, error);
+        logger.error({ socketId, type }, `[WebRTC Send Error] Failed to send ${type} to ${socketId}`);
         return false;
       }
     }
@@ -612,7 +613,7 @@ export class WebRTCServer extends EventEmitter {
         peerData.dataChannel.send(JSON.stringify(message));
         return true;
       } catch (error) {
-        console.error(`[WebRTC Send Error] Failed to send immediate ${type} to ${socketId}:`, error);
+        logger.error({ socketId, type }, `[WebRTC Send Error] Failed to send immediate ${type} to ${socketId}`);
         return false;
       }
     }
@@ -703,13 +704,13 @@ export class WebRTCServer extends EventEmitter {
           }
         })
         .catch((error) => {
-          console.error("WebRTC offer error:", error);
+          logger.error({ socketId }, "WebRTC offer error");
           if (this.io) {
             this.io.to(socketId).emit("webrtc-error", { message: "Failed to establish WebRTC connection" });
           }
         });
     } catch (error) {
-      console.error("WebRTC offer error:", error);
+      logger.error({ socketId }, "WebRTC offer error");
       if (this.io) {
         this.io.to(socketId).emit("webrtc-error", { message: "Failed to establish WebRTC connection" });
       }
@@ -723,7 +724,7 @@ export class WebRTCServer extends EventEmitter {
     try {
       this.handleIceCandidate(socketId, data.candidate);
     } catch (error) {
-      console.error("WebRTC signal error:", error);
+      logger.error({ socketId }, "WebRTC signal error");
     }
   }
 
@@ -735,7 +736,7 @@ export class WebRTCServer extends EventEmitter {
 
     // Validate batch size (75ms to 500ms range)
     if (typeof batchSizeMs !== "number" || isNaN(batchSizeMs) || batchSizeMs < 75 || batchSizeMs > 500) {
-      console.log(`Invalid batch preference from ${socketId}: ${batchSizeMs}ms`);
+      logger.warn({ socketId, batchSizeMs }, `Invalid batch preference from ${socketId}`);
       return;
     }
 
@@ -781,7 +782,7 @@ export class WebRTCServer extends EventEmitter {
 
       // Handle disconnect - clean up WebRTC peer
       socket.on("disconnect", () => {
-        console.log(`Socket disconnect: ${socket.id} - removing WebRTC peer`);
+        logger.info({ socketId: socket.id }, `Socket disconnect: ${socket.id} - removing WebRTC peer`);
         this.removePeer(socket.id);
       });
     });
@@ -807,7 +808,7 @@ export class WebRTCServer extends EventEmitter {
         peerData.dataChannel.close();
       }
     } catch (e) {
-      console.error(`[WebRTC] Error closing data channel for ${socketId}:`, e);
+        logger.error({ socketId }, `[WebRTC] Error closing data channel for ${socketId}`);
     }
 
     try {
@@ -818,7 +819,7 @@ export class WebRTCServer extends EventEmitter {
         peerData.pc.close();
       }
     } catch (e) {
-      console.error(`[WebRTC] Error closing peer connection for ${socketId}:`, e);
+        logger.error({ socketId }, `[WebRTC] Error closing peer connection for ${socketId}`);
     }
 
     return true;
@@ -837,7 +838,7 @@ export class WebRTCServer extends EventEmitter {
     // Reconnection without a socket.io drop: tear down any pre-existing peer
     // for this socketId first so we don't leak RTCPeerConnections.
     if (this.peers.has(socketId)) {
-      console.log(`[WebRTC] Closing pre-existing peer for ${socketId} before recreating`);
+      logger.info({ socketId }, `[WebRTC] Closing pre-existing peer for ${socketId} before recreating`);
       this.closePeerConnection(socketId);
       this.peers.delete(socketId);
     }
@@ -881,7 +882,7 @@ export class WebRTCServer extends EventEmitter {
     pc.onconnectionstatechange = () => {
       if (!isCurrent()) return; // Ignore stale callbacks from a superseded connection
       const state = pc.connectionState;
-      console.log(`[WebRTC] Connection state for ${socketId}: ${state}`);
+      logger.info({ socketId, state }, `[WebRTC] Connection state for ${socketId}: ${state}`);
 
       // Update health tracking
       const health = this.connectionHealth.get(socketId) || {};
@@ -912,7 +913,7 @@ export class WebRTCServer extends EventEmitter {
 
       dataChannel.onopen = () => {
         if (!isCurrent()) return;
-        console.log(`[WebRTC] Data channel opened for ${socketId}`);
+        logger.info({ socketId }, `[WebRTC] Data channel opened for ${socketId}`);
         peerData.connected = true;
         peerData.dataChannel = dataChannel;
 
@@ -932,7 +933,7 @@ export class WebRTCServer extends EventEmitter {
         // reconnection - ask the app layer to push a fresh full state so the
         // client can restore its view and re-baseline deltas.
         if (wasReconnect) {
-          console.log(`[WebRTC] Re-established data channel for ${socketId} - requesting state restore`);
+          logger.info({ socketId }, `[WebRTC] Re-established data channel for ${socketId} - requesting state restore`);
           this.emit("webrtcStateRestore", socketId);
         }
       };
@@ -947,7 +948,7 @@ export class WebRTCServer extends EventEmitter {
           const m = JSON.parse(e.data);
           this.handleMessage(socketId, m);
         } catch (error) {
-          console.error(`[WebRTC] Failed to parse message from ${socketId}:`, error);
+          logger.error({ socketId }, `[WebRTC] Failed to parse message from ${socketId}`);
         }
       };
 
@@ -966,7 +967,7 @@ export class WebRTCServer extends EventEmitter {
 
       dataChannel.onerror = (err) => {
         if (!isCurrent()) return;
-        console.error(`[WebRTC] Data channel error for ${socketId}:`, err);
+        logger.error({ socketId }, `[WebRTC] Data channel error for ${socketId}`);
 
         // Update health tracking
         const health = this.connectionHealth.get(socketId) || {};
@@ -997,7 +998,7 @@ export class WebRTCServer extends EventEmitter {
       try {
         await peerData.pc.addIceCandidate(new RTCIceCandidate(candidate));
       } catch (error) {
-        console.error(`Failed to add ICE candidate for ${socketId}:`, error);
+        logger.error({ socketId }, `Failed to add ICE candidate for ${socketId}`);
       }
     }
   }
@@ -1032,7 +1033,7 @@ export class WebRTCServer extends EventEmitter {
         this.emit("webrtcStateRestore", socketId);
         break;
       default:
-        console.warn(`Unknown WebRTC message type: ${message.type}`);
+        logger.warn({ type: message.type }, `Unknown WebRTC message type`);
     }
   }
 
@@ -1131,7 +1132,7 @@ export class WebRTCServer extends EventEmitter {
         stats.totalMessagesPending += count + messagesLen + fingerprintsSize;
 
         if (!peer) {
-          console.warn(`[WebRTC Memory Leak] Socket ${socketId} disconnected but batch queue still has ${count} pending`);
+          logger.warn({ socketId, pending: count }, `[WebRTC Memory Leak] Socket ${socketId} disconnected but batch queue still has ${count} pending`);
         }
       }
     }
