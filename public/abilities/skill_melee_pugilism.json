@@ -7,13 +7,13 @@
     "unlockSkillLevelMin": 0,
     "mpCostBase": 3,
     "cooldownMsBase": 2000,
-    "damageBase": 8,
+    "damageBase": 7,
     "maxTargets": 1,
     "allowedWeaponClasses": ["melee"],
     "requiredWeaponSubTypes": ["pugilism"],
     "requiresWeaponEquipped": true,
     "castUsesWeaponDamageModel": true,
-    "attributeDamageScale": {"STR": 0.8, "DEX": 0.5, "VIT": 0.1}
+    "attributeDamageScale": {"STR": 0.7, "DEX": 0.4, "AGI": 0.3}
   },
   {
     "id": "uppercut",
@@ -23,28 +23,87 @@
     "unlockSkillLevelMin": 2,
     "mpCostBase": 4,
     "cooldownMsBase": 2200,
-    "damageBase": 11,
+    "damageBase": 10,
     "maxTargets": 1,
     "allowedWeaponClasses": ["melee"],
     "requiredWeaponSubTypes": ["pugilism"],
     "requiresWeaponEquipped": true,
     "castUsesWeaponDamageModel": true,
-    "attributeDamageScale": {"STR": 0.8, "DEX": 0.5, "VIT": 0.1}
+    "attributeDamageScale": {"STR": 0.7, "DEX": 0.4, "AGI": 0.3}
+  },
+  {
+    "id": "pugilism_body_blow",
+    "name": "Body Blow",
+    "description": "A crushing strike to the torso that lowers the target's guard.",
+    "skillId": "skill_melee_pugilism",
+    "unlockSkillLevelMin": 4,
+    "mpCostBase": 5,
+    "cooldownMsBase": 2400,
+    "damageBase": 13,
+    "effects": [
+      { "type": "defenseDown", "amount": 0.15, "duration": 4 }
+    ],
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["melee"],
+    "requiredWeaponSubTypes": ["pugilism"],
+    "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
+    "attributeDamageScale": {"STR": 0.7, "DEX": 0.4, "AGI": 0.3}
   },
   {
     "id": "suplex",
     "name": "Suplex",
     "description": "Deals weapon damage to one foe with your fists.",
     "skillId": "skill_melee_pugilism",
-    "unlockSkillLevelMin": 5,
-    "mpCostBase": 5,
-    "cooldownMsBase": 3500,
-    "damageBase": 18,
+    "unlockSkillLevelMin": 6,
+    "mpCostBase": 6,
+    "cooldownMsBase": 2600,
+    "damageBase": 16,
+    "effects": [
+      { "type": "actionSlow", "amount": 10, "duration": 2 }
+    ],
     "maxTargets": 1,
     "allowedWeaponClasses": ["melee"],
     "requiredWeaponSubTypes": ["pugilism"],
     "requiresWeaponEquipped": true,
     "castUsesWeaponDamageModel": true,
-    "attributeDamageScale": {"STR": 0.8, "DEX": 0.5, "VIT": 0.1}
+    "attributeDamageScale": {"STR": 0.7, "DEX": 0.4, "AGI": 0.3}
+  },
+  {
+    "id": "pugilism_combination",
+    "name": "Combination",
+    "description": "A rapid flurry of strikes against multiple foes.",
+    "skillId": "skill_melee_pugilism",
+    "unlockSkillLevelMin": 8,
+    "mpCostBase": 8,
+    "cooldownMsBase": 2600,
+    "damageBase": 14,
+    "targets": [1, 2, 0.5],
+    "allowedWeaponClasses": ["melee"],
+    "requiredWeaponSubTypes": ["pugilism"],
+    "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
+    "abilityType": "aoe",
+    "attributeDamageScale": {"STR": 0.7, "DEX": 0.4, "AGI": 0.3}
+  },
+  {
+    "id": "pugilism_haymaker",
+    "name": "Haymaker",
+    "description": "A wide, powerful swing that dazes the target on impact.",
+    "skillId": "skill_melee_pugilism",
+    "unlockSkillLevelMin": 10,
+    "mpCostBase": 11,
+    "cooldownMsBase": 2800,
+    "damageBase": 20,
+    "effects": [
+      { "type": "actionSlow", "amount": 20, "duration": 3 }
+    ],
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["melee"],
+    "requiredWeaponSubTypes": ["pugilism"],
+    "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
+    "abilityType": "damage",
+    "attributeDamageScale": {"STR": 0.7, "DEX": 0.4, "AGI": 0.3}
   }
 ]

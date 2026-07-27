@@ -37,14 +37,14 @@
     "name": "Sweeping Strike",
     "description": "Deals weapon damage to multiple foes with a polearm and slows them.",
     "skillId": "skill_melee_polearms",
-    "unlockSkillLevelMin": 6,
+    "unlockSkillLevelMin": 10,
     "mpCostBase": 8,
     "cooldownMsBase": 3200,
     "damageBase": 16,
     "effects": [
       { "type": "actionSlow", "amount": 20, "duration": 3 }
     ],
-    "maxTargets": 4,
+    "targets": [3, 4, 0.5],
     "allowedWeaponClasses": ["melee"],
     "requiredWeaponSubTypes": ["polearms"],
     "requiresWeaponEquipped": true,

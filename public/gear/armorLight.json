@@ -21,10 +21,11 @@
     "magicResist": 5,
     "bonuses": {
       "INT": 4,
-      "CNC": 4
+      "CNC": 4,
+      "AP": 11
     },
     "range": 1,
-    "value": 26,
+    "value": 32,
     "description": "A light robe woven for spellcasters, shielding the mind more than the body."
   },
   {
@@ -35,10 +36,11 @@
     "magicResist": 5,
     "bonuses": {
       "CNC": 6,
-      "INT": 2
+      "INT": 2,
+      "AP": 11
     },
     "range": 1,
-    "value": 26,
+    "value": 32,
     "description": "A light robe woven for devout casters, shielding the spirit more than the body."
   },
   {
@@ -52,7 +54,7 @@
       "DEX": 5
     },
     "range": 1,
-    "value": 30,
+    "value": 28,
     "description": "Light protective armor made from animal hide."
   },
   {
@@ -67,7 +69,7 @@
       "STR": 3
     },
     "range": 1,
-    "value": 32,
+    "value": 30,
     "description": "Light armor tailored for silent strikes and swift escapes."
   }
 ]

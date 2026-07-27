@@ -16,30 +16,14 @@
     "attributeDamageScale": {"STR": 0.9, "VIT": 0.1}
   },
   {
-    "id": "cleave",
-    "name": "Cleave",
-    "description": "Deals weapon damage to multiple foes with a long blade.",
-    "skillId": "skill_melee_longBlade",
-    "unlockSkillLevelMin": 3,
-    "mpCostBase": 5,
-    "cooldownMsBase": 2400,
-    "damageBase": 7,
-    "maxTargets": 3,
-    "allowedWeaponClasses": ["melee"],
-    "requiredWeaponSubTypes": ["longBlade"],
-    "requiresWeaponEquipped": true,
-    "castUsesWeaponDamageModel": true,
-    "attributeDamageScale": {"STR": 0.9, "VIT": 0.1}
-  },
-  {
     "id": "longblade_sever",
     "name": "Severing Strike",
     "description": "Deals weapon damage to one foe with a long blade and deals damage over time.",
     "skillId": "skill_melee_longBlade",
-    "unlockSkillLevelMin": 5,
+    "unlockSkillLevelMin": 4,
     "mpCostBase": 7,
     "cooldownMsBase": 2800,
-    "damageBase": 24,
+    "damageBase": 18,
     "effects": [
       { "type": "dot", "amount": 6, "duration": 5 }
     ],
@@ -49,6 +33,42 @@
     "requiresWeaponEquipped": true,
     "castUsesWeaponDamageModel": true,
     "abilityType": "damage",
+    "attributeDamageScale": {"STR": 0.9, "VIT": 0.1}
+  },
+  {
+    "id": "longblade_rending_strike",
+    "name": "Rending Strike",
+    "description": "A brutal, armor-tearing cut that wounds one foe with a long blade and leaves them bleeding.",
+    "skillId": "skill_melee_longBlade",
+    "unlockSkillLevelMin": 7,
+    "mpCostBase": 9,
+    "cooldownMsBase": 3000,
+    "damageBase": 25,
+    "effects": [
+      { "type": "dot", "amount": 7, "duration": 5 }
+    ],
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["melee"],
+    "requiredWeaponSubTypes": ["longBlade"],
+    "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
+    "abilityType": "damage",
+    "attributeDamageScale": {"STR": 0.9, "VIT": 0.1}
+  },
+  {
+    "id": "cleave",
+    "name": "Cleave",
+    "description": "Deals weapon damage to multiple foes with a long blade.",
+    "skillId": "skill_melee_longBlade",
+    "unlockSkillLevelMin": 10,
+    "mpCostBase": 8,
+    "cooldownMsBase": 2400,
+    "damageBase": 7,
+    "targets": [2, 3, 0.5],
+    "allowedWeaponClasses": ["melee"],
+    "requiredWeaponSubTypes": ["longBlade"],
+    "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
     "attributeDamageScale": {"STR": 0.9, "VIT": 0.1}
   }
 ]

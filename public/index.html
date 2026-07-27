@@ -61,9 +61,14 @@
 
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "socket.io-client": "/vendor/socket.io-client/socket.io.esm.min.js"
+        }
+      }
+    </script>
 <script src="https://cdn.jsdelivr.net/npm/jsframe.js/lib/jsframe.min.js"></script>
-<script type="module" src="gear/itemGenerator.js"></script>
 <script type="module" src="index.js"></script>
 
 </body>

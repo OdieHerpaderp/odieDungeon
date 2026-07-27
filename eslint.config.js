@@ -2,10 +2,10 @@
 /** @type {import('eslint').Linter.FlatConfig[]} */
 export default [
   {
-    ignores: ['**/node_modules/**', '**/public/socket.io/socket.io.js', '**/public/jsframe*.js'],
+    ignores: ['**/node_modules/**', '**/public/jsframe*.js'],
   },
   {
-    files: ['**/*.js'],
+    files: ['**/*.{js,mjs}'],
     languageOptions: {
       ecmaVersion: 2025,
       sourceType: 'module',
@@ -33,7 +33,6 @@ export default [
         setInterval: 'readonly',
         setTimeout: 'readonly',
         // Third-party globals loaded via script tags (not module imports)
-        io: 'readonly',
         JSFrame: 'readonly',
       },
     },
@@ -44,13 +43,12 @@ export default [
       eqeqeq: ['warn', 'always'],
       'prefer-const': 'error',
       'prefer-template': 'error',
-      'no-console': ['error', { allow: ['warn', 'error'] }],
     },
   },
   {
-    files: ['public/**/*.js'],
+    files: ['public/**/*.{js,mjs}'],
     rules: {
-      'no-console': 'warn',
+
     },
   },
 ];

@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import skillCurve from './public/skills/skillCurve.json' with { type: 'json' };
+import * as characters from './characters.js';
 
 export function deepEqual(obj1, obj2) {
   if (obj1 === obj2) return true;
@@ -116,7 +117,7 @@ export function createDefaultCharacter(name) {
 }
 
 export function compactEquipment(equipment) {
-  const slots = ['weapon', 'armour', 'helmet', 'shoes'];
+  const slots = ['weapon', 'armour', 'helmet', 'shoes', 'offHand'];
   const out = {};
   for (const slot of slots) {
     const item = equipment ? equipment[slot] : undefined;
@@ -152,7 +153,29 @@ export function toInventoryItem(raw, slot) {
   let itemSlot = raw.slot || slot || '';
   if (itemSlot === 'helmet') itemSlot = 'headgear';
   if (itemSlot === 'armour') itemSlot = 'armor';
-  return { id, level, rarity, slot: itemSlot };
+  if (itemSlot === 'shield' || itemSlot === 'book') itemSlot = 'offHand';
+  return {
+    id,
+    level,
+    rarity,
+    slot: itemSlot,
+    baseItem: raw.baseItem || id,
+    displayName: raw.displayName || raw.name || id,
+    name: raw.name || id,
+    baseDamage: raw.baseDamage,
+    baseSpellPower: raw.baseSpellPower,
+    baseAttackSpeed: raw.baseAttackSpeed,
+    baseDefense: raw.baseDefense,
+    baseMagicResist: raw.baseMagicResist,
+    baseDamageModifiers: raw.baseDamageModifiers,
+    baseValue: raw.baseValue,
+    baseRange: raw.baseRange,
+    baseBonuses: raw.baseBonuses,
+    type: raw.type,
+    subType: raw.subType,
+    twoHanded: raw.twoHanded,
+    description: raw.description,
+  };
 }
 
 export function generateMessageId() {
@@ -168,19 +191,76 @@ export function getEffectiveAttribute(player, statName) {
   return base;
 }
 
-export function getAttributeDamageModifier(player, weapon) {
-  if (!weapon || typeof weapon !== 'object') return 1;
-  const modifiers = weapon.damageModifiers;
+export function attributeScaling(player, modifiers, multiplier = 0.02) {
   if (!modifiers || typeof modifiers !== 'object') return 1;
-  const entries = Object.entries(modifiers);
-  if (entries.length === 0) return 1;
-
   let sum = 0;
-  for (const [stat, weight] of entries) {
+  for (const [stat, weight] of Object.entries(modifiers)) {
     if (typeof weight !== 'number') continue;
     sum += getEffectiveAttribute(player, stat) * weight;
   }
-  return 1 + sum * 0.03;
+  return 1 + sum * multiplier;
+}
+
+export function getAttributeDamageModifier(player, weapon) {
+  return attributeScaling(player, weapon?.damageModifiers, 0.02);
+}
+
+export function findInventoryItem(inventory, itemId) {
+  return safeArray(inventory).find(
+    (entry) =>
+      entry &&
+      (entry.id === itemId || entry.baseItem === itemId || entry.name === itemId || entry.displayName === itemId),
+  );
+}
+
+// Array coerce
+
+export function safeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+// Ensure every core stat meets its minimum floor so derived calculations can't
+// divide by zero or produce degenerate displays. Mutates in place.
+export function normalizeCharacterStats(character) {
+  character.level = Math.max(1, character.level || 1);
+  character.vit = Math.max(5, character.vit || 5);
+  character.str = Math.max(5, character.str || 5);
+  character.dex = Math.max(5, character.dex || 5);
+  character.agi = Math.max(5, character.agi || 5);
+  character.int = Math.max(5, character.int || 5);
+  character.cnc = Math.max(5, character.cnc || 5);
+  character.for = Math.max(1, character.for || 1);
+  character.wis = Math.max(1, character.wis || 1);
+  character.luk = Math.max(1, character.luk || 1);
+  character.pie = Math.max(1, character.pie || 1);
+}
+
+// After gear/stat changes, recompute max HP/MP/AP from scratch and scale the
+// current values by the same delta so the player doesn't lose stored progress.
+export function recalcDerivedMaxAndClampCurrents(player) {
+  const oldMax = { ap: player.maxAp, hp: player.maxHp, mp: player.maxMp };
+  player.maxAp = characters.calcMaxAp(player);
+  player.ap = Math.min(player.maxAp, player.ap + (player.maxAp - oldMax.ap));
+  player.maxHp = characters.calcMaxHp(player);
+  player.hp = Math.min(player.maxHp, player.hp + (player.maxHp - oldMax.hp));
+  player.maxMp = characters.calcMaxMp(player);
+  player.mp = Math.min(player.maxMp, player.mp + (player.maxMp - oldMax.mp));
+}
+
+// Canonical empty stats object for a newly-tracked combatant.
+export function createEmptyCombatStats() {
+  return {
+    attacks: 0,
+    hits: 0,
+    totalDamage: 0,
+    rollSum: 0,
+    totalHealed: 0,
+    crits: 0,
+    maxDamage: 0,
+    totalDamageTaken: 0,
+    totalMitigated: 0,
+    maxDamageTaken: 0,
+  };
 }
 
 export default {
@@ -201,4 +281,10 @@ export default {
   formatPacketStats,
   getEffectiveAttribute,
   getAttributeDamageModifier,
+  attributeScaling,
+  findInventoryItem,
+  safeArray,
+  normalizeCharacterStats,
+  recalcDerivedMaxAndClampCurrents,
+  createEmptyCombatStats,
 };

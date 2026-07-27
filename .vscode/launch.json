@@ -6,16 +6,14 @@
             "program": "${workspaceFolder}/app.js",
             "request": "launch",
             "skipFiles": ["<node_internals>/**"],
-            "type": "node",
-            "outputCapture": "std"
+            "type": "node"
         },
         {
             "type": "node",
             "request": "launch",
             "name": "Launch Program",
             "skipFiles": ["<node_internals>/**"],
-            "program": "${workspaceFolder}/app.js",
-            "outputCapture": "std"
+            "program": "${workspaceFolder}/app.js"
         }
     ]
 }

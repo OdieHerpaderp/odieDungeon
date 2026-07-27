@@ -11,7 +11,7 @@
     "floorMult": 0.0588,
     "floorAmount": 9,
     "background": "#2d2a1d",
-    "emoji": "🎻"
+    "emoji": "🌻"
   },
   "meadow": {
     "floorBase": 5.9042,
@@ -53,7 +53,7 @@
     "floorMult": 0.0636,
     "floorAmount": 15,
     "background": "#2a3a2a",
-    "emoji": "🏨️"
+    "emoji": "🏘️"
   },
   "school": {
     "floorBase": 34.0505,
@@ -109,7 +109,7 @@
     "floorMult": 0.0705,
     "floorAmount": 23,
     "background": "#10231d",
-    "emoji": "🕰️"
+    "emoji": "🚰"
   },
   "mine": {
     "floorBase": 131.0812,
@@ -130,14 +130,14 @@
     "floorMult": 0.0732,
     "floorAmount": 26,
     "background": "#cc9933",
-    "emoji": "🏔️"
+    "emoji": "🏜️"
   },
   "canyon": {
     "floorBase": 201.9549,
     "floorMult": 0.0741,
     "floorAmount": 27,
     "background": "#cc7711",
-    "emoji": "🏔"
+    "emoji": "🌄"
   },
   "clocktower": {
     "floorBase": 232.1898,
@@ -151,14 +151,14 @@
     "floorMult": 0.076,
     "floorAmount": 29,
     "background": "#111122",
-    "emoji": "\ud83dd\uddff"
+    "emoji": "🗿"
   },
   "temple": {
     "floorBase": 305.3061,
     "floorMult": 0.077,
     "floorAmount": 30,
     "background": "#2a1b2f",
-    "emoji": "🕕"
+    "emoji": "🛕"
   },
   "graveyard": {
     "floorBase": 349.3138,
@@ -207,7 +207,7 @@
     "floorMult": 0.0841,
     "floorAmount": 37,
     "background": "#2a0a0a",
-    "emoji": "🏟️"
+    "emoji": "🏯"
   },
   "labyrinth": {
     "floorBase": 871.1797,
@@ -230,19 +230,19 @@
     "background": "#1a2433",
     "emoji": "❄️"
   },
-  "sky": {
+  "collusseum": {
     "floorBase": 1275.6173,
     "floorMult": 0.0885,
     "floorAmount": 41,
     "background": "#1b2b3a",
-    "emoji": "☁️"
+    "emoji": "🏟️"
   },
   "sanctum": {
     "floorBase": 1447.2026,
     "floorMult": 0.0896,
     "floorAmount": 42,
     "background": "#1a1330",
-    "emoji": "✨"
+    "emoji": "🕍"
   },
   "volcano": {
     "floorBase": 1641.2408,
@@ -284,6 +284,6 @@
     "floorMult": 0.0966,
     "floorAmount": 48,
     "background": "#040202",
-    "emoji": "🗋"
+    "emoji": "🕋"
   }
 }

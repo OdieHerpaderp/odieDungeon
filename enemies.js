@@ -8,7 +8,7 @@ import dungeons from './public/dungeons.json' with { type: 'json' };
  */
 export function generateEnemies(party) {
   const livePlayers = Array.from(party.players.values()).filter((p) => p.hp > 0);
-  const enemyBonus = livePlayers.length - 0.35;
+  const enemyBonus = livePlayers.length - 0.3;
 
   // Get dungeon data for scaling
   const dungeonData = party.dungeon ? dungeons[party.dungeon] : null;
@@ -27,9 +27,9 @@ export function generateEnemies(party) {
   let boss = dungeonFloor === dungeonFloorMax;
   let enemyCount =
     Math.ceil(Math.random() * (0.3 + effectiveFloor / 21)) +
-    enemyBonus * 1.4 +
-    effectiveFloor / 11 +
-    (enemyBonus * 1.2 + 0.3) * (0.35 + effectiveFloor / 11 + dungeonFloor / 11);
+    enemyBonus * 1.3 +
+    effectiveFloor / 13 +
+    (enemyBonus * 1.1 + 0.3) * (0.35 + effectiveFloor / 13 + dungeonFloor / 13);
 
   // Last floor boss: force a single boss unit
   if (boss) {
@@ -39,17 +39,14 @@ export function generateEnemies(party) {
   party.enemies = [];
 
   for (let i = 0; i < enemyCount; i++) {
-    // Use effectiveFloor for tier selection
-    const enemyData = getRandomEnemy(party.floor, effectiveFloor);
-    let enemyName = enemyData.name;
+    // Use effectiveFloor for tier selection, but force boss enemies on boss floor
+    const tier = boss ? enemyTiers.boss : getEnemyTierForFloor(party.floor, effectiveFloor);
+    const enemyName = boss ? getRandomEnemyFromTier(enemyTiers.boss) : getRandomEnemyFromTier(tier);
     let floorBonus =
       Math.pow(
-        (enemyBonus * 0.8 + (0.1 + enemyBonus / 1.3) * effectiveFloor * 1.1) / (0.8 + enemyCount / 18) +
+        (enemyBonus * 0.7 + (0.2 + enemyBonus / 1.5) * effectiveFloor * 1.1) / (0.8 + enemyCount / 17) +
           Math.random() * (0.1 + effectiveFloor / 44),
-        1.15,
-      ) *
-        0.34 +
-      0.2;
+        1.15 ) * 0.34 + 0.2;
     let calcVit = Math.floor(2 + floorBonus / 1.3 + Math.random() * (0.5 + floorBonus / 9));
     let calcHp = Math.floor(
       Math.pow(
@@ -57,7 +54,7 @@ export function generateEnemies(party) {
           calcVit * 6 +
           floorBonus * 4 +
           effectiveFloor * 5 +
-          36 +
+          62 +
           Math.random() * (calcVit * 0.05 + 0.02 + floorBonus / 55),
         1.03,
       ),
@@ -68,7 +65,7 @@ export function generateEnemies(party) {
       // Last-floor boss: single boss unit + stronger stats
       floorBonus += 1.4 + enemyBonus * 0.55;
       floorBonus *= 1.3 + enemyBonus * 0.3;
-      calcHp = Math.round(calcHp * (2.6 + enemyBonus * 0.7));
+      calcHp = Math.round(calcHp * (2.7 + enemyBonus * 0.7));
       calcVit += 15;
       enemyAp = Math.floor((20 + enemyAp) * 2.5);
     }
@@ -76,14 +73,14 @@ export function generateEnemies(party) {
       id: `enemy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
       name: enemyName,
       level: floorBonus.toFixed(2),
-      gold: floorBonus * 0.0012 + calcHp * 0.00036 + 0.12,
+      gold: floorBonus * 0.003 + calcHp * 0.0009 + 0.38,
       hp: calcHp,
       maxHp: calcHp,
       ap: enemyAp,
       maxAp: enemyAp,
       mp: Math.floor(8 + floorBonus * 1.1),
       maxMp: Math.floor(8 + floorBonus * 1.1),
-      str: Math.floor((1.1 + enemyBonus / 2.8) * floorBonus * 13 + Math.random() * (1.8 + floorBonus / 2.1)) / 10,
+      str: Math.floor((1.3 + enemyBonus / 2.9) * floorBonus * 13 + Math.random() * (1.8 + floorBonus / 2.1)) / 10,
       dex: Math.floor(1 + floorBonus * 12 + Math.random() * (2.2 + floorBonus / 1.8)) / 10,
       agi: Math.floor(1 + floorBonus * 12 + Math.random() * (2.2 + floorBonus / 1.8)) / 10,
       vit: calcVit,
@@ -105,7 +102,7 @@ export function generateEnemies(party) {
       maxActionBar: 115 + enemyCount * 6,
       equipment: {
         weapon: {
-          id: ['newspaper', 'pebble', 'magicRune'][Math.floor(Math.random() * 3)],
+          id: 'newspaper',
           level: boss ? 2 : 1,
           rarity: boss ? 1.5 : 1,
         },
@@ -119,19 +116,19 @@ export const enemyTiers = {
   // Weak enemies (Floors 1-10)
   weak: {
     names: [
-      '\uD83E\uDDEBSlime',
-      '\uD83D\uDC00Rat',
-      '\uD83E\uDDEBPoring',
-      '\uD83E\uDE80Bat',
-      '\u2603\uFE0FSnowMan',
-      '\uD83D\uDF3AGoblin',
-      '\uD83C\uDF85Santa',
-      '\uD83D\uDC0DDangerNoodle',
-      '\uD83D\uDE08Kobold',
-      '\uD83E\uDDDCElf',
-      '\uD83D\uDC0CSnail',
-      '\uD83E\uDDD7Bug',
-      '\uD83D\uDC38Frog',
+      '🧫Slime',
+      '🐀Rat',
+      '🧫Poring',
+      '🦇Bat',
+      '☃️SnowMan',
+      '👺Goblin',
+      '🎅Santa',
+      '🐍DangerNoodle',
+      '😈Kobold',
+      '🧝Elf',
+      '🐌Snail',
+      '🦗Bug',
+      '🐸Frog',
     ],
     floorRange: [1, 10],
     weight: 60, // Higher weight for lower floors
@@ -140,17 +137,17 @@ export const enemyTiers = {
   // Medium enemies (Floors 11-40)
   medium: {
     names: [
-      '\uD83E\uDED8Rhino',
-      '\uD83D\uDC7DAyylmao',
-      '\uD83E\uDDD8livingImpaired',
-      '\uD83C\uDF42\uD83D\uDEA9KnightSlime',
-      '\uD83E\uDDDCAbroseidon',
-      '\uD83E\uDDDFTroll',
-      '\uD83D\uDC79Ogre',
-      '\uD83D\uDC80Skeleton',
-      '\uD83D\uDC3AWolf',
-      '\uD83E\uDD81Lion',
-      '\uD83E\uDD82Scorpion',
+      '🦏Rhino',
+      '👽Ayylmao',
+      '🧟livingImpaired',
+      '🀄KnightSlime',
+      '🧜🏼‍♂️Broseidon',
+      '🧌Troll',
+      '👹Ogre',
+      '💀Skeleton',
+      '🐺Wolf',
+      '🦁Lion',
+      '🦂Scorpion',
     ],
     floorRange: [11, 40],
     weight: 30,
@@ -159,18 +156,18 @@ export const enemyTiers = {
   // Strong enemies (Floors 41-150)
   strong: {
     names: [
-      '\uD83D\uDC19Kraken',
-      '\uD83E\uDD96T-Rex',
-      '\uD83D\uDC7EInvader',
-      '\uD83E\uDDDCVampire',
-      '\uD83E\uDD16Robit',
-      '\uD83DD\uDDFFMoai',
-      '\uD83E\uDD8DGiantCrab',
-      '\uD83E\uDD0DHarambe',
-      '\uD83E\uDDCCYeti',
-      '\uD83D\uDC3AWerewolf',
-      '\uD83E\uDD84Unicorn',
-      '\uD83E\uDD91Leviathan',
+      '🐙Kraken',
+      '🦖T-Rex',
+      '👾Invader',
+      '🧛Vampire',
+      '🤖Robit',
+      '🗿Moai',
+      '🦀GiantCrab',
+      '🦍Harambe',
+      '🫈Yeti',
+      '🐺Werewolf',
+      '🦄Unicorn',
+      '🦑Leviathan',
     ],
     floorRange: [41, 150],
     weight: 10,
@@ -179,16 +176,16 @@ export const enemyTiers = {
   // Boss enemies (Floors 150+ or boss floors)
   boss: {
     names: [
-      '\uD83D\uDC51KingSlime',
-      '\u2620\uFE0FLich',
-      '\uD83D\uDC09Dragon',
-      '\uD83D\uDEEBUFO',
-      '\u2620\uFE0FBoneLord',
-      '\uD83C\uDF1AMoonLord',
-      '\uD83D\uDC32KingDragon',
-      '\uD83D\uDC0DMedusa',
-      '\uD83E\uDD88SharkLord',
-      '\uD83E\uDD85Griffin',
+      '👑KingSlime',
+      '☠️Lich',
+      '🐉Dragon',
+      '🛸UFO',
+      '☠️BoneLord',
+      '🌚MoonLord',
+      '🐲KingDragon',
+      '🐍Medusa',
+      '🦈SharkLord',
+      '🦅Griffin',
     ],
     floorRange: [150, 300],
     weight: 5,

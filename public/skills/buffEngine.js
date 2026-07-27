@@ -1,30 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { calcSkillLv, calcXpForLevel, calcXpForNextLevel, getEffectiveAttribute } from '../../utils.js';
+import { calcSkillLv, calcXpForLevel, calcXpForNextLevel, attributeScaling } from '../../utils.js';
 import * as itemGenerator from '../gear/itemGenerator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import weaponMelee from '../gear/weaponMelee.json' with { type: 'json' };
-import weaponRanged from '../gear/weaponRanged.json' with { type: 'json' };
-import weaponMagic from '../gear/weaponMagic.json' with { type: 'json' };
-const weapons = [...weaponMelee, ...weaponRanged, ...weaponMagic];
-
 export function getSkillLevel(skillsState, skillId) {
   const xp = skillsState?.[skillId]?.xp || 0;
   return Math.floor(calcSkillLv(xp));
-}
-
-export function calculateAttributeScaling(player, attributeDamageScale) {
-  if (!attributeDamageScale || typeof attributeDamageScale !== 'object') return 1;
-  let sum = 0;
-  for (const [stat, weight] of Object.entries(attributeDamageScale)) {
-    if (typeof weight !== 'number') continue;
-    sum += getEffectiveAttribute(player, stat) * weight;
-  }
-  return 1 + sum * 0.01;
 }
 
 export const MAX_EFFECT_STACKS = 9;
@@ -35,7 +20,7 @@ export const EFFECT_HANDLERS = {
     apply(caster, target, ability) {
       const skillLevel = getSkillLevel(caster.skillsState, ability.skillId);
       const skillMultiplier = 1 + (skillLevel - 1) * 0.05;
-      const attributeMultiplier = calculateAttributeScaling(caster, ability.attributeDamageScale);
+      const attributeMultiplier = attributeScaling(caster, ability.attributeDamageScale);
       const damagePerTick = Math.floor(
         (ability.damagePerTick || ability.dotDamagePerTick || 0) * skillMultiplier * attributeMultiplier,
       );
@@ -55,6 +40,13 @@ export const EFFECT_HANDLERS = {
     tick(effect, target, party) {
       const damage = Math.max(1, Math.floor(effect.amount * (1 + effect.tickCount * 0.05)));
       target.hp = Math.max(1, target.hp - damage);
+      if (!target.isEnemy && party && party.combatStats) {
+        const stats = party.combatStats.get(target.id);
+        if (stats) {
+          stats.totalDamageTaken += damage;
+          stats.maxDamageTaken = Math.max(stats.maxDamageTaken, damage);
+        }
+      }
       let source = null;
       if (!target.isEnemy) {
         source = party.players.get(effect.sourceId);
@@ -76,7 +68,7 @@ export const EFFECT_HANDLERS = {
     apply(caster, target, ability) {
       const skillLevel = getSkillLevel(caster.skillsState, ability.skillId);
       const skillMultiplier = 1 + (skillLevel - 1) * 0.05;
-      const attributeMultiplier = calculateAttributeScaling(caster, ability.attributeDamageScale);
+      const attributeMultiplier = attributeScaling(caster, ability.attributeDamageScale);
       const healPerTick = Math.floor(
         (ability.healPerTick || ability.hotHealPerTick || 0) * skillMultiplier * attributeMultiplier,
       );

@@ -13,7 +13,7 @@
     "requiredWeaponSubTypes": ["shortBlade"],
     "requiresWeaponEquipped": true,
     "castUsesWeaponDamageModel": true,
-    "attributeDamageScale": {"STR": 0.9, "VIT": 0.1}
+    "attributeDamageScale": {"STR": 0.5, "AGI": 0.5}
   },
   {
     "id": "shortblade_backstab",
@@ -23,28 +23,29 @@
     "unlockSkillLevelMin": 4,
     "mpCostBase": 6,
     "cooldownMsBase": 2000,
+    "damageBase": 13,
     "maxTargets": 1,
     "allowedWeaponClasses": ["melee"],
     "requiredWeaponSubTypes": ["shortBlade"],
     "requiresWeaponEquipped": true,
     "castUsesWeaponDamageModel": true,
-    "attributeDamageScale": {"STR": 0.9, "VIT": 0.1}
+    "attributeDamageScale": {"STR": 0.5, "AGI": 0.5}
   },
   {
     "id": "shortblade_flurry",
     "name": "Blade Flurry",
     "description": "Deals weapon damage to multiple foes with a short blade.",
     "skillId": "skill_melee_shortBlade",
-    "unlockSkillLevelMin": 6,
+    "unlockSkillLevelMin": 10,
     "mpCostBase": 8,
     "cooldownMsBase": 3000,
     "damageBase": 14,
-    "maxTargets": 3,
+    "targets": [2, 3, 0.5],
     "allowedWeaponClasses": ["melee"],
     "requiredWeaponSubTypes": ["shortBlade"],
     "requiresWeaponEquipped": true,
     "castUsesWeaponDamageModel": true,
     "abilityType": "cone",
-    "attributeDamageScale": {"STR": 0.9, "VIT": 0.1}
+    "attributeDamageScale": {"STR": 0.5, "AGI": 0.5}
   }
 ]

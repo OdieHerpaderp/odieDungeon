@@ -2,8 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import logger from './logger.js';
-import { compactEquipment } from './utils.js';
+import { compactEquipment, safeArray } from './utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,7 +73,7 @@ export function saveCharacter(name, character) {
     fs.writeFileSync(filePath, JSON.stringify(characterData, null, 2));
     // console.log(`Saved character ${name} to ${filePath}`);
   } catch (error) {
-    logger.error({ err: error.message, name }, `Failed to save character ${name}`);
+    console.error('Failed to save character ' + name, { err: error.message, name });
   }
 }
 
@@ -98,15 +97,15 @@ export function loadCharacter(name) {
       characterData.abilityCooldowns = characterData.abilityCooldowns || {};
       characterData.equipment = characterData.equipment || {};
       characterData.effects = characterData.effects || []; // Initialize effects array
-      characterData.inventory = Array.isArray(characterData.inventory) ? characterData.inventory : [];
+      characterData.inventory = safeArray(characterData.inventory);
       delete characterData.currentVenture;
       delete characterData.ventures;
 
-      logger.debug(`Loaded character ${name} (Gold: ${characterData.gold}) from ${filePath}`);
+      console.log('Loaded character ' + name + ' (Gold: ' + characterData.gold + ') from ' + filePath);
 
       return characterData;
     } catch (error) {
-      logger.error({ err: error.message, name }, `Failed to load character ${name}`);
+      console.error('Failed to load character ' + name, { err: error.message, name });
     }
   }
   return null;
@@ -123,6 +122,6 @@ export function graveyardCharacter(name) {
 
   if (fs.existsSync(primarySource)) {
     fs.renameSync(primarySource, destPath);
-    logger.debug(`Moved ${name} to graveyard as ${key}.json`);
+      console.log('Moved ' + name + ' to graveyard as ' + key + '.json');
   }
 }

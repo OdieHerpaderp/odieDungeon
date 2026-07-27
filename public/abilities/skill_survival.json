@@ -59,7 +59,7 @@
     "mpCostBase": 12,
     "cooldownMsBase": 3000,
     "healAmount": 12,
-    "maxTargets": 3,
+    "targets": [2, 3, 0.5],
     "allowedWeaponClasses": ["magic","ranged","melee"],
     "requiresWeaponEquipped": false,
     "isHeal": true,

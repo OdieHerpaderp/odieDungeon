@@ -1,5 +1,9 @@
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const GEAR_DIR = path.join(__dirname, "..", "public", "gear");
 
@@ -13,12 +17,13 @@ const FILES = {
   headgearLight: { file: "headgearLight.json", kind: "defensive", slot: "helmet" },
   headgearMedium: { file: "headgearMedium.json", kind: "defensive", slot: "helmet" },
   headgearHeavy: { file: "headgearHeavy.json", kind: "defensive", slot: "helmet" },
+  offHand: { file: "offHand.json", kind: "defensive", slot: "offHand" },
   weaponMelee: { file: "weaponMelee.json", kind: "weapon", slot: "weapon" },
   weaponRanged: { file: "weaponRanged.json", kind: "weapon", slot: "weapon" },
   weaponMagic: { file: "weaponMagic.json", kind: "weapon", slot: "weapon" },
 };
 
-const DEFENSE_WEIGHT = { armor: 1.0, helmet: 0.67, shoes: 0.33 };
+const DEFENSE_WEIGHT = { armor: 1.0, helmet: 0.67, shoes: 0.33, offHand: 0.85 };
 
 const SURVIVABILITY = new Set(["VIT", "HP"]);
 
@@ -92,10 +97,10 @@ function updateGearPrices() {
     const scores = items.map((item) => scoreFn(item, slot));
     const allScores = Object.values(FILES)
       .filter((f) => f.kind === kind)
-      .flatMap((f) => {
-        const it = JSON.parse(fs.readFileSync(path.join(GEAR_DIR, f.file), "utf8"));
-        return it.map((item, i) => scoreFn(item, f.slot));
-      });
+.flatMap((f) => {
+          const it = JSON.parse(fs.readFileSync(path.join(GEAR_DIR, f.file), "utf8"));
+          return it.map((item) => scoreFn(item, f.slot));
+        });
     const minScore = Math.round(Math.min(...allScores) * 100) / 100;
     const maxScore = Math.round(Math.max(...allScores) * 100) / 100;
 
@@ -103,7 +108,7 @@ function updateGearPrices() {
       item.value = normalize(Math.round(scores[i] * 100) / 100, minScore, maxScore);
     });
 
-    fs.writeFileSync(filePath, JSON.stringify(items, null, 2) + "\n");
+    fs.writeFileSync(filePath, `${JSON.stringify(items, null, 2)}\n`);
     console.log(`Updated ${file}`);
   }
 }

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { calcSkillLv, calcXpForLevel, calcXpForNextLevel, getEffectiveAttribute } from '../../utils.js';
+import { calcSkillLv, calcXpForLevel, calcXpForNextLevel, getEffectiveAttribute, attributeScaling } from '../../utils.js';
 import * as itemGenerator from '../gear/itemGenerator.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -186,6 +186,10 @@ export function selectAbilityToCast(player, abilities, now, liveTargets) {
       const required = ability.requiredWeaponSubTypes.map((s) => String(s).toLowerCase());
       if (subType && !required.includes(subType)) return false;
     }
+    if (ability.requiresTwoHandedWeapon) {
+      const resolved = resolveFullWeapon(getEquippedItem(player, 'weapon'));
+      if (!resolved?.twoHanded) return false;
+    }
     return true;
   });
   return available[0] || null;
@@ -200,15 +204,7 @@ export function applyAbilityCast(player, ability, now) {
   return next;
 }
 
-export function calculateAttributeScaling(player, attributeDamageScale) {
-  if (!attributeDamageScale || typeof attributeDamageScale !== 'object') return 1;
-  let sum = 0;
-  for (const [stat, weight] of Object.entries(attributeDamageScale)) {
-    if (typeof weight !== 'number') continue;
-    sum += getEffectiveAttribute(player, stat) * weight;
-  }
-  return 1 + sum * 0.01;
-}
+export const calculateAttributeScaling = attributeScaling;
 
 // New function to calculate healing based on skill level
 export function calculateHealAmount(ability, player) {
@@ -272,31 +268,35 @@ export function getAbilityTargets(caster, ability, liveTargets) {
     return [];
   }
 
-  // Determine if this is a healing ability targeting allies or a damage ability targeting enemies
   const isHealAbility = ability.isHeal === true;
 
-  // Filter targets based on whether this is healing (allies) or damaging (enemies)
   let filteredTargets;
   if (isHealAbility) {
-    // For healing abilities, target living party members (including possibly self)
     filteredTargets = liveTargets.filter((t) => !t.isEnemy && t.hp > 0);
   } else {
-    // For damage abilities, target living enemies
     filteredTargets = liveTargets.filter((t) => t.isEnemy && t.hp > 0);
   }
 
-  // Sort targets by priority
   if (isHealAbility) {
-    // For healing, prioritize targets with lower HP percentage
     filteredTargets.sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp);
   } else {
-    // For damage, sort randomly or by distance (for now, random)
     filteredTargets.sort(() => Math.random() - 0.5);
   }
 
-  // Limit to maxTargets specified in ability
-  const maxTargets = ability.maxTargets || 1;
+  const maxTargets = chooseTargetCount(ability);
   return filteredTargets.slice(0, maxTargets);
+}
+
+export function chooseTargetCount(ability) {
+  const targetDef = ability.targets;
+  if (!Array.isArray(targetDef) || targetDef.length < 2) return ability.maxTargets || 1;
+  const min = targetDef[0];
+  const max = targetDef[1];
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return ability.maxTargets || 1;
+  const lo = Math.min(min, max);
+  const hi = Math.max(min, max);
+  const count = hi - lo + 1;
+  return lo + Math.floor(Math.random() * count);
 }
 
 export { calcSkillLv, calcXpForLevel, calcXpForNextLevel };

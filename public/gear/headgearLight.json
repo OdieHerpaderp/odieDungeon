@@ -24,7 +24,7 @@
       "DEX": 3
     },
     "range": 1,
-    "value": 26,
+    "value": 24,
     "description": "Light protective headwear made from animal hide."
   },
   {
@@ -35,10 +35,11 @@
     "magicResist": 4,
     "bonuses": {
       "INT": 4,
-      "CNC": 4
+      "CNC": 4,
+      "AP": 5
     },
     "range": 1,
-    "value": 24,
+    "value": 26,
     "description": "A pointed light hat that hums faintly with arcane focus."
   },
   {
@@ -49,10 +50,11 @@
     "magicResist": 4,
     "bonuses": {
       "CNC": 6,
-      "INT": 2
+      "INT": 2,
+      "AP": 5
     },
     "range": 1,
-    "value": 24,
+    "value": 26,
     "description": "A humble light hat that glows softly with divine focus."
   },
   {

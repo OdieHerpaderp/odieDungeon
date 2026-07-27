@@ -35,10 +35,11 @@
     "magicResist": 3,
     "bonuses": {
       "INT": 6,
-      "CNC": 4
+      "CNC": 4,
+      "AP": 4
     },
     "range": 1,
-    "value": 24,
+    "value": 26,
     "description": "Simple travel boots for light armor."
   },
   {
@@ -49,10 +50,11 @@
     "magicResist": 3,
     "bonuses": {
       "CNC": 8,
-      "INT": 2
+      "INT": 2,
+      "AP": 4
     },
     "range": 1,
-    "value": 24,
+    "value": 26,
     "description": "Simple travel boots blessed for the faithful."
   },
   {
@@ -67,7 +69,7 @@
       "STR": 2
     },
     "range": 1,
-    "value": 26,
+    "value": 24,
     "description": "Padded boots designed for quiet, rapid movement."
   },
   {
@@ -81,7 +83,7 @@
       "DEX": 5
     },
     "range": 1,
-    "value": 26,
+    "value": 24,
     "description": "Light boots of cured hide, offering quiet tread and agile movement."
   }
 ]

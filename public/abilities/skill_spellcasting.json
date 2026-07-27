@@ -72,7 +72,7 @@
     "mpCostBase": 14,
     "cooldownMsBase": 3200,
     "damageBase": 35,
-    "maxTargets": 5,
+    "targets": [4, 5, 0.5],
     "allowedWeaponClasses": ["magic"],
     "requiresWeaponEquipped": true,
     "abilityType": "aoe",

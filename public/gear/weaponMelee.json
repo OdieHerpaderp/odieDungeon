@@ -80,6 +80,7 @@
     "name": "Iron Maul",
     "type": "melee",
     "subType": "blunt",
+    "twoHanded": true,
     "damage": 16,
     "spellPower": 1,
     "attackSpeed": 0.9,
@@ -138,6 +139,7 @@
     "name": "Great Sword",
     "type": "melee",
     "subType": "longBlade",
+    "twoHanded": true,
     "damage": 15,
     "spellPower": 1,
     "attackSpeed": 0.9,
@@ -158,7 +160,7 @@
     "name": "Knife",
     "type": "melee",
     "subType": "shortBlade",
-    "damage": 8,
+    "damage": 7,
     "spellPower": 1,
     "attackSpeed": 1.6,
     "bonuses": {
@@ -166,7 +168,7 @@
       "AGI": 7
     },
     "damageModifiers": {
-      "DEX": 0.3,
+      "STR": 0.3,
       "AGI": 0.7
     },
     "range": 1,
@@ -178,19 +180,19 @@
     "name": "Dagger",
     "type": "melee",
     "subType": "shortBlade",
-    "damage": 10,
+    "damage": 9,
     "spellPower": 1,
-    "attackSpeed": 1.7,
+    "attackSpeed": 1.6,
     "bonuses": {
       "DEX": 5,
       "AGI": 9
     },
     "damageModifiers": {
-      "DEX": 0.3,
+      "STR": 0.3,
       "AGI": 0.7
     },
     "range": 1,
-    "value": 30,
+    "value": 28,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -198,15 +200,15 @@
     "name": "Rapier",
     "type": "melee",
     "subType": "shortBlade",
-    "damage": 12,
+    "damage": 11,
     "spellPower": 1,
-    "attackSpeed": 1.7,
+    "attackSpeed": 1.6,
     "bonuses": {
       "DEX": 7,
       "AGI": 9
     },
     "damageModifiers": {
-      "DEX": 0.3,
+      "STR": 0.3,
       "AGI": 0.7
     },
     "range": 1,
@@ -278,6 +280,7 @@
     "name": "Halberd",
     "type": "melee",
     "subType": "polearms",
+    "twoHanded": true,
     "damage": 17,
     "spellPower": 1,
     "attackSpeed": 0.9,
@@ -308,7 +311,7 @@
     "damageModifiers": {
       "STR": 0.4,
       "AGI": 0.4,
-      "DEX": 0.4
+      "DEX": 0.3
     },
     "range": 1,
     "value": 24,
@@ -327,12 +330,54 @@
       "AGI": 6
     },
     "damageModifiers": {
-      "STR": 0.45,
-      "AGI": 0.45,
-      "DEX": 0.45
+      "STR": 0.4,
+      "AGI": 0.4,
+      "DEX": 0.3
     },
     "range": 1,
     "value": 26,
+    "description": "Padded gloves built for delivering powerful punches."
+  },
+  {
+    "id": "punchDagger",
+    "name": "Punch Dagger",
+    "type": "melee",
+    "subType": "pugilism",
+    "damage": 7,
+    "spellPower": 1,
+    "attackSpeed": 1.7,
+    "bonuses": {
+      "STR": 5,
+      "AGI": 7
+    },
+    "damageModifiers": {
+      "STR": 0.4,
+      "AGI": 0.4,
+      "DEX": 0.3
+    },
+    "range": 1,
+    "value": 28,
+    "description": "Padded gloves built for delivering powerful punches."
+  },
+  {
+    "id": "brassKnuckles",
+    "name": "Brass Knuckles",
+    "type": "melee",
+    "subType": "pugilism",
+    "damage": 8,
+    "spellPower": 1,
+    "attackSpeed": 1.7,
+    "bonuses": {
+      "STR": 6,
+      "AGI": 8
+    },
+    "damageModifiers": {
+      "STR": 0.4,
+      "AGI": 0.4,
+      "DEX": 0.3
+    },
+    "range": 1,
+    "value": 30,
     "description": "Padded gloves built for delivering powerful punches."
   }
 ]

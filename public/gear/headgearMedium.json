@@ -11,7 +11,7 @@
       "AGI": 2
     },
     "range": 1,
-    "value": 28,
+    "value": 26,
     "description": "Medium helm carved from chitinous plates, light yet resilient."
   },
   {
@@ -25,7 +25,7 @@
       "DEX": 4
     },
     "range": 1,
-    "value": 30,
+    "value": 26,
     "description": "Medium headwear made of interlinked metal rings."
   },
   {
@@ -40,7 +40,7 @@
       "VIT": 3
     },
     "range": 1,
-    "value": 28,
+    "value": 26,
     "description": "Medium helm of overlapping metal scales, offering balanced protection."
   },
   {
@@ -55,7 +55,7 @@
       "CNC": 3
     },
     "range": 1,
-    "value": 30,
+    "value": 26,
     "description": "Medium cap of alchemically hardened wyrmhide, balancing agility with resilience."
   }
 ]

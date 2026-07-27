@@ -94,5 +94,11 @@
     "name": "Miracles",
     "description": "Divine healing and protection. Requires magic weapons.",
     "group": "Magic"
+  },
+  {
+    "id": "skill_twoHanded",
+    "name": "Two-Handed Weapons",
+    "description": "Improves two-handed melee weapon attacks. Generic abilities for any two-handed weapon.",
+    "group": "Weapon Proficiencies"
   }
 ]

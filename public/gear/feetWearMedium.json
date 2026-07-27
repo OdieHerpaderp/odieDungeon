@@ -26,7 +26,7 @@
       "VIT": 2
     },
     "range": 1,
-    "value": 28,
+    "value": 26,
     "description": "Medium boots reinforced with interlinked metal rings."
   },
   {
@@ -41,7 +41,7 @@
       "VIT": 2
     },
     "range": 1,
-    "value": 26,
+    "value": 24,
     "description": "Medium boots of overlapping metal scales that absorb hard impacts."
   },
   {
@@ -56,7 +56,7 @@
       "CNC": 3
     },
     "range": 1,
-    "value": 28,
+    "value": 24,
     "description": "Medium boots of textured wyrmhide that spring with every step yet shrug off heavy blows."
   }
 ]

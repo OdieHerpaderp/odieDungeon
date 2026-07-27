@@ -4,6 +4,8 @@ const ENEMY_DAMAGE_MULTIPLIER = 0.8;
 import assert from 'node:assert';
 import express from 'express';
 import http from 'http';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { Server } from 'socket.io';
 import * as utils from './utils.js';
 import { saveCharacter, loadCharacter } from './database.js';
@@ -15,7 +17,8 @@ import * as buffEngine from './public/skills/buffEngine.js';
 import * as skillEngine from './public/skills/skillEngine.js';
 import { loadAbilities } from './loadAbilities.js';
 import * as itemGenerator from './public/gear/itemGenerator.js';
-import logger from './logger.js';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const abilities = loadAbilities();
 
@@ -303,7 +306,7 @@ function handleGearPurchase(socket, gearType, partyId) {
 
   player.gold -= cost;
   player.equipment = player.equipment || {};
-  player.inventory = Array.isArray(player.inventory) ? player.inventory : [];
+  player.inventory = utils.safeArray(player.inventory);
 
   // If this is a shop stock item, remove it from the stock
   if (itemIndex !== -1) {
@@ -336,18 +339,19 @@ function handleEquipItem(socket, data) {
   const player = party.players.get(socket.id);
   if (!player) return;
 
-  player.inventory = Array.isArray(player.inventory) ? player.inventory : [];
-  const inventoryItem = player.inventory.find(
-    (entry) =>
-      entry &&
-      (entry.id === itemId || entry.baseItem === itemId || entry.name === itemId || entry.displayName === itemId),
-  );
+  if (!itemId) {
+    handleUnequipItem(socket, { partyId, slot });
+    return;
+  }
+
+  player.inventory = utils.safeArray(player.inventory);
+  const inventoryItem = utils.findInventoryItem(player.inventory, itemId);
   if (!inventoryItem) {
     socket.emit('eventLog', { message: 'You do not own that item.', type: 'error' });
     return;
   }
 
-  const normalizedSlot = slot === 'headgear' ? 'helmet' : slot === 'armor' ? 'armour' : slot;
+  const normalizedSlot = slot === 'headgear' ? 'helmet' : slot === 'armor' ? 'armour' : slot === 'shield' || slot === 'book' ? 'offHand' : slot;
   player.equipment = player.equipment || {};
 
   // Get the currently equipped item in this slot (if any) to put back in inventory
@@ -373,17 +377,30 @@ function handleEquipItem(socket, data) {
   // Equip the new item
   player.equipment[normalizedSlot] = calculatedItem;
 
+  // Two-handed weapon rules: equipping one auto-unequips offHand.
+  if (normalizedSlot === 'weapon' && calculatedItem.twoHanded) {
+    if (player.equipment.offHand) {
+      const restored = utils.toInventoryItem(player.equipment.offHand, 'offHand');
+      if (restored) player.inventory.push(restored);
+      delete player.equipment.offHand;
+    }
+  }
+  // Equipping anything in offHand while a two-handed weapon is armed -> refuse.
+  if (normalizedSlot === 'offHand' && player.equipment.weapon?.twoHanded) {
+    // Put the attempted off-hand item back in inventory before refusing.
+    const restored = utils.toInventoryItem(calculatedItem, 'offHand');
+    if (restored) player.inventory.push(restored);
+    socket.emit('eventLog', { message: 'Cannot equip off-hand while wielding a two-handed weapon.', type: 'error' });
+    return;
+  }
+
   characters.calcMiscStats(player);
   characters.logGearBonuses(player, 'equipItem');
 
-  const oldMax = { ap: player.maxAp, hp: player.maxHp, mp: player.maxMp };
-  player.maxAp = characters.calcMaxAp(player);
-  player.ap = Math.min(player.maxAp, player.ap + (player.maxAp - oldMax.ap));
-  player.maxHp = characters.calcMaxHp(player);
-  player.hp = Math.min(player.maxHp, player.hp + (player.maxHp - oldMax.hp));
-  player.maxMp = characters.calcMaxMp(player);
-  player.mp = Math.min(player.maxMp, player.mp + (player.maxMp - oldMax.mp));
-  logger.debug('[equipItem]', {
+  const oldMax = { hp: player.maxHp, mp: player.maxMp };
+  utils.recalcDerivedMaxAndClampCurrents(player);
+
+  console.log('[equipItem]', {
     slot: normalizedSlot,
     oldItem: currentlyEquippedItem
       ? currentlyEquippedItem.displayName || currentlyEquippedItem.name || currentlyEquippedItem.id
@@ -411,12 +428,8 @@ function handleSellItem(socket, data) {
   const player = party.players.get(socket.id);
   if (!player) return;
 
-  player.inventory = Array.isArray(player.inventory) ? player.inventory : [];
-  const inventoryItem = player.inventory.find(
-    (entry) =>
-      entry &&
-      (entry.id === itemId || entry.baseItem === itemId || entry.name === itemId || entry.displayName === itemId),
-  );
+  player.inventory = utils.safeArray(player.inventory);
+  const inventoryItem = utils.findInventoryItem(player.inventory, itemId);
 
   if (!inventoryItem) {
     socket.emit('eventLog', { message: 'You do not own that item.', type: 'error' });
@@ -440,7 +453,7 @@ function handleSellItem(socket, data) {
     resolvedItem.level,
     resolvedItem.rarity,
   );
-  const sellPrice = Math.max(1, Math.floor(calculatedValue * 0.75));
+  const sellPrice = Math.max(1, Math.floor(calculatedValue * characters.SHOP_SELL_RATIO));
 
   // Remove from inventory
   player.inventory = player.inventory.filter((entry) => entry !== inventoryItem);
@@ -448,7 +461,7 @@ function handleSellItem(socket, data) {
   // Add the sold item back to the store so other players (or the same
   // player) can buy it again. It gets a fresh timestamp and a full-value
   // price, then is capped/sorted like the restock path.
-  party.shopStock = Array.isArray(party.shopStock) ? party.shopStock : [];
+  party.shopStock = utils.safeArray(party.shopStock);
   const returnedShopItem = makeShopItemFromInventory(inventoryItem);
   if (returnedShopItem) {
     party.shopStock.push(returnedShopItem);
@@ -473,14 +486,14 @@ function handleUnequipItem(socket, data) {
   const player = party.players.get(socket.id);
   if (!player) return;
 
-  const normalizedSlot = slot === 'headgear' ? 'helmet' : slot === 'armor' ? 'armour' : slot;
+  const normalizedSlot = slot === 'headgear' ? 'helmet' : slot === 'armor' ? 'armour' : slot === 'shield' || slot === 'book' ? 'offHand' : slot;
   player.equipment = player.equipment || {};
   const unequippedItem = player.equipment[normalizedSlot];
 
   if (unequippedItem) {
     const inventoryItem = utils.toInventoryItem(unequippedItem, normalizedSlot);
     if (inventoryItem) {
-      player.inventory = Array.isArray(player.inventory) ? player.inventory : [];
+      player.inventory = utils.safeArray(player.inventory);
       player.inventory.push(inventoryItem);
       player.inventory = [...player.inventory];
     }
@@ -491,13 +504,7 @@ function handleUnequipItem(socket, data) {
   characters.calcMiscStats(player);
   characters.logGearBonuses(player, 'unequipItem');
 
-  const oldMax = { ap: player.maxAp, hp: player.maxHp, mp: player.maxMp };
-  player.maxAp = characters.calcMaxAp(player);
-  player.ap = Math.min(player.maxAp, player.ap + (player.maxAp - oldMax.ap));
-  player.maxHp = characters.calcMaxHp(player);
-  player.hp = Math.min(player.maxHp, player.hp + (player.maxHp - oldMax.hp));
-  player.maxMp = characters.calcMaxMp(player);
-  player.mp = Math.min(player.maxMp, player.mp + (player.maxMp - oldMax.mp));
+  utils.recalcDerivedMaxAndClampCurrents(player);
   saveCharacter(player.name, player);
   broadcastCriticalGearUpdate(partyId, party);
   socket.emit('eventLog', {
@@ -514,12 +521,8 @@ function handleUseItem(socket, data) {
   const player = party.players.get(socket.id);
   if (!player) return;
 
-  player.inventory = Array.isArray(player.inventory) ? player.inventory : [];
-  const inventoryItem = player.inventory.find(
-    (entry) =>
-      entry &&
-      (entry.id === itemId || entry.baseItem === itemId || entry.name === itemId || entry.displayName === itemId),
-  );
+  player.inventory = utils.safeArray(player.inventory);
+  const inventoryItem = utils.findInventoryItem(player.inventory, itemId);
   if (!inventoryItem) {
     socket.emit('eventLog', { message: 'You do not own that item.', type: 'error' });
     return;
@@ -641,7 +644,7 @@ function handleEscapeDungeon(socket, data) {
   broadcastToParty(partyId, 'eventLog', { message: '🏠 Escaped to Town! Dungeon progress reset.', type: 'info' });
   broadcastFullState(partyId, party);
 
-  logger.debug(`[ESCAPE] Party ${partyId} escaped from ${oldDungeon} to Town`);
+  console.log(`[ESCAPE] Party ${partyId} escaped from ${oldDungeon} to Town`);
 }
 
 function handleEmbarkDungeon(socket, data) {
@@ -778,12 +781,12 @@ function handleChangeDungeon(socket, data) {
     party.floor >= 1 ? `Entered ${dungeon}! ⚔️ Action Bars filling!` : `Entered ${dungeon}! 🏠 Safe in town!`;
   broadcastToParty(partyId, 'eventLog', { message: eventMsg, type: 'info' });
 
-  logger.debug(`[DUNGEON] Party ${partyId} changed from ${oldDungeon} to ${dungeon}`);
+  console.log(`[DUNGEON] Party ${partyId} changed from ${oldDungeon} to ${dungeon}`);
 }
 
 function handleJoinParty(socket, data) {
   utils.trackSocketIoReceived('joinParty', data);
-  logger.debug('[SERVER] Received joinParty:', data);
+  console.log('[SERVER] Received joinParty', data);
   const { partyId, name } = data;
   let party = parties.get(partyId);
 
@@ -804,17 +807,17 @@ function handleJoinParty(socket, data) {
     };
     parties.set(partyId, party);
 
-    characters.restockShopWithDungeonScaling(
-      party,
-      party.dungeon || 'field',
-      characters.getDungeonData(party.dungeon || 'field'),
-    );
+    const dungeon = party.dungeon || 'field';
+    const dungeonData = characters.getDungeonData(dungeon);
+    for (let i = 0; i < 5; i++) {
+      characters.restockShopWithDungeonScaling(party, dungeon, dungeonData);
+    }
   }
 
   if (party.players.size < party.maxPlayers) {
-    logger.debug('[SERVER] Loading character for name:', name);
+    console.log('[SERVER] Loading character for name', name);
     const savedData = loadCharacter(name);
-    logger.debug('[SERVER] Loaded character data:', savedData ? 'exists' : 'null');
+    console.log('[SERVER] Loaded character data', savedData ? 'exists' : 'null');
 
     let character = savedData || utils.createDefaultCharacter(name);
     character = characters.ensureSkillAndAbilityState(character);
@@ -837,9 +840,8 @@ function handleJoinParty(socket, data) {
 
     character.actionBar = character.actionBar || 0;
     character.maxActionBar = character.maxActionBar || 100;
-    character.vit = character.vit || 5;
 
-    normalizeCharacterStats(character);
+    utils.normalizeCharacterStats(character);
 
     character.equipment = characters.normalizeEquipment(character.equipment || {});
 
@@ -890,7 +892,7 @@ function handleJoinParty(socket, data) {
 
     party.players.set(socket.id, character);
     socket.join(partyId);
-    logger.info(`[SERVER] Player ${name} joined with socket.id: ${socket.id} to party ${partyId}`);
+    console.log(`[SERVER] Player ${name} joined with socket.id: ${socket.id} to party ${partyId}`);
     saveCharacter(name, character);
 
     const fullState = buildFullStatePacket(party, partyId);
@@ -903,34 +905,19 @@ function handleJoinParty(socket, data) {
   }
 }
 
-function normalizeCharacterStats(character) {
-  // Ensure minimum stat values to prevent 0/0 displays
-  character.level = Math.max(1, character.level || 1);
-  character.vit = Math.max(5, character.vit || 5);
-  character.str = Math.max(5, character.str || 5);
-  character.dex = Math.max(5, character.dex || 5);
-  character.agi = Math.max(5, character.agi || 5);
-  character.int = Math.max(5, character.int || 5);
-  character.cnc = Math.max(5, character.cnc || 5);
-  character.for = Math.max(1, character.for || 1);
-  character.wis = Math.max(1, character.wis || 1);
-  character.luk = Math.max(1, character.luk || 1);
-  character.pie = Math.max(1, character.pie || 1);
-}
-
 function handleAllocatePoints(socket, data) {
   utils.trackSocketIoReceived('allocatePoints', data);
-  logger.debug('[SERVER] Received allocatePoints:', data, 'socket.id:', socket.id);
+  console.log('[SERVER] Received allocatePoints', data, 'socket.id:', socket.id);
   const { partyId, stat, points } = data;
   const party = parties.get(partyId);
   if (!party) {
-    logger.debug('[SERVER] Party not found:', partyId);
+    console.log('[SERVER] Party not found', partyId);
     return;
   }
   const player = party.players.get(socket.id);
-  logger.debug('[SERVER] Player found:', !!player, 'player name:', player ? player.name : 'none');
+  console.log('[SERVER] Player found', !!player, 'player name:', player ? player.name : 'none');
   if (!player || player.pointsToAllocate < points || points <= 0) {
-    logger.debug(
+    console.log(
       '[SERVER] Invalid allocation: player exists?',
       !!player,
       'pointsToAllocate:',
@@ -944,27 +931,23 @@ function handleAllocatePoints(socket, data) {
   player[stat] += points;
   player.pointsToAllocate -= points;
 
-  // 🩸 If vit or str increased, boost max HP and heal
+  // 🩸 vit/str → max HP (+heal to new cap) plus max AP
   if (stat === 'vit' || stat === 'str') {
-    const newMaxHp = characters.calcMaxHp(player);
-    const hpDiff = newMaxHp - player.maxHp;
-    player.maxHp = newMaxHp;
-    player.hp = Math.min(player.maxHp, player.hp + hpDiff);
-  }
-  // 🩸 If int or cnc increased, boost max MP
-  if (stat === 'int' || stat === 'cnc') {
-    const newMaxMp = characters.calcMaxMp(player);
-    const mpDiff = newMaxMp - player.maxMp;
-    player.maxMp = newMaxMp;
-    player.mp = Math.min(player.maxMp, player.mp + mpDiff);
+    utils.recalcDerivedMaxAndClampCurrents(player);
   }
 
-  // 🛡️ If vit, str, or for increased, boost max AP
-  if (stat === 'vit' || stat === 'str' || stat === 'for') {
-    const newMaxAp = characters.calcMaxAp(player);
-    const apDiff = newMaxAp - player.maxAp;
-    player.maxAp = newMaxAp;
-    player.ap = Math.min(player.maxAp, player.ap + apDiff);
+  // 🩸 int/cnc → max MP only (HP/AP already covered or unchanged)
+  if (stat === 'int' || stat === 'cnc') {
+    const oldMaxMp = player.maxMp;
+    player.maxMp = characters.calcMaxMp(player);
+    player.mp = Math.min(player.maxMp, player.mp + (player.maxMp - oldMaxMp));
+  }
+
+  // 🛡️ for (when not already handled by vit/str branch above)
+  if (stat === 'for') {
+    const oldMaxAp = player.maxAp;
+    player.maxAp = characters.calcMaxAp(player);
+    player.ap = Math.min(player.maxAp, player.ap + (player.maxAp - oldMaxAp));
   }
 
   // Log the stat allocation to the event log
@@ -1038,14 +1021,18 @@ function broadcastPlayerUpdate(partyId, party, socketId) {
 
 // Helper function to generate combat summary
 function generateCombatSummary(partyId, party, message) {
-  let summary = '';
   let totalDamage = 0;
   let totalAttacks = 0;
   let totalHits = 0;
   let totalRollSum = 0;
   let totalHealed = 0;
   let totalCrits = 0;
-  let playerSummaries = [];
+  let totalMaxDamage = 0;
+  let totalDamageTaken = 0;
+  let totalMitigated = 0;
+  let playerEntries = [];
+
+  const durationSeconds = Math.max(1, (Date.now() - party.combatStartMs) / 1000);
 
   for (const [playerId, stats] of party.combatStats) {
     if (stats.attacks > 0) {
@@ -1053,33 +1040,72 @@ function generateCombatSummary(partyId, party, message) {
       const critRate = stats.hits > 0 ? ((stats.crits / stats.hits) * 100).toFixed(1) : '0';
       const avgDamage = stats.hits > 0 ? (stats.totalDamage / stats.hits).toFixed(1) : '0';
       const avgRoll = stats.hits > 0 ? (stats.rollSum / stats.hits).toFixed(1) : '0';
+      const effectiveHealed = stats.totalHealed + (stats.totalHotHealing || 0);
+      const dps = stats.hits > 0 ? (stats.totalDamage / durationSeconds) : 0;
+      const hps = effectiveHealed / durationSeconds;
       const player = party.players.get(playerId);
       if (player) {
-        playerSummaries.push({
+        playerEntries.push({
           name: player.name,
           totalDamage: stats.totalDamage,
-          html: `<div class="player-summary">${player.name}: Total Damage ${stats.totalDamage.toFixed(1)}, Max Damage ${stats.maxDamage.toFixed(1)}, Total Healed ${stats.totalHealed.toFixed(1)}<br>Hit Rate ${hitRate}%, Crit Rate ${critRate}%, Avg Damage ${avgDamage}, Avg Roll ${avgRoll}</div>`,
+          maxDamage: stats.maxDamage,
+          totalHealed: effectiveHealed,
+          hits: stats.hits,
+          attacks: stats.attacks,
+          crits: stats.crits,
+          hitRate,
+          critRate,
+          avgDamage,
+          avgRoll,
+          durationSeconds,
+          dps,
+          hps,
+          totalDamageTaken: stats.totalDamageTaken || 0,
+          totalMitigated: stats.totalMitigated || 0,
+          maxDamageTaken: stats.maxDamageTaken || 0,
         });
       }
       totalDamage += stats.totalDamage;
+      totalMaxDamage += stats.maxDamage;
       totalAttacks += stats.attacks;
       totalHits += stats.hits;
       totalRollSum += stats.rollSum;
-      totalHealed += stats.totalHealed;
+      totalHealed += effectiveHealed;
       totalCrits += stats.crits;
+      totalDamageTaken += stats.totalDamageTaken || 0;
+      totalMitigated += stats.totalMitigated || 0;
     }
   }
 
-  playerSummaries.sort((a, b) => b.totalDamage - a.totalDamage);
-  summary = playerSummaries.map((p) => p.html).join('');
+  playerEntries.sort((a, b) => (b.totalDamage + b.totalHealed) - (a.totalDamage + a.totalHealed));
 
-  if (totalAttacks > 0) {
-    const overallHitRate = ((totalHits / totalAttacks) * 100).toFixed(1);
-    const overallCritRate = totalHits > 0 ? ((totalCrits / totalHits) * 100).toFixed(1) : '0';
-    const overallAvgDamage = totalHits > 0 ? (totalDamage / totalHits).toFixed(1) : '0';
-    const overallAvgRoll = totalHits > 0 ? (totalRollSum / totalHits).toFixed(1) : '0';
-    summary += `<div class="total-summary">Total: Damage ${totalDamage.toFixed(1)}, Healed ${totalHealed.toFixed(1)}<br> Hit Rate ${overallHitRate}%, Crit Rate ${overallCritRate}%, Avg Damage ${overallAvgDamage}, Avg Roll ${overallAvgRoll}</div>`;
-  }
+  const overallHitRate = totalAttacks > 0 ? ((totalHits / totalAttacks) * 100).toFixed(1) : '0';
+  const overallCritRate = totalHits > 0 ? ((totalCrits / totalHits) * 100).toFixed(1) : '0';
+  const overallAvgDamage = totalHits > 0 ? (totalDamage / totalHits).toFixed(1) : '0';
+  const overallAvgRoll = totalHits > 0 ? (totalRollSum / totalHits).toFixed(1) : '0';
+  const overallDps = totalDamage / durationSeconds;
+  const overallHps = totalHealed / durationSeconds;
+
+  const summary = {
+    players: playerEntries,
+    totals: {
+      totalDamage,
+      totalMaxDamage,
+      totalHealed,
+      totalAttacks,
+      totalHits,
+      totalCrits,
+      overallHitRate,
+      overallCritRate,
+      overallAvgDamage,
+      overallAvgRoll,
+      overallDurationSeconds: durationSeconds,
+      overallDps,
+      overallHps,
+      totalDamageTaken,
+      totalMitigated,
+    },
+  };
 
   // Emit combat end via the single combatEnd channel (WebRTC-preferred, Socket.IO fallback).
   broadcastToParty(partyId, 'combatEnd', {
@@ -1100,6 +1126,7 @@ const io = new Server(server, {
   perMessageDeflate: { threshold: 1024 },
 });
 
+app.use('/vendor/socket.io-client', express.static(join(__dirname, 'node_modules', 'socket.io-client', 'dist')));
 app.use(express.static('public'));
 
 // Merged ability definitions (auto-discovered per-skill JSON files).
@@ -1120,18 +1147,7 @@ setInterval(() => {
   const combinedReceived = utils.socketIoPacketTracker.received.total.count + webrtcStats.received.total.count;
   const combinedReceivedBytes = utils.socketIoPacketTracker.received.total.bytes + webrtcStats.received.total.bytes;
 
-  logger.info({
-    type: 'packet_stats',
-    duration: '60s',
-    socketIoSent: utils.socketIoPacketTracker.sent,
-    socketIoReceived: utils.socketIoPacketTracker.received,
-    webrtcSent: webrtcStats.sent,
-    webrtcReceived: webrtcStats.received,
-    combinedSentPackets: combinedSent,
-    combinedSentBytes: combinedSentBytes,
-    combinedReceivedPackets: combinedReceived,
-    combinedReceivedBytes: combinedReceivedBytes,
-  });
+  console.log('[Packet Stats]', { socketIoSent: utils.socketIoPacketTracker.sent, socketIoReceived: utils.socketIoPacketTracker.received, webrtcSent: webrtcStats.sent, webrtcReceived: webrtcStats.received, combinedSentPackets: combinedSent, combinedSentBytes: combinedSentBytes, combinedReceivedPackets: combinedReceived, combinedReceivedBytes: combinedReceivedBytes });
 
   // Reset Socket.IO stats (WebRTC stats are reset externally if needed)
   utils.socketIoPacketTracker.sent = { total: { count: 0, bytes: 0 }, byType: {} };
@@ -1164,7 +1180,7 @@ webrtcServer.on('webrtcStateRestore', (socketId) => {
     }
   }
   if (!targetParty) {
-    logger.debug(`[WebRTC Restore] No party found for reconnected socket ${socketId} - nothing to restore`);
+    console.log(`[WebRTC Restore] No party found for reconnected socket ${socketId} - nothing to restore`);
     return;
   }
 
@@ -1172,7 +1188,7 @@ webrtcServer.on('webrtcStateRestore', (socketId) => {
   webrtcServer.resetDeltaStateForSocket(socketId);
   const fullState = buildFullStatePacket(targetParty, targetPartyId);
   const sent = webrtcServer.sendMessage(socketId, 'partyUpdate', fullState);
-  logger.debug(`[WebRTC Restore] Sent full state to reconnected socket ${socketId}: ${sent ? 'ok' : 'failed'}`);
+    console.log(`[WebRTC Restore] Sent full state to reconnected socket ${socketId}: ${sent ? 'ok' : 'failed'}`);
 
   // Re-apply the delta baseline now that the client has the canonical state.
   webrtcServer.initializePlayerDeltaState(targetPartyId, targetParty, socketId);
@@ -1430,6 +1446,9 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
     });
 
     combatant.skillsState = skillEngine.awardHealXp(combatant.skillsState, totalHealed, ability.skillId);
+
+    const casterStats = party.combatStats.get(combatant.id);
+    if (casterStats) casterStats.totalHealed += totalHealed;
   } else {
     // For offensive abilities, calculate damage and apply to targets
     const damageTargets = skillEngine.getAbilityTargets(combatant, ability, liveEnemies(party));
@@ -1474,11 +1493,15 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
       combatant,
     );
 
-    // Apply damage to each target
-    damageTargets.forEach((target) => {
-      applyDamage(target, scaledDamage, partyId, party);
+      // Apply damage to each target
+      damageTargets.forEach((target) => {
+        applyDamage(target, scaledDamage, partyId, party);
 
-      // Apply DoT effect if specified in ability
+        if (!target.isEnemy) {
+          updateIncomingCombatStats(target, party, scaledDamage, 0);
+        }
+
+        // Apply DoT effect if specified in ability
       if (ability.effects?.some((e) => e.type === 'dot')) {
         buffEngine.applyEffect(combatant, target, ability);
       }
@@ -1545,6 +1568,7 @@ function startActionBarSystem(partyId, party) {
     clearInterval(spellCastIntervals.get(partyId));
   }
   party.combatStats = new Map();
+  party.combatStartMs = Date.now();
 
   // Spell-cast timer: independent of the action bar. Every ~100ms each live player attempts
   // to cast their first available spell (cooldown + MP + weapon requirements still apply).
@@ -1628,7 +1652,7 @@ function startActionBarSystem(partyId, party) {
           party.completedDungeons[party.dungeon] = true;
         }
 
-        logger.info(`🏁 ${party.dungeon} completed!`);
+        console.log(`🏁 ${party.dungeon} completed!`);
 
         // Broadcast the 🏁 completion line. These one-shot, critical
         // messages must reach the client reliably, so emit on Socket.IO
@@ -1798,7 +1822,7 @@ function calculateDamage(actor, damageMod, roll) {
     : null;
   const effectiveDamage = resolvedWeapon?.damage || 3;
   const damMod = damageMod / 1.1 + effectiveDamage / 1.1;
-  let damage = Math.random() * (0.5 + damageMod * 0.3) + damMod * 1.2 + damageMod * 1.2;
+  let damage = Math.random() * (0.5 + damageMod * 0.3) + damMod * 1.16 + damageMod * 1.16;
   const weaponData = weapons.find((w) => w.id === activeWeapon?.id) || activeWeapon;
   damage *= characters.getAttributeDamageModifier(actor, weaponData);
   if (actor.isEnemy) damage *= ENEMY_DAMAGE_MULTIPLIER;
@@ -1809,15 +1833,7 @@ function updateCombatStats(actor, party, hit, crit, damage, roll) {
   if (actor.isEnemy) return;
 
   if (!party.combatStats.has(actor.id)) {
-    party.combatStats.set(actor.id, {
-      attacks: 0,
-      hits: 0,
-      totalDamage: 0,
-      rollSum: 0,
-      totalHealed: 0,
-      crits: 0,
-      maxDamage: 0,
-    });
+    party.combatStats.set(actor.id, utils.createEmptyCombatStats());
   }
 
   const stats = party.combatStats.get(actor.id);
@@ -1831,20 +1847,27 @@ function updateCombatStats(actor, party, hit, crit, damage, roll) {
   }
 }
 
+function updateIncomingCombatStats(target, party, rawDamage, mitigated) {
+  if (target.isEnemy) return;
+  if (!party.combatStats.has(target.id)) {
+    party.combatStats.set(target.id, utils.createEmptyCombatStats());
+  }
+  const stats = party.combatStats.get(target.id);
+  stats.totalDamageTaken += rawDamage;
+  stats.totalMitigated += mitigated;
+  stats.maxDamageTaken = Math.max(stats.maxDamageTaken, rawDamage);
+}
+
 function handlePlayerDeath(partyId, party, player) {
   player.equipment = {};
-  player.inventory = Array.isArray(player.inventory) ? player.inventory : [];
+  player.inventory = utils.safeArray(player.inventory);
 
   // Recalculate derived stats without gear bonuses
   characters.calcMiscStats(player);
-  player.maxHp = characters.calcMaxHp(player);
-  player.maxMp = characters.calcMaxMp(player);
-  player.maxAp = characters.calcMaxAp(player);
+  utils.recalcDerivedMaxAndClampCurrents(player);
 
   // Restore minimal HP so the saved character isn't permanently dead on rejoin
   player.hp = Math.max(1, Math.floor(player.maxHp * 0.1));
-  player.mp = player.maxMp;
-  player.ap = player.maxAp;
   player.actionBar = 0;
 
   // Save character state after permanent gear loss
@@ -1898,59 +1921,89 @@ function performActionBarAttack(actor, partyId, party) {
   if (!target) return;
 
   const { accuracyMod, damageMod } = calculateAttackMods(actor);
-  let roll = calculateRoll(actor, target, accuracyMod, party, partyId);
-  const hit = roll > 0,
-    crit = roll > 99;
+  const result = resolveAttackHit(actor, target, accuracyMod, damageMod, party, partyId);
 
-  updateCombatStats(actor, party, hit, crit, 0, roll);
+  if (target.isEnemy && target.hp <= 0) awardXP(partyId, party);
 
-  let damage = 1;
-  if (hit) {
-    roll += Math.round(0.5 * actor.luk + Math.random() * actor.luk * 1.2);
-    damage = calculateDamage(actor, damageMod, roll);
-
-    // Weaken debuff: the attacker's outgoing damage is reduced
-    const weaken = buffEngine.sumEffectAmount(actor.effects, 'weaken', 0.9);
-    if (weaken > 0) {
-      damage = damage * (1 - weaken);
+  if (result.hit && actor.equipment.weapon?.twoHanded && Math.random() < 0.5) {
+    const liveEnemiesList = liveEnemies(party).filter((e) => e.hp > 0 && e !== target);
+    if (liveEnemiesList.length) {
+      const extraTarget = liveEnemiesList[Math.floor(Math.random() * liveEnemiesList.length)];
+      resolveAttackHit(actor, extraTarget, accuracyMod, damageMod, party, partyId);
     }
+  }
+}
 
-    const rawDamage = damage; // pre-mitigation damage
+function resolveAttackHit(actor, target, accuracyMod, damageMod, party, partyId) {
+  let roll = calculateRoll(actor, target, accuracyMod, party, partyId);
+  const hit = roll > 0;
+  const crit = roll > 99;
 
-    // Defense-Down debuff: the target's damage mitigation is reduced
-    const defenseDown = buffEngine.sumEffectAmount(target.effects, 'defenseDown', 0.9);
-    const mitigationTerm =
-      (0.4 * Math.random() * (target.equipment?.helmet?.defense || target.helmet || 1) +
-        0.4 * Math.random() * (target.equipment?.armour?.defense || target.armour || 0) +
-        0.4 * Math.random() * (target.equipment?.shoes?.defense || target.shoes || 0) +
-        0.003 * Math.random() * target.vit +
-        0.001 * Math.random() * target.for) /
-      4;
-    const defenseUp = buffEngine.sumEffectAmount(target.effects, 'defenseUp', 0.5);
-    const effectiveMitigation = (defenseDown > 0 ? mitigationTerm * (1 - defenseDown) : mitigationTerm) + defenseUp;
-    const cappedMitigation = Math.min(effectiveMitigation, rawDamage * 0.85);
-    damage = Math.max(0, Math.round(damage - cappedMitigation));
-    const mitigated = Math.max(0, rawDamage - damage + 0.1);
-    updateCombatStats(actor, party, true, crit, damage, roll);
-    applyDamage(target, damage, partyId, party);
+  if (!hit) {
+    broadcastCriticalUpdate(partyId, party, {
+      actor: { ...actor },
+      target: { ...target, isEnemy: target.isEnemy || false },
+      hit: false,
+      crit: false,
+      damage: 0,
+      roll,
+    });
+    return { hit, crit, damage: 0, roll };
+  }
 
-    const weaponSkillId = skillEngine.getWeaponSkillId(characters.getActiveWeapon(actor));
-    if (!actor.isEnemy && actor.skillsState) {
+  roll += Math.round(0.5 * actor.luk + Math.random() * actor.luk * 1.2);
+  let damage = calculateDamage(actor, damageMod, roll);
+
+  const weaken = buffEngine.sumEffectAmount(actor.effects, 'weaken', 0.9);
+  if (weaken > 0) damage = damage * (1 - weaken);
+  const rawDamage = damage;
+
+  const offHandDef = target.equipment?.offHand?.defense || target.offHand || 0;
+  const defenseDown = buffEngine.sumEffectAmount(target.effects, 'defenseDown', 0.9);
+  const mitigationTerm =
+    (0.6 * (1.75 + Math.random()) * (target.equipment?.helmet?.defense || target.helmet || 1) +
+      0.6 * (1.75 + Math.random()) * (target.equipment?.armour?.defense || target.armour || 1) +
+      0.6 * (1.75 + Math.random()) * (target.equipment?.shoes?.defense || target.shoes || 1) +
+      0.6 * (1.75 + Math.random()) * offHandDef +
+      0.03 * (1.75 + Math.random()) * target.vit) / 6;
+  const defenseUp = buffEngine.sumEffectAmount(target.effects, 'defenseUp', 0.5);
+  const effectiveMitigation = (defenseDown > 0 ? mitigationTerm * (1 - defenseDown) : mitigationTerm) + defenseUp;
+  const cappedMitigation = Math.min(effectiveMitigation, rawDamage * 0.75);
+  damage = Math.max(0, Math.round(damage - cappedMitigation / 1.2) / 0.99 + mitigationTerm / 40);
+  const mitigated = Math.max(0, rawDamage - damage + 0.1);
+
+  updateCombatStats(actor, party, true, crit, damage, roll);
+  applyDamage(target, damage, partyId, party);
+  if (!target.isEnemy) {
+    updateIncomingCombatStats(target, party, rawDamage, mitigated);
+  }
+
+  const weaponSkillId = skillEngine.getWeaponSkillId(characters.getActiveWeapon(actor));
+  if (!actor.isEnemy && actor.skillsState) {
+    const xpAmount = Math.max(1, Math.round(damage / 32));
+    if (actor.equipment.weapon?.twoHanded) {
       actor.skillsState = skillEngine.awardSkillXp(
         actor.skillsState,
         weaponSkillId,
-        Math.max(1, Math.round(damage / 24)),
+        Math.floor(xpAmount / 2),
       );
-    }
-
-    // Award armor proficiency XP to the player being hit, based on damage mitigated,
-    // split across the proficiencies of their worn armor pieces (by piece count).
-    if (!target.isEnemy && target.skillsState && mitigated > 0) {
-      target.skillsState = skillEngine.awardArmorProficiencyXp(target.skillsState, mitigated * 5, target);
+      actor.skillsState = skillEngine.awardSkillXp(
+        actor.skillsState,
+        'skill_twoHanded',
+        Math.ceil(xpAmount / 2),
+      );
+    } else {
+      actor.skillsState = skillEngine.awardSkillXp(
+        actor.skillsState,
+        weaponSkillId,
+        xpAmount,
+      );
     }
   }
 
-  if (target.isEnemy && target.hp <= 0) awardXP(partyId, party);
+  if (!target.isEnemy && target.skillsState && mitigated > 0) {
+    target.skillsState = skillEngine.awardArmorProficiencyXp(target.skillsState, mitigated / 3, target);
+  }
 
   broadcastCriticalUpdate(partyId, party, {
     actor: { ...actor },
@@ -1960,6 +2013,8 @@ function performActionBarAttack(actor, partyId, party) {
     damage,
     roll,
   });
+
+  return { hit, crit, damage, roll };
 }
 
 // Award XP to players
@@ -1976,7 +2031,7 @@ function awardXP(partyId, party) {
       livePlayers.forEach((player) => {
         player.xp += xpShare;
 
-        let goldShare = enemy.gold / livePlayers.length;
+        let goldShare = enemy.gold / (0.2 + livePlayers.length / 0.8);
         player.gold += goldShare;
         // Prevent infinite loop if xpToNext is 0 or invalid
         if (player.xpToNext <= 0) player.xpToNext = 128;
@@ -2046,25 +2101,7 @@ const spellCastIntervals = new Map();
 // Debug function: Poll server stats every 30 seconds
 setInterval(() => {
   const mem = process.memoryUsage();
-  logger.info({
-    type: 'server_stats',
-    connectedClients: io.sockets.sockets.size,
-    totalParties: parties.size,
-    memory: {
-      rss: Math.round(mem.rss / 1024 / 1024),
-      heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
-      heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
-    },
-    uptime: Math.round(process.uptime()),
-    actionIntervals: actionIntervals.size,
-    spawnTimers: spawnTimers.size,
-    parties: Array.from(parties.values()).map((p) => ({
-      partyId: p.partyId,
-      players: p.players.size,
-      floor: p.floor,
-      combatActive: p.combatActive,
-    })),
-  });
+  console.log('[Server Stats]', { connectedClients: io.sockets.sockets.size, totalParties: parties.size, memory: { rss: Math.round(mem.rss / 1024 / 1024), heapUsed: Math.round(mem.heapUsed / 1024 / 1024), heapTotal: Math.round(mem.heapTotal / 1024 / 1024) }, uptime: Math.round(process.uptime()), actionIntervals: actionIntervals.size, spawnTimers: spawnTimers.size, parties: Array.from(parties.values()).map((p) => ({ partyId: p.partyId, players: p.players.size, floor: p.floor, combatActive: p.combatActive })) });
 }, 8000);
 
 // Periodic shop sweep: every 5 minutes, drop any shop item older than
@@ -2077,7 +2114,7 @@ setInterval(
     let itemsRemoved = 0;
 
     for (const [partyId, party] of parties) {
-      if (!party || !Array.isArray(party.shopStock) || party.shopStock.length === 0) continue;
+       if (!party || !utils.safeArray(party.shopStock).length) continue;
       const before = party.shopStock.length;
       const kept = party.shopStock.filter((item) => {
         if (item.timestamp === undefined) return true; // don't expire legacy items
@@ -2092,7 +2129,7 @@ setInterval(
     }
 
     if (itemsRemoved > 0 || partiesScanned > 0) {
-      logger.debug(`[Shop Sweep] Scanned ${partiesScanned} parties, removed ${itemsRemoved} expired items.`);
+      console.log(`[Shop Sweep] Scanned ${partiesScanned} parties, removed ${itemsRemoved} expired items.`);
     }
   },
   5 * 60 * 1000,
@@ -2113,27 +2150,27 @@ function startRegenSystem() {
       live.forEach((p) => {
         // HP Regen (effective attributes include equipment bonuses)
         let hpRegen =
-          (inCombat ? 0.08 : 0.17) +
-          characters.getEffectiveAttribute(p, 'vit') / 288 +
+          (inCombat ? 0.09 : 0.18) +
+          characters.getEffectiveAttribute(p, 'vit') / 266 +
           characters.getEffectiveAttribute(p, 'str') / 344 +
           characters.getEffectiveAttribute(p, 'for') / 677;
-        p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 1.8 : 3.5));
+        p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 1.9 : 3.6));
 
         // MP Regen (effective attributes include equipment bonuses)
         let mpRegen =
-          (inCombat ? 0.07 : 0.21) +
+          (inCombat ? 0.08 : 0.22) +
           characters.getEffectiveAttribute(p, 'int') / 422 +
           characters.getEffectiveAttribute(p, 'cnc') / 311 +
           characters.getEffectiveAttribute(p, 'wis') / 677;
-        p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 1.3 : 2.3));
+        p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 1.8 : 3.1));
 
         // AP Regen (effective attributes include equipment bonuses)
         let apRegen =
-          (inCombat ? 0.01 : 0.25) +
+          (inCombat ? 0.01 : 0.26) +
           characters.getEffectiveAttribute(p, 'int') / 422 +
           characters.getEffectiveAttribute(p, 'cnc') / 311 +
           characters.getEffectiveAttribute(p, 'wis') / 677;
-        p.ap = Math.min(p.maxAp, p.ap + apRegen * (inCombat ? 0.01 : 1.8));
+        p.ap = Math.min(p.maxAp, p.ap + apRegen * (inCombat ? 0.01 : 1.9));
 
         // HP/MP changes are emitted by the consolidated delta broadcaster
         // on the critical cadence (≤200ms), so no extra queueing here.
@@ -2351,7 +2388,7 @@ function embarkParty(partyId, party, dungeon) {
 // CONNECTION HANDLER - Centralized socket connection management
 // ═══════════════════════════════════════════════════════════════════
 io.on('connection', (socket) => {
-  logger.info(`[CONNECTION] New socket connected: ${socket.id} from ${socket.handshake.address}`);
+    console.log(`[CONNECTION] New socket connected: ${socket.id} from ${socket.handshake.address}`);
 
   // Performance optimization: Track socket
   socketMap.set(socket.id, socket);
@@ -2433,7 +2470,7 @@ io.on('connection', (socket) => {
       }
     }
 
-    player.abilitySlots = Array.isArray(player.abilitySlots) ? player.abilitySlots : [];
+    player.abilitySlots = utils.safeArray(player.abilitySlots);
     const nextSlots = Array.from({ length: 8 }, (_, index) => player.abilitySlots[index] || null);
     if (abilityId) {
       const dupIndex = nextSlots.findIndex((id, i) => i !== slot && id === abilityId);
@@ -2498,5 +2535,5 @@ function initDotSystem() {
 const dotIntervalId = initDotSystem();
 
 server.listen(25561, () => {
-  logger.info('AGI Action Bar RPG with VIT Regeneration on port 25561');
+    console.log('AGI Action Bar RPG with VIT Regeneration on port 25561');
 });

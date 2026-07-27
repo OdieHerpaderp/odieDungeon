@@ -24,16 +24,21 @@ import {
   compactEquipment,
   toCompactRef,
   toInventoryItem,
+  safeArray,
+  normalizeCharacterStats,
 } from './utils.js';
 import dungeons from './public/dungeons.json' with { type: 'json' };
-import logger from './logger.js';
+
 
 const abilities = loadAbilities();
 export { getEffectiveAttribute, getAttributeDamageModifier } from './utils.js';
 
 // Maximum number of items a shop can hold. Shared so the sell-to-shop path can
 // apply the same cap/re-sort as the dungeon restock path.
-export const MAX_SHOP_ITEMS = 120;
+export const MAX_SHOP_ITEMS = 255;
+
+// Ratio applied to item sell price when selling back to the shop (0.5 = 50% of buy price).
+export const SHOP_SELL_RATIO = 0.5;
 
 // How long a shop item stays on the shelf before the expiry sweep removes it.
 export const SHOP_ITEM_MAX_AGE_MS = 30 * 60 * 1000;
@@ -41,7 +46,7 @@ export const SHOP_ITEM_MAX_AGE_MS = 30 * 60 * 1000;
 // Sort the shop stock by price (most expensive first) so the priciest items
 // appear at the top, then cap to MAX_SHOP_ITEMS (keeping the highest-priced).
 export function sortAndCapShopStock(party) {
-  if (!party || !Array.isArray(party.shopStock)) return;
+  if (!party || !safeArray(party.shopStock).length) return;
   party.shopStock.sort((a, b) => (b.price || 0) - (a.price || 0));
   if (party.shopStock.length > MAX_SHOP_ITEMS) {
     party.shopStock = party.shopStock.slice(0, MAX_SHOP_ITEMS);
@@ -57,10 +62,10 @@ export function restockShopWithDungeonScaling(party, dungeon, dungeonData) {
 
   // Generate 2-4 items for every category so each restock always covers all
   // gear types (weapon, armor, headgear, shoes).
-  const categoryPool = ['weapon', 'armor', 'headgear', 'shoes'];
+  const categoryPool = ['weapon', 'armor', 'headgear', 'shoes', 'offHand'];
 
   for (const category of categoryPool) {
-    const count = 2 + Math.floor(Math.random() * 2); // 2-4 items
+    const count = 3 + Math.floor(Math.random() * 2); // 2-4 items
     for (let i = 0; i < count; i++) {
       // Pass a single-category pool so the generator's random pick always
       // resolves to this category.
@@ -78,7 +83,7 @@ export function restockShopWithDungeonScaling(party, dungeon, dungeonData) {
   const dungeonDifficulty =
     (dungeonData?.floorBase ?? 1) + (dungeonData?.floorMult ?? 1) * (dungeonData?.floorAmount ?? 100);
 
-  logger.info(
+  console.log(
     `Restocked shop (now ${party.shopStock.length} items) after completing ${dungeon} (difficulty: ${dungeonDifficulty})`,
   );
 }
@@ -94,7 +99,7 @@ export function rewardPlayersOnDungeonClear(party, dungeon, dungeonData) {
   const floorAmount = dungeonData?.floorAmount ?? 100;
   const dungeonDifficulty = Math.round(floorBase + floorMult * floorAmount);
 
-  const categoryPool = ['weapon', 'armor', 'headgear', 'shoes'];
+  const categoryPool = ['weapon', 'armor', 'headgear', 'shoes', 'offHand'];
   const results = [];
 
   for (const player of party.players.values()) {
@@ -102,7 +107,7 @@ export function rewardPlayersOnDungeonClear(party, dungeon, dungeonData) {
 
     if (Math.random() < 0.3) {
       const item = itemGenerator.generateScaledItem(dungeonData, categoryPool);
-      player.inventory = Array.isArray(player.inventory) ? player.inventory : [];
+      player.inventory = safeArray(player.inventory);
       player.inventory.push(toInventoryItem(item, item.slot));
       player.inventory = [...player.inventory];
       if (player.name) saveCharacter(player.name, player);
@@ -116,7 +121,7 @@ export function rewardPlayersOnDungeonClear(party, dungeon, dungeonData) {
         detail: `${displayName}${rarityText}`,
       });
     } else {
-      let dungeonReward = Math.round(Math.pow(3 + dungeonDifficulty, 0.5));
+      let dungeonReward = Math.round(Math.pow(6 + dungeonDifficulty / 1.5, 0.8));
       player.gold = (player.gold || 0) + dungeonReward;
       if (player.name) saveCharacter(player.name, player);
       results.push({
@@ -133,7 +138,7 @@ export function rewardPlayersOnDungeonClear(party, dungeon, dungeonData) {
 
 // Compact equipment references: only id + scaling factors are persisted.
 // All other stats are calculated from the gear catalogs (e.g. weaponMelee.json).
-const EQUIPMENT_SLOTS = ['weapon', 'armour', 'helmet', 'shoes'];
+const EQUIPMENT_SLOTS = ['weapon', 'armour', 'helmet', 'shoes', 'offHand'];
 
 export function getDefaultEquipment() {
   return compactEquipment({
@@ -149,11 +154,17 @@ export function normalizeEquipment(equipment) {
   const refs = {};
   for (const slot of EQUIPMENT_SLOTS) {
     const ref = toCompactRef(equipment[slot], slot);
-    refs[slot] = ref || {
-      id: slot === 'armour' ? 'rags' : slot === 'helmet' ? 'strawHat' : slot === 'shoes' ? 'sandals' : 'newspaper',
-      level: 1,
-      rarity: 1,
-    };
+    if (ref) {
+      refs[slot] = ref;
+    } else if (slot === 'offHand') {
+      refs[slot] = undefined;
+    } else {
+      refs[slot] = {
+        id: slot === 'armour' ? 'rags' : slot === 'helmet' ? 'strawHat' : slot === 'shoes' ? 'sandals' : 'newspaper',
+        level: 1,
+        rarity: 1,
+      };
+    }
   }
   return compactEquipment(refs);
 }
@@ -165,17 +176,13 @@ export function ensureSkillAndAbilityState(character) {
   // (e.g. newly added skills like Spellcasting), preserving saved XP.
   character.skillsState = { ...defaults, ...character.skillsState };
   character.abilityCooldowns = character.abilityCooldowns || {};
-  const slotCount = 8;
-  const normalizedSlots = Array.from({ length: slotCount }, (_, index) => {
-    const existing = Array.isArray(character.abilitySlots) ? character.abilitySlots[index] : null;
-    if (existing) return existing;
-    return null; // Always return null for empty slots, don't auto-assign abilities
-  });
+  const existingSlots = safeArray(character.abilitySlots);
+  const normalizedSlots = Array.from({ length: 8 }, (_, index) => existingSlots[index] || null);
   character.abilitySlots = normalizedSlots
     .filter(Boolean)
-    .concat(Array.from({ length: slotCount - normalizedSlots.filter(Boolean).length }, () => null));
+    .concat(Array.from({ length: 8 - normalizedSlots.filter(Boolean).length }, () => null));
   character.equipment = normalizeEquipment(character.equipment || {});
-  character.inventory = (Array.isArray(character.inventory) ? character.inventory : [])
+  character.inventory = safeArray(character.inventory)
     .map((item) => toInventoryItem(item, item && item.slot))
     .filter(Boolean);
   return character;
@@ -201,7 +208,7 @@ export function logGearBonuses(player, changeType = 'calculated') {
   ];
 
   const withSign = bonusList.map((b) => `${b.stat}: ${b.val >= 0 ? '+' : ''}${b.val}`).join(', ');
-  logger.debug(`[${changeType}] ${player?.name || 'Unknown'} gear bonuses: [${withSign}]`);
+  console.log(`[${changeType}] ${player?.name || 'Unknown'} gear bonuses: [${withSign}]`);
 }
 
 // Compact equipment refs persist only { id, level, rarity } and carry no bonuses
@@ -374,20 +381,12 @@ export function calcMaxMp(player) {
 }
 
 export function calcMaxAp(player) {
-  const armourDef = player?.equipment?.armour?.defense || 3;
-  const helmetDef = player?.equipment?.helmet?.defense || 3;
-  const shoesDef = player?.equipment?.shoes?.defense || 3;
-
-  const gearBonus = Math.floor(armourDef * 3 + helmetDef * 5 + shoesDef * 1);
-
-  // Reduced non-gear contributions (minor source)
+  const apBonus = getEquipmentBonus(player, 'ap');
   const levelBonus = Math.floor(player.level);
   const statBonus = Math.floor((player.vit + player.str + player.for) / 9);
+  const hpBonus = Math.floor(player.maxHp * 0.006);
 
-  // HP contribution (minimal)
-  const hpBonus = Math.floor(player.maxHp * 0.006); // Reduced from 0.15
-
-  return Math.floor((gearBonus + levelBonus + statBonus + hpBonus) * 0.6);
+  return Math.floor((apBonus + levelBonus + statBonus + hpBonus) * 0.6);
 }
 
 // Export all character-related functions
@@ -395,5 +394,5 @@ export function calculateItemSellValue(slot, id, level, rarity) {
   const resolved = itemGenerator.resolveItem(slot, id, level, rarity);
   if (!resolved || typeof resolved.baseValue !== 'number') return 0;
   const calculatedValue = itemGenerator.calculateItemPrice(resolved.baseValue, level, rarity);
-  return Math.floor(calculatedValue * 0.75);
+  return Math.floor(calculatedValue * SHOP_SELL_RATIO);
 }

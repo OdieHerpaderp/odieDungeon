@@ -11,6 +11,11 @@ const expandedSkills = new Set();
 const collapsedGroups = new Set();
 const collapsedAbilityGroups = new Set();
 
+// Local safeArray so browser code can normalize references without a server import.
+function safeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
 // Client-side skill curve config (loaded once from shared JSON)
 let _skillCurve = null;
 async function loadSkillCurve() {
@@ -171,7 +176,7 @@ async function loadAbilityDefinitions() {
   try {
     const response = await fetch("/api/abilities");
     const data = await response.json();
-    abilityDefinitions = Array.isArray(data) ? data : [];
+    abilityDefinitions = safeArray(data);
   } catch (error) {
     console.warn("Unable to load ability definitions:", error);
     abilityDefinitions = [];
@@ -184,7 +189,7 @@ async function loadSkillDefinitions() {
   try {
     const response = await fetch("/skills/skills.json");
     const data = await response.json();
-    skillDefinitionsClient = Array.isArray(data) ? data : [];
+    skillDefinitionsClient = safeArray(data);
   } catch (error) {
     console.warn("Unable to load skill definitions:", error);
     skillDefinitionsClient = [];
@@ -556,7 +561,9 @@ export async function equipAbility(abilityId) {
 
   await _clientNetwork.assignAbilitySlot(selectedSlotIndex, abilityId);
 
-  const currentSlots = Array.isArray(lastPlayerForSlots.abilitySlots) ? lastPlayerForSlots.abilitySlots : Array(8).fill(null);
+  const currentSlots = safeArray(lastPlayerForSlots.abilitySlots).length
+    ? lastPlayerForSlots.abilitySlots
+    : Array(8).fill(null);
   const nextSlots = currentSlots.map((id, i) => (i === selectedSlotIndex ? abilityId : id));
   const dupIndex = nextSlots.findIndex((id, i) => i !== selectedSlotIndex && id === abilityId);
   if (dupIndex !== -1) nextSlots[dupIndex] = null;
@@ -568,7 +575,9 @@ export async function equipAbility(abilityId) {
 export async function unequipAbilitySlot(index) {
   await _clientNetwork.assignAbilitySlot(index, "");
 
-  const currentSlots = Array.isArray(lastPlayerForSlots.abilitySlots) ? lastPlayerForSlots.abilitySlots : Array(8).fill(null);
+  const currentSlots = safeArray(lastPlayerForSlots.abilitySlots).length
+    ? lastPlayerForSlots.abilitySlots
+    : Array(8).fill(null);
   const nextSlots = [...currentSlots];
   nextSlots[index] = null;
   lastPlayerForSlots.abilitySlots = nextSlots;

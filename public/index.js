@@ -2,41 +2,19 @@ import ClientNetwork from "./clientNetwork.js";
 import * as itemGenerator from "./gear/itemGenerator.js";
 import * as skillUI from "./skills/skillUI.js";
 
+// Local helper so browser code doesn't repeat the inline guard.
+function safeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+const SHOP_SELL_RATIO = 0.5;
+
 // Global variables for state - declared here to avoid TDZ issues
 let currentState;
 
 //Toast
 const toastFrame = new JSFrame();
 toastFrame.showToast({ html: "Henlo :)" });
-
-// Load gear data for itemGenerator
-Promise.all([
-  fetch("/gear/weaponMelee.json").then((response) => response.json()),
-  fetch("/gear/weaponRanged.json").then((response) => response.json()),
-  fetch("/gear/weaponMagic.json").then((response) => response.json()),
-  fetch("/gear/headgearLight.json").then((response) => response.json()),
-  fetch("/gear/headgearMedium.json").then((response) => response.json()),
-  fetch("/gear/headgearHeavy.json").then((response) => response.json()),
-  fetch("/gear/armorLight.json").then((response) => response.json()),
-  fetch("/gear/armorMedium.json").then((response) => response.json()),
-  fetch("/gear/armorHeavy.json").then((response) => response.json()),
-  fetch("/gear/feetWearLight.json").then((response) => response.json()),
-  fetch("/gear/feetWearMedium.json").then((response) => response.json()),
-  fetch("/gear/feetWearHeavy.json").then((response) => response.json()),
-])
-  .then(([weaponMelee, weaponRanged, weaponMagic, hgL, hgM, hgH, arL, arM, arH, ftL, ftM, ftH]) => {
-    // Update the itemGenerator with loaded data
-    const headgear = [...hgL, ...hgM, ...hgH];
-    const armors = [...arL, ...arM, ...arH];
-    const feetWear = [...ftL, ...ftM, ...ftH];
-    if (itemGenerator && typeof itemGenerator.updateCatalogs === "function") {
-      itemGenerator.updateCatalogs(weaponMelee, weaponRanged, weaponMagic, headgear, armors, feetWear);
-      console.log("Gear catalogs loaded and updated in itemGenerator");
-    } else {
-      console.warn("itemGenerator not available or updateCatalogs method missing");
-    }
-  })
-  .catch((err) => console.error("Failed to load gear JSON files:", err));
 
 // Load dungeons configuration
 let dungeons = {};
@@ -268,7 +246,7 @@ function updateCombatLog() {
   if (!combatLogEl) return;
 
   if (latestCombatSummary) {
-    combatLogEl.innerHTML = `${latestCombatSummary}`;
+    combatLogEl.innerHTML = renderCombatSummaryTable(latestCombatSummary);
   } else {
     combatLogEl.innerHTML = "";
   }
@@ -279,8 +257,39 @@ function addToCombatLog(message, type = "info") {
   // Use addCombatSummaryToLog() for combat summaries
 }
 
-function addCombatSummaryToLog(summaryHtml) {
-  latestCombatSummary = summaryHtml;
+function renderCombatSummaryTable(summaryData) {
+  if (!summaryData || !summaryData.players || summaryData.players.length === 0) return "";
+
+  const fmt = (n) => n == null ? n : (Number.isInteger(n) ? n : n.toFixed(1));
+  const dur = (s) => { const m = s / 60; return m >= 1 ? `${Math.floor(m)}m ${Math.floor(s % 60)}s` : `${s}s`; };
+  const enemyWord = (c) => `${c} enemy${c === 1 ? "" : "s"}`;
+  const floorName = () => {
+    if (!currentState) return "Town";
+    const dn = currentState.dungeon || "field", fl = (currentState.dungeonFloors || {})[dn] || currentState.floor;
+    return fl <= 0 ? "Town" : `${((dungeons[dn] || {}).name || dn).charAt(0).toUpperCase() + dn.slice(1)} F${fl}`;
+  };
+
+  const t = summaryData.totals;
+  const header = `<div class="c-log-hdr">${floorName()} | ${enemyWord(currentState?.enemies?.length ?? 0)} | ⏱${dur(t.overallDurationSeconds)}</div>`;
+
+  let rows = "";
+  for (const p of summaryData.players) {
+    const dc = p.totalDamage >= 0 ? "col-green" : "col-orange";
+    const hc = p.totalHealed >= 0 ? "col-green" : "col-orange";
+    const takenStr = `${fmt(p.totalDamageTaken || 0)} - ${fmt(p.totalMitigated || 0)}`;
+    rows += `<tr><td>${p.name}</td><td class="${dc} col-right">${fmt(p.totalDamage)}</td><td class="col-right">${fmt(p.maxDamage)}</td><td class="${hc} col-right">${fmt(p.totalHealed)}</td><td class="col-right">${takenStr}</td><td class="col-right">${p.hits}/${p.attacks}</td><td class="col-right">${p.crits}</td><td class="col-right">${p.hitRate}%</td><td class="col-right">${p.critRate}%</td><td class="col-right">${fmt(p.dps)}</td><td class="col-right">${fmt(p.hps)}</td></tr>`;
+  }
+
+  const td = t.totalDamage >= 0 ? "col-green" : "col-orange";
+  const th = t.totalHealed >= 0 ? "col-green" : "col-orange";
+  const totalTakenStr = `${fmt(t.totalDamageTaken || 0)} - ${fmt(t.totalMitigated || 0)}`;
+  const totalRow = `<tr class="total-row"><td><b>Total</b></td><td class="${td} col-right"><b>${fmt(t.totalDamage)}</b></td><td class="col-right"><b>${fmt(t.totalMaxDamage)}</b></td><td class="${th} col-right"><b>${fmt(t.totalHealed)}</b></td><td class="col-right"><b>${totalTakenStr}</b></td><td class="col-right"><b>${t.totalHits}/${t.totalAttacks}</b></td><td class="col-right"><b>${t.totalCrits}</b></td><td class="col-right"><b>${t.overallHitRate}%</b></td><td class="col-right"><b>${t.overallCritRate}%</b></td><td class="col-right"><b>${fmt(t.overallDps)}</b></td><td class="col-right"><b>${fmt(t.overallHps)}</b></td></tr>`;
+
+  return `${header}<table class="combat-summary-table"><thead><tr><th>P</th><th>Dmg</th><th>Max</th><th>Heal</th><th>Taken</th><th>Hits</th><th>Crits</th><th>H%</th><th>C%</th><th>DPS</th><th>HPS</th></tr></thead><tbody>${rows}</tbody><tfoot>${totalRow}</tfoot></table>`;
+}
+
+function addCombatSummaryToLog(summaryData) {
+  latestCombatSummary = summaryData;
   updateCombatLog();
 }
 
@@ -404,6 +413,7 @@ function generateShopHtml() {
 // Shared column definitions used by both the Equipment/Inventory panel and the Shop.
 const EQUIPMENT_CATEGORIES = [
   { label: "Weapon", icon: "⚔️", equippedKey: "weapon", slots: ["weapon"] },
+  { label: "Off-Hand", icon: "📖", equippedKey: "offHand", slots: ["offHand", "shield", "book"] },
   { label: "Headgear", icon: "🪖", equippedKey: "helmet", slots: ["headgear", "helmet"] },
   { label: "Armor", icon: "🛡️", equippedKey: "armour", slots: ["armor", "armour"] },
   { label: "Shoes", icon: "👢", equippedKey: "shoes", slots: ["shoes"] },
@@ -579,7 +589,7 @@ const frameConfigs = [
     height: 320,
     minWidth: 160,
     minHeight: 200,
-    html: `<div id="skillsPanel" style="padding:6px; color:white; font-size:12px; height:100%; overflow-y:auto; box-sizing:border-box;"></div>`,
+    html: `<div id="skillsPanel" style="padding:1px; color:white; font-size:12px; height:100%; overflow-y:auto; box-sizing:border-box;"></div>`,
   },
   {
     name: "AbilitySlots",
@@ -590,12 +600,12 @@ const frameConfigs = [
     minWidth: 252,
     height: 320,
     minHeight: 200,
-    html: `<div id="abilitySlotsPanel" style="padding:6px; color:white; font-size:12px; height:100%; box-sizing:border-box; overflow:hidden;"></div>`,
+    html: `<div id="abilitySlotsPanel" style="padding:1px; color:white; font-size:12px; height:100%; box-sizing:border-box; overflow:hidden;"></div>`,
   },
   {
     name: "Equipment",
     title: "🎒 Equipment & Inventory",
-    left: 605,
+    left: 625,
     top: 285,
     width: 300,
     height: 260,
@@ -603,7 +613,7 @@ const frameConfigs = [
     minHeight: 160,
     html: generateEquipmentHtml(),
   },
-  { name: "Shop", title: "🛒 Shop (town only)", left: 865, top: 285, width: 300, height: 260, minWidth: 180, minHeight: 160, html: generateShopHtml() },
+  { name: "Shop", title: "🛒 Shop (town only)", left: 935, top: 285, width: 300, height: 260, minWidth: 180, minHeight: 160, html: generateShopHtml() },
   {
     name: "Win1",
     title: "📜 Event Log",
@@ -618,7 +628,7 @@ const frameConfigs = [
   {
     name: "FloorControls",
     title: "🗺️ Floor Controls",
-    left: 1220,
+    left: 1280,
     top: 224,
     width: 200,
     height: 280,
@@ -652,7 +662,7 @@ const frameConfigs = [
   {
     name: "PartyMembers",
     title: "🛡️ Party Members",
-    left: 330,
+    left: 320,
     top: 50,
     width: 315,
     height: 230,
@@ -663,7 +673,7 @@ const frameConfigs = [
   {
     name: "Enemies",
     title: "👹 Enemies",
-    left: 650,
+    left: 630,
     top: 50,
     width: 440,
     height: 230,
@@ -681,7 +691,7 @@ const frameConfigs = [
     minWidth: 200,
     minHeight: 150,
     hidden: true,
-    html: '<div id="combatLogContent" style="width:100%; height:100%; color:#4ecdc4; overflow-y:auto; font-size:12px; padding:5px;"></div>',
+    html: '<div id="combatLogContent" style="width:100%; height:100%; color:#4ecdc4; overflow-y:auto; font-size:12px; padding:1px;"></div>',
   },
 ];
 
@@ -714,7 +724,7 @@ const createWindowManagerFrame = () => {
     .create({
       name: "WindowManager",
       title: "Window Manager",
-      left: 1220,
+      left: 1280,
       top: 2,
       width: 200,
       height: 220,
@@ -1011,9 +1021,17 @@ function getCalculatedItem(item, slotKey) {
   }
   if (perSlot.has(slotKey)) return perSlot.get(slotKey);
   let result;
-  if (item.baseItem) result = itemGenerator.calculateItemStats(item) || item;
-  else if (item.id) result = itemGenerator.resolveItem(slotKey, item.id, item.level, item.rarity) || item;
-  else result = item;
+  if (item.baseItem) {
+    result = itemGenerator.calculateItemStats(item) || item;
+  } else if (item.id) {
+    result = itemGenerator.resolveItem(slotKey, item.id, item.level, item.rarity) || item;
+    if ((!result || result === item) && item.id.includes('-')) {
+      const baseId = item.id.split('-')[0];
+      result = itemGenerator.resolveItem(slotKey, baseId, item.level, item.rarity) || result;
+    }
+  } else {
+    result = item;
+  }
   perSlot.set(slotKey, result);
   return result;
 }
@@ -1150,7 +1168,7 @@ function getSellPrice(calculated) {
   } else {
     price = calc.price ?? 40;
   }
-  return Math.max(1, Math.floor(price * 0.75));
+  return Math.max(1, Math.floor(price * SHOP_SELL_RATIO));
 }
 
 function itemTooltip(calculatedItem, extra = "") {
@@ -1216,7 +1234,8 @@ function gearCardTitle(calculated, count) {
   const level = calculated?.level ? ` Lv${calculated.level}` : "";
   const rarity = calculated?.rarity ? ` <span style="color:${getColourFromRarity(calculated.rarity).text};">(${calculated.rarity}★)</span>` : "";
   const countBadge = count > 1 ? ` <span style="font-size:10px; color:#9f9;">x${count}</span>` : "";
-  return `${name}${level}${rarity}${itemTierBadge(calculated)}${countBadge}`;
+  const subtype = getItemSubtypeHtml(calculated);
+  return `${name}${level}${rarity}${subtype}${itemTierBadge(calculated)}${countBadge}`;
 }
 
 // Build a full item as a two-line, full-width rarity-banded card. Line 1 holds
@@ -1234,6 +1253,20 @@ function itemRowCard(calculated, count, fontSize, tooltipPrefix, actionHtml, pri
       </div>
       <div class="gear-card-side">${priceBlock}${actionHtml}</div>
     </div>`;
+}
+
+function getItemSubtypeHtml(calculated) {
+  if (!calculated) return "";
+  const isWeapon = calculated.type === "melee" || calculated.type === "ranged" || calculated.type === "magic";
+  if (isWeapon) {
+    const sub = calculated.subType || calculated.weaponClass || "";
+    if (!sub) return "";
+    const prefix = calculated.twoHanded ? "2H " : "";
+    return ` <span style="font-size:10px; opacity:0.85;">(${prefix}${sub})</span>`;
+  }
+  const sub = calculated.type || calculated.subType || "";
+  if (!sub) return "";
+  return ` <span style="font-size:10px; opacity:0.85;">(${sub})</span>`;
 }
 
 // Equipped block shown at the top of a category tab, slimmed to two lines so it matches
@@ -1285,7 +1318,7 @@ function equipmentInventorySig(equipment, inventory) {
 function equipmentSig(player) {
   if (!player) return "none";
   const equipment = player.equipment || {};
-  const inventory = Array.isArray(player.inventory) ? player.inventory : [];
+  const inventory = safeArray(player.inventory);
   const eqSig = ["weapon", "armour", "helmet", "shoes"]
     .map((s) => {
       const it = equipment[s];
@@ -1308,7 +1341,7 @@ export function renderEquipmentPanel(player, force = false) {
   if (!container) return;
 
   const equipment = player.equipment || {};
-  const inventory = Array.isArray(player.inventory) ? player.inventory : [];
+  const inventory = safeArray(player.inventory);
 
   // Change-detection is the only guard here (no time throttle): only rebuild the
   // panel when the equipment/inventory contents actually changed.
