@@ -1,0 +1,22 @@
+[
+  {
+    "id": "magicRune",
+    "name": "Magic Rune",
+    "type": "magic",
+    "subType": "runes",
+    "damage": 6,
+    "spellPower": 4,
+    "attackSpeed": 0.8,
+    "bonuses": {
+      "CNC": 2,
+      "INT": 2
+    },
+    "damageModifiers": {
+      "CNC": 0.4,
+      "INT": 0.4
+    },
+    "range": 16,
+    "value": 23,
+    "description": "A powerful magic rod that casts spells with high damage."
+  }
+]

@@ -1,0 +1,99 @@
+[
+  {
+    "id": "newspaper",
+    "name": "Newspaper",
+    "type": "melee",
+    "subType": "blunt",
+    "damage": 5,
+    "spellPower": 1,
+    "attackSpeed": 1.1,
+    "bonuses": {
+      "STR": 2,
+      "AGI": 2
+    },
+    "damageModifiers": {
+      "STR": 1
+    },
+    "range": 1,
+    "value": 22,
+    "description": "A basic sword for melee combat."
+  },
+  {
+    "id": "woodenClub",
+    "name": "Wooden Club",
+    "type": "melee",
+    "subType": "blunt",
+    "damage": 7,
+    "spellPower": 1,
+    "attackSpeed": 1.2,
+    "bonuses": {
+      "STR": 5,
+      "DEX": 4
+    },
+    "damageModifiers": {
+      "STR": 1
+    },
+    "range": 1,
+    "value": 26,
+    "description": "A basic sword for melee combat."
+  },
+  {
+    "id": "stoneMallet",
+    "name": "Stone Mallet",
+    "type": "melee",
+    "subType": "blunt",
+    "damage": 8,
+    "spellPower": 1,
+    "attackSpeed": 1.1,
+    "bonuses": {
+      "STR": 7,
+      "DEX": 4
+    },
+    "damageModifiers": {
+      "STR": 1
+    },
+    "range": 1,
+    "value": 28,
+    "description": "A basic sword for melee combat."
+  },
+  {
+    "id": "flail",
+    "name": "Flail",
+    "type": "melee",
+    "subType": "blunt",
+    "damage": 9,
+    "spellPower": 1,
+    "attackSpeed": 1.1,
+    "bonuses": {
+      "STR": 8,
+      "VIT": 4
+    },
+    "damageModifiers": {
+      "STR": 1
+    },
+    "range": 1,
+    "value": 30,
+    "description": "A flail."
+  },
+  {
+    "id": "ironMaul",
+    "name": "Iron Maul",
+    "type": "melee",
+    "subType": "blunt",
+    "twoHanded": true,
+    "damage": 13,
+    "spellPower": 1,
+    "attackSpeed": 0.9,
+    "bonuses": {
+      "STR": 9,
+      "VIT": 6
+    },
+    "damageModifiers": {
+      "STR": 0.9,
+      "VIT": 0.1
+    },
+    "range": 1,
+    "value": 34,
+    "description": "A basic sword for melee combat."
+  }
+]

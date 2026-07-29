@@ -14,7 +14,7 @@
       "CNC": -0.5
     },
     "range": 1,
-    "value": 30,
+    "value": 31,
     "description": "A sturdy iron helm offering reliable protection."
   },
   {
@@ -32,7 +32,7 @@
       "CNC": -1
     },
     "range": 1,
-    "value": 32,
+    "value": 34,
     "description": "Heavy protective helmet made of metal plates."
   },
   {
@@ -50,7 +50,7 @@
       "CNC": -1
     },
     "range": 1,
-    "value": 36,
+    "value": 37,
     "description": "A towering full helm forged for the heaviest of battles."
   }
 ]

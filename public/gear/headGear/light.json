@@ -10,7 +10,7 @@
       "DEX": 2
     },
     "range": 1,
-    "value": 22,
+    "value": 21,
     "description": "A basic hat for light armor."
   },
   {
@@ -39,7 +39,7 @@
       "AP": 5
     },
     "range": 1,
-    "value": 26,
+    "value": 27,
     "description": "A pointed light hat that hums faintly with arcane focus."
   },
   {
@@ -54,7 +54,7 @@
       "AP": 5
     },
     "range": 1,
-    "value": 26,
+    "value": 27,
     "description": "A humble light hat that glows softly with divine focus."
   },
   {
@@ -69,7 +69,7 @@
       "STR": 2
     },
     "range": 1,
-    "value": 28,
+    "value": 27,
     "description": "A dark mask that conceals identity and sharpens reflexes."
   }
 ]

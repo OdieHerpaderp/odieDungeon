@@ -1,0 +1,81 @@
+[
+  {
+    "id": "longSword",
+    "name": "Long Sword",
+    "type": "melee",
+    "subType": "longBlade",
+    "damage": 7,
+    "spellPower": 1,
+    "attackSpeed": 1.2,
+    "bonuses": {
+      "STR": 8,
+      "DEX": 5
+    },
+    "damageModifiers": {
+      "STR": 1
+    },
+    "range": 1,
+    "value": 29,
+    "description": "A basic sword for melee combat."
+  },
+  {
+    "id": "falchion",
+    "name": "Falchion",
+    "type": "melee",
+    "subType": "longBlade",
+    "damage": 9,
+    "spellPower": 1,
+    "attackSpeed": 1.0,
+    "bonuses": {
+      "DEX": 7,
+      "STR": 7
+    },
+    "damageModifiers": {
+      "DEX": 0.2,
+      "STR": 0.8
+    },
+    "range": 1,
+    "value": 31,
+    "description": "A broad, single-edged long blade designed for swift, precise strikes. Favored by duelists who rely on agility over brute force."
+  },
+  {
+    "id": "claymore",
+    "name": "Claymore",
+    "type": "melee",
+    "subType": "longBlade",
+    "damage": 8,
+    "spellPower": 1,
+    "attackSpeed": 1.1,
+    "bonuses": {
+      "STR": 9,
+      "DEX": 4
+    },
+    "damageModifiers": {
+      "STR": 1
+    },
+    "range": 1,
+    "value": 30,
+    "description": "A canonical longBlade upgrade — slowest ASPD for pure brute force."
+  },
+  {
+    "id": "greatSword",
+    "name": "Great Sword",
+    "type": "melee",
+    "subType": "longBlade",
+    "twoHanded": true,
+    "damage": 12,
+    "spellPower": 1,
+    "attackSpeed": 0.9,
+    "bonuses": {
+      "STR": 12,
+      "DEX": 5
+    },
+    "damageModifiers": {
+      "STR": 0.9,
+      "VIT": 0.1
+    },
+    "range": 1,
+    "value": 34,
+    "description": "A basic sword for melee combat."
+  }
+]

@@ -7,7 +7,7 @@
     "unlockSkillLevelMin": 0,
     "mpCostBase": 3,
     "cooldownMsBase": 2000,
-    "healAmount": 4,
+    "healAmount": 5,
         "effects": [
       { "type": "hot", "amount": 2, "duration": 6 }
     ],
@@ -15,7 +15,7 @@
     "allowedWeaponClasses": ["magic","ranged","melee"],
     "requiresWeaponEquipped": false,
     "isHeal": true,
-    "attributeDamageScale": {"CNC": 0.2, "INT": 0.2}
+    "attributeDamageScale": {"CNC": 0.3, "INT": 0.2}
   },
   {
     "id": "survival_herb_tincture",
@@ -25,7 +25,7 @@
     "unlockSkillLevelMin": 3,
     "mpCostBase": 5,
     "cooldownMsBase": 2300,
-    "healAmount": 6,
+    "healAmount": 7,
     "effects": [
       { "type": "hot", "amount": 3, "duration": 7 }
     ],
@@ -33,22 +33,22 @@
     "allowedWeaponClasses": ["magic","ranged","melee"],
     "requiresWeaponEquipped": false,
     "isHeal": true,
-    "attributeDamageScale": {"CNC": 0.2, "INT": 0.2}
+    "attributeDamageScale": {"CNC": 0.3, "INT": 0.2}
   },
   {
     "id": "survival_field_medic",
     "name": "Field Medic",
-    "description": "Tends to one ally's wounds with a healing poultice.",
+    "description": "Tends to up to two allies with a healing poultice.",
     "skillId": "skill_survival",
     "unlockSkillLevelMin": 6,
     "mpCostBase": 7,
     "cooldownMsBase": 2600,
     "healAmount": 11,
-    "maxTargets": 1,
+    "targets": [1, 2, 0.7],
     "allowedWeaponClasses": ["magic","ranged","melee"],
     "requiresWeaponEquipped": false,
     "isHeal": true,
-    "attributeDamageScale": {"CNC": 0.2, "INT": 0.2}
+    "attributeDamageScale": {"CNC": 0.3, "INT": 0.2}
   },
   {
     "id": "survival_mass_bandage",
@@ -59,11 +59,11 @@
     "mpCostBase": 12,
     "cooldownMsBase": 3000,
     "healAmount": 12,
-    "targets": [2, 3, 0.5],
+    "targets": [2, 3, 0.7],
     "allowedWeaponClasses": ["magic","ranged","melee"],
     "requiresWeaponEquipped": false,
     "isHeal": true,
     "abilityType": "aoe",
-    "attributeDamageScale": {"CNC": 0.2, "INT": 0.2}
+    "attributeDamageScale": {"CNC": 0.3, "INT": 0.2}
   }
 ]

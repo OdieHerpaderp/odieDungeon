@@ -25,6 +25,9 @@
     "cooldownMsBase": 2000,
     "damageBase": 13,
     "maxTargets": 1,
+    "effects": [
+      { "type": "dot", "amount": 4, "duration": 5 }
+    ],
     "allowedWeaponClasses": ["melee"],
     "requiredWeaponSubTypes": ["shortBlade"],
     "requiresWeaponEquipped": true,

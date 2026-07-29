@@ -11,7 +11,7 @@
       "AGI": 5
     },
     "range": 1,
-    "value": 32,
+    "value": 31,
     "description": "Medium armor formed from layered chitin, balancing mobility and guard."
   },
   {
@@ -42,7 +42,7 @@
       "AGI": -0.5
     },
     "range": 1,
-    "value": 32,
+    "value": 31,
     "description": "Medium armor of overlapping metal scales that shifts with your movement."
   },
   {
@@ -57,7 +57,7 @@
       "CNC": 3
     },
     "range": 1,
-    "value": 32,
+    "value": 31,
     "description": "Medium jerkin of enchanted wyrmhide — no metal, yet as tough as the best plate studded mail."
   }
 ]

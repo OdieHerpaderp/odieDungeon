@@ -23,7 +23,7 @@
     "unlockSkillLevelMin": 4,
     "mpCostBase": 6,
     "cooldownMsBase": 2600,
-    "damageBase": 22,
+    "damageBase": 11,
     "maxTargets": 1,
     "allowedWeaponClasses": ["melee"],
     "requiredWeaponSubTypes": ["polearms"],
@@ -40,11 +40,11 @@
     "unlockSkillLevelMin": 10,
     "mpCostBase": 8,
     "cooldownMsBase": 3200,
-    "damageBase": 16,
+    "damageBase": 14,
     "effects": [
       { "type": "actionSlow", "amount": 20, "duration": 3 }
     ],
-    "targets": [3, 4, 0.5],
+    "targets": [2, 4, 0.5],
     "allowedWeaponClasses": ["melee"],
     "requiredWeaponSubTypes": ["polearms"],
     "requiresWeaponEquipped": true,

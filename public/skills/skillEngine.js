@@ -7,10 +7,7 @@ import * as itemGenerator from '../gear/itemGenerator.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import weaponMelee from '../gear/weaponMelee.json' with { type: 'json' };
-import weaponRanged from '../gear/weaponRanged.json' with { type: 'json' };
-import weaponMagic from '../gear/weaponMagic.json' with { type: 'json' };
-const weapons = [...weaponMelee, ...weaponRanged, ...weaponMagic];
+const weapons = itemGenerator.getCatalog().weapon;
 
 // Load skill definitions from skills.json file
 const skillDefinitionsRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'skills.json'), 'utf8'));
@@ -46,7 +43,7 @@ function resolveFullWeapon(weapon) {
 }
 
 // Map a melee weapon `subType` to its proficiency skill id. Derived from the
-// subTypes declared in public/gear/weaponMelee.json so each melee subtype is its own skill.
+// subTypes declared in public/gear/WeaponMelee/ so each melee subtype is its own skill.
 const MELEE_SUBTYPE_TO_SKILL = {
   blunt: 'skill_melee_blunt',
   longblade: 'skill_melee_longBlade',
@@ -108,11 +105,13 @@ function getArmorPieceType(slot, piece) {
 export function awardArmorProficiencyXp(skillsState, mitigatedAmount, player) {
   if (!skillsState || !player || !(mitigatedAmount > 0)) return skillsState;
 
-  const SLOTS = ['armour', 'helmet', 'shoes'];
+  const SLOTS = ['armour', 'helmet', 'shoes', 'offHand'];
   const equipment = player.equipment || {};
   const typeCounts = {};
   let total = 0;
 
+  // Empty/missing slots are safely skipped: getArmorPieceType returns null
+  // for undefined pieces, and the guard below skips any type not in the map.
   for (const slot of SLOTS) {
     const type = getArmorPieceType(slot, equipment[slot]);
     if (type && ARMOR_TYPE_TO_SKILL[type]) {

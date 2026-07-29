@@ -137,7 +137,7 @@ export function rewardPlayersOnDungeonClear(party, dungeon, dungeonData) {
 }
 
 // Compact equipment references: only id + scaling factors are persisted.
-// All other stats are calculated from the gear catalogs (e.g. weaponMelee.json).
+// All other stats are calculated from the gear catalogs (e.g. WeaponMelee/blunt.json).
 const EQUIPMENT_SLOTS = ['weapon', 'armour', 'helmet', 'shoes', 'offHand'];
 
 export function getDefaultEquipment() {
@@ -383,10 +383,10 @@ export function calcMaxMp(player) {
 export function calcMaxAp(player) {
   const apBonus = getEquipmentBonus(player, 'ap');
   const levelBonus = Math.floor(player.level);
-  const statBonus = Math.floor((player.vit + player.str + player.for) / 9);
-  const hpBonus = Math.floor(player.maxHp * 0.006);
+  const statBonus = (player.vit + player.int + player.cnc) / 2;
+  const hpBonus = player.maxHp * 0.012;
 
-  return Math.floor((apBonus + levelBonus + statBonus + hpBonus) * 0.6);
+  return Math.floor((apBonus + levelBonus + statBonus + hpBonus) * 1.25);
 }
 
 // Export all character-related functions

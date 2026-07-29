@@ -50,7 +50,7 @@
     "effects": [
       { "type": "defenseDown", "amount": 0.20, "duration": 5 }
     ],
-    "targets": [3, 4, 0.5],
+    "targets": [2, 4, 0.5],
     "allowedWeaponClasses": ["ranged"],
     "requiredWeaponSubTypes": ["thrown"],
     "requiresWeaponEquipped": true,

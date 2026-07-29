@@ -1264,7 +1264,7 @@ function getItemSubtypeHtml(calculated) {
     const prefix = calculated.twoHanded ? "2H " : "";
     return ` <span style="font-size:10px; opacity:0.85;">(${prefix}${sub})</span>`;
   }
-  const sub = calculated.type || calculated.subType || "";
+  const sub = calculated.subType || calculated.type || "";
   if (!sub) return "";
   return ` <span style="font-size:10px; opacity:0.85;">(${sub})</span>`;
 }

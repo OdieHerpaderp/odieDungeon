@@ -1,0 +1,84 @@
+[
+  {
+    "id": "spear",
+    "name": "Spear",
+    "type": "melee",
+    "subType": "polearms",
+    "damage": 8,
+    "spellPower": 1,
+    "attackSpeed": 1.1,
+    "bonuses": {
+      "DEX": 5,
+      "STR": 4
+    },
+    "damageModifiers": {
+      "DEX": 0.6,
+      "STR": 0.4
+    },
+    "range": 1,
+    "value": 26,
+    "description": "A small and fast melee weapon for quick strikes."
+  },
+  {
+    "id": "lance",
+    "name": "Lance",
+    "type": "melee",
+    "subType": "polearms",
+    "damage": 9,
+    "spellPower": 1,
+    "attackSpeed": 1.1,
+    "bonuses": {
+      "DEX": 7,
+      "STR": 5
+    },
+    "damageModifiers": {
+      "STR": 0.5,
+      "DEX": 0.5
+    },
+    "range": 1,
+    "value": 29,
+    "description": "A fast thrusting polearm — faster than spear but lower damage ceiling."
+  },
+  {
+    "id": "pike",
+    "name": "Pike",
+    "type": "melee",
+    "subType": "polearms",
+    "twoHanded": true,
+    "damage": 12,
+    "spellPower": 1,
+    "attackSpeed": 0.9,
+    "bonuses": {
+      "DEX": 9,
+      "STR": 6
+    },
+    "damageModifiers": {
+      "STR": 0.6,
+      "DEX": 0.4
+    },
+    "range": 1,
+    "value": 32,
+    "description": "A heavy slow polearm — high damage output over time."
+  },
+  {
+    "id": "halberd",
+    "name": "Halberd",
+    "type": "melee",
+    "subType": "polearms",
+    "twoHanded": true,
+    "damage": 13,
+    "spellPower": 1,
+    "attackSpeed": 0.9,
+    "bonuses": {
+      "DEX": 6,
+      "STR": 11
+    },
+    "damageModifiers": {
+      "DEX": 0.3,
+      "STR": 0.7
+    },
+    "range": 1,
+    "value": 35,
+    "description": "A small and fast melee weapon for quick strikes."
+  }
+]

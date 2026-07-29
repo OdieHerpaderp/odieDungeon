@@ -21,7 +21,7 @@
     "unlockSkillLevelMin": 1,
     "mpCostBase": 6,
     "cooldownMsBase": 2400,
-    "healAmount": 6,
+    "healAmount": 7,
     "effects": [
       { "type": "hot", "amount": 2, "duration": 6 }
     ],
@@ -39,7 +39,7 @@
     "unlockSkillLevelMin": 4,
     "mpCostBase": 7,
     "cooldownMsBase": 2800,
-    "healAmount": 7,
+    "healAmount": 8,
     "effects": [
       { "type": "hot", "amount": 2, "duration": 9 }
     ],
@@ -57,7 +57,7 @@
     "unlockSkillLevelMin": 7,
     "mpCostBase": 10,
     "cooldownMsBase": 3500,
-    "healAmount": 10,
+    "healAmount": 8,
     "effects": [
       { "type": "hot", "amount": 3, "duration": 9 }
     ],

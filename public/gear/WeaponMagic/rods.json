@@ -1,0 +1,22 @@
+[
+  {
+    "id": "magicRod",
+    "name": "Magic Rod",
+    "type": "magic",
+    "subType": "rods",
+    "damage": 7,
+    "spellPower": 9,
+    "attackSpeed": 0.8,
+    "bonuses": {
+      "CNC": 12,
+      "INT": 10
+    },
+    "damageModifiers": {
+      "CNC": 0.7,
+      "INT": 0.3
+    },
+    "range": 16,
+    "value": 37,
+    "description": "A powerful magic rod that casts spells with high damage."
+  }
+]

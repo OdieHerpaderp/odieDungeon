@@ -8,29 +8,37 @@ const __dirname = path.dirname(__filename);
 const GEAR_DIR = path.join(__dirname, "..", "public", "gear");
 
 const FILES = {
-  armorsLight: { file: "armorLight.json", kind: "defensive", slot: "armor" },
-  armorsMedium: { file: "armorMedium.json", kind: "defensive", slot: "armor" },
-  armorsHeavy: { file: "armorHeavy.json", kind: "defensive", slot: "armor" },
-  feetWearLight: { file: "feetWearLight.json", kind: "defensive", slot: "shoes" },
-  feetWearMedium: { file: "feetWearMedium.json", kind: "defensive", slot: "shoes" },
-  feetWearHeavy: { file: "feetWearHeavy.json", kind: "defensive", slot: "shoes" },
-  headgearLight: { file: "headgearLight.json", kind: "defensive", slot: "helmet" },
-  headgearMedium: { file: "headgearMedium.json", kind: "defensive", slot: "helmet" },
-  headgearHeavy: { file: "headgearHeavy.json", kind: "defensive", slot: "helmet" },
-  offHand: { file: "offHand.json", kind: "defensive", slot: "offHand" },
-  weaponMelee: { file: "weaponMelee.json", kind: "weapon", slot: "weapon" },
-  weaponRanged: { file: "weaponRanged.json", kind: "weapon", slot: "weapon" },
-  weaponMagic: { file: "weaponMagic.json", kind: "weapon", slot: "weapon" },
+  armorsLight: { file: path.join('armor', 'light.json'), kind: 'defensive', slot: 'armor' },
+  armorsMedium: { file: path.join('armor', 'medium.json'), kind: 'defensive', slot: 'armor' },
+  armorsHeavy: { file: path.join('armor', 'heavy.json'), kind: 'defensive', slot: 'armor' },
+  feetWearLight: { file: path.join('feetWear', 'light.json'), kind: 'defensive', slot: 'shoes' },
+  feetWearMedium: { file: path.join('feetWear', 'medium.json'), kind: 'defensive', slot: 'shoes' },
+  feetWearHeavy: { file: path.join('feetWear', 'heavy.json'), kind: 'defensive', slot: 'shoes' },
+  headgearLight: { file: path.join('headGear', 'light.json'), kind: 'defensive', slot: 'helmet' },
+  headgearMedium: { file: path.join('headGear', 'medium.json'), kind: 'defensive', slot: 'helmet' },
+  headgearHeavy: { file: path.join('headGear', 'heavy.json'), kind: 'defensive', slot: 'helmet' },
+  offHand: { file: path.join('offHand', 'offHand.json'), kind: 'defensive', slot: 'offHand' },
+  weaponMeleeBlunt: { file: path.join('WeaponMelee', 'blunt.json'), kind: 'weapon', slot: 'weapon' },
+  weaponMeleeLongBlade: { file: path.join('WeaponMelee', 'longBlade.json'), kind: 'weapon', slot: 'weapon' },
+  weaponMeleeShortBlade: { file: path.join('WeaponMelee', 'shortBlade.json'), kind: 'weapon', slot: 'weapon' },
+  weaponMeleePolearms: { file: path.join('WeaponMelee', 'polearms.json'), kind: 'weapon', slot: 'weapon' },
+  weaponMeleePugilism: { file: path.join('WeaponMelee', 'pugilism.json'), kind: 'weapon', slot: 'weapon' },
+  weaponRangedSlings: { file: path.join('WeaponRanged', 'slings.json'), kind: 'weapon', slot: 'weapon' },
+  weaponRangedBow: { file: path.join('WeaponRanged', 'bow.json'), kind: 'weapon', slot: 'weapon' },
+  weaponRangedThrown: { file: path.join('WeaponRanged', 'thrown.json'), kind: 'weapon', slot: 'weapon' },
+  weaponMagicRunes: { file: path.join('WeaponMagic', 'runes.json'), kind: 'weapon', slot: 'weapon' },
+  weaponMagicRods: { file: path.join('WeaponMagic', 'rods.json'), kind: 'weapon', slot: 'weapon' },
+  weaponMagicStaves: { file: path.join('WeaponMagic', 'staves.json'), kind: 'weapon', slot: 'weapon' },
 };
 
-const DEFENSE_WEIGHT = { armor: 1.0, helmet: 0.67, shoes: 0.33, offHand: 0.85 };
+const DEFENSE_WEIGHT = { armor: 1.0, helmet: 0.99, shoes: 0.99, offHand: 0.99 };
 
 const SURVIVABILITY = new Set(["VIT", "HP"]);
 
 function bonusWeight(stat) {
   if (stat === "HP") return 0.7;
-  if (stat === "VIT") return 1.5;
-  return SURVIVABILITY.has(stat) ? 1.5 : 1.0;
+  if (stat === "VIT") return 1.4;
+  return SURVIVABILITY.has(stat) ? 1.4 : 1.0;
 }
 
 function sumBonuses(item, weightFn) {
@@ -81,7 +89,7 @@ function normalize(score, minScore, maxScore) {
   if (span === 0) return 30;
   const raw = 20 + ((score - minScore) / span) * 20;
   const rounded = Math.round(raw);
-  return Math.round(rounded / 2) * 2;
+  return Math.round(rounded * 2) / 2;
 }
 
 function pad(s, n) {

@@ -1,19 +1,27 @@
 // itemGenerator - ESM for server; also works as <script type="module"> for browser (skips Node import() branch)
 // Browser fills catalogs via updateCatalogs() after fetching JSON from Express static files.
 
-import weaponMelee from './weaponMelee.json' with { type: 'json' };
-import weaponRanged from './weaponRanged.json' with { type: 'json' };
-import weaponMagic from './weaponMagic.json' with { type: 'json' };
-import headgearLight from './headgearLight.json' with { type: 'json' };
-import headgearMedium from './headgearMedium.json' with { type: 'json' };
-import headgearHeavy from './headgearHeavy.json' with { type: 'json' };
-import armorLight from './armorLight.json' with { type: 'json' };
-import armorMedium from './armorMedium.json' with { type: 'json' };
-import armorHeavy from './armorHeavy.json' with { type: 'json' };
-import feetWearLight from './feetWearLight.json' with { type: 'json' };
-import feetWearMedium from './feetWearMedium.json' with { type: 'json' };
-import feetWearHeavy from './feetWearHeavy.json' with { type: 'json' };
-import offHand from './offHand.json' with { type: 'json' };
+import meleeBlunt from './WeaponMelee/blunt.json' with { type: 'json' };
+import meleeLongBlade from './WeaponMelee/longBlade.json' with { type: 'json' };
+import meleeShortBlade from './WeaponMelee/shortBlade.json' with { type: 'json' };
+import meleePolearms from './WeaponMelee/polearms.json' with { type: 'json' };
+import meleePugilism from './WeaponMelee/pugilism.json' with { type: 'json' };
+import rangedSlings from './WeaponRanged/slings.json' with { type: 'json' };
+import rangedBow from './WeaponRanged/bow.json' with { type: 'json' };
+import rangedThrown from './WeaponRanged/thrown.json' with { type: 'json' };
+import magicRunes from './WeaponMagic/runes.json' with { type: 'json' };
+import magicRods from './WeaponMagic/rods.json' with { type: 'json' };
+import magicStaves from './WeaponMagic/staves.json' with { type: 'json' };
+import headgearLight from './headGear/light.json' with { type: 'json' };
+import headgearMedium from './headGear/medium.json' with { type: 'json' };
+import headgearHeavy from './headGear/heavy.json' with { type: 'json' };
+import armorLight from './armor/light.json' with { type: 'json' };
+import armorMedium from './armor/medium.json' with { type: 'json' };
+import armorHeavy from './armor/heavy.json' with { type: 'json' };
+import feetWearLight from './feetWear/light.json' with { type: 'json' };
+import feetWearMedium from './feetWear/medium.json' with { type: 'json' };
+import feetWearHeavy from './feetWear/heavy.json' with { type: 'json' };
+import offHand from './offHand/offHand.json' with { type: 'json' };
 
 export const SLOT_CATEGORY = {
   weapon: 'weapon',
@@ -27,8 +35,25 @@ export const SLOT_CATEGORY = {
   book: 'offHand',
 };
 
+const weapons = [
+  ...meleeBlunt,
+  ...meleeLongBlade,
+  ...meleeShortBlade,
+  ...meleePolearms,
+  ...meleePugilism,
+  ...rangedSlings,
+  ...rangedBow,
+  ...rangedThrown,
+  ...magicRunes,
+  ...magicRods,
+  ...magicStaves,
+];
+
 let defaultCatalog = {
-  weapon: [...weaponMelee, ...weaponRanged, ...weaponMagic],
+  weapon: weapons,
+  weaponMelee: [...meleeBlunt, ...meleeLongBlade, ...meleeShortBlade, ...meleePolearms, ...meleePugilism],
+  weaponRanged: [...rangedSlings, ...rangedBow, ...rangedThrown],
+  weaponMagic: [...magicRunes, ...magicRods, ...magicStaves],
   headgear: [...headgearLight, ...headgearMedium, ...headgearHeavy],
   armor: [...armorLight, ...armorMedium, ...armorHeavy],
   shoes: [...feetWearLight, ...feetWearMedium, ...feetWearHeavy],
@@ -37,6 +62,10 @@ let defaultCatalog = {
 
 export function getCatalog() {
   return defaultCatalog;
+}
+
+export function getWeapons() {
+  return weapons;
 }
 
 function randomInt(min, max) {
@@ -90,7 +119,7 @@ export function calculateItemPrice(baseValue, level, rarity) {
   if (typeof baseValue !== 'number') return baseValue;
   const levelMult = Math.pow(0.65 + level * 0.9, 1.2);
   const rarityMult = Math.pow(0.65 + rarity * 1.5, 1.4);
-  return Math.round(Math.pow(baseValue * (0.65 + levelMult / 11) * (0.65 + rarityMult / 8) * 1.8, 1.4)) / 10;
+  return Math.round(Math.pow(baseValue * (0.75 + levelMult / 11) * (0.75 + rarityMult / 8) * 1.9, 1.4)) / 10;
 }
 
 function calculateBonuses(baseBonuses, level, rarity) {
@@ -194,8 +223,8 @@ export function generateScaledItem(dungeonData, categoryPool) {
   var baseLevel = Math.max(0.1, 0.5 + dungeonDifficulty / 2);
   var category = categoryPool[Math.floor(Math.random() * categoryPool.length)];
   var itemLevel =
-    0.4 + Math.pow(0.3 + (baseLevel / 1.2 + floorAmount / 13) + Math.random() * (baseLevel * 3.8 + 4), 0.9) / 1.8;
-  var itemRarity = 0.6 + Math.pow(0.9 + Math.random() * (baseLevel * 2.6 + 9), 0.65) / 2.3;
+    0.2 + Math.pow(0.2 + (baseLevel / 1.2 + floorAmount / 13) + Math.random() * (baseLevel * 3.8 + 1), 0.9) / 1.9;
+  var itemRarity = 0.4 + Math.pow(0.7 + Math.random() * (baseLevel * 2.6 + 7), 0.65) / 2.3;
   itemRarity = Number(itemRarity.toFixed(1));
   var logMsg = `Generating item for dungeon difficulty ${dungeonDifficulty.toFixed(2)}: level ${itemLevel.toFixed(2)}, rarity ${itemRarity}, category ${category}`;
   console.log(logMsg);
@@ -206,12 +235,9 @@ export function generateScaledItem(dungeonData, categoryPool) {
   return generatedItem;
 }
 
-export function updateCatalogs(weaponMelee, weaponRanged, weaponMagic, headgear, armors, shoes, offHand) {
-  defaultCatalog.weapon = [...(weaponMelee || []), ...(weaponRanged || []), ...(weaponMagic || [])];
-  defaultCatalog.headgear = headgear || [];
-  defaultCatalog.armor = armors || [];
-  defaultCatalog.shoes = shoes || [];
-  defaultCatalog.offHand = offHand || [];
+export function updateCatalogs(catalog) {
+  if (!catalog) return;
+  defaultCatalog = Object.assign({}, defaultCatalog, catalog);
 }
 
 export function resolveItem(slot, id, level, rarity) {

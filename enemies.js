@@ -46,15 +46,15 @@ export function generateEnemies(party) {
       Math.pow(
         (enemyBonus * 0.7 + (0.2 + enemyBonus / 1.5) * effectiveFloor * 1.1) / (0.8 + enemyCount / 17) +
           Math.random() * (0.1 + effectiveFloor / 44),
-        1.15 ) * 0.34 + 0.2;
+        1.15 ) * 0.32 + 0.2;
     let calcVit = Math.floor(2 + floorBonus / 1.3 + Math.random() * (0.5 + floorBonus / 9));
     let calcHp = Math.floor(
       Math.pow(
-        floorBonus * 0.08 * (0.04 + calcVit * 0.03) +
-          calcVit * 6 +
+        floorBonus * 0.08 * (0.04 + calcVit * 0.04) +
+          calcVit * 7 +
           floorBonus * 4 +
           effectiveFloor * 5 +
-          62 +
+          68 +
           Math.random() * (calcVit * 0.05 + 0.02 + floorBonus / 55),
         1.03,
       ),
@@ -65,7 +65,7 @@ export function generateEnemies(party) {
       // Last-floor boss: single boss unit + stronger stats
       floorBonus += 1.4 + enemyBonus * 0.55;
       floorBonus *= 1.3 + enemyBonus * 0.3;
-      calcHp = Math.round(calcHp * (2.7 + enemyBonus * 0.7));
+      calcHp = Math.round(calcHp * (2.8 + enemyBonus * 0.7));
       calcVit += 15;
       enemyAp = Math.floor((20 + enemyAp) * 2.5);
     }
@@ -73,14 +73,14 @@ export function generateEnemies(party) {
       id: `enemy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
       name: enemyName,
       level: floorBonus.toFixed(2),
-      gold: floorBonus * 0.003 + calcHp * 0.0009 + 0.38,
+      gold: floorBonus * 0.003 + calcHp * 0.0009 + 0.34,
       hp: calcHp,
       maxHp: calcHp,
       ap: enemyAp,
       maxAp: enemyAp,
       mp: Math.floor(8 + floorBonus * 1.1),
       maxMp: Math.floor(8 + floorBonus * 1.1),
-      str: Math.floor((1.3 + enemyBonus / 2.9) * floorBonus * 13 + Math.random() * (1.8 + floorBonus / 2.1)) / 10,
+      str: Math.floor((1.1 + enemyBonus / 2.9) * floorBonus * 13 + Math.random() * (1.8 + floorBonus / 2.1)) / 10,
       dex: Math.floor(1 + floorBonus * 12 + Math.random() * (2.2 + floorBonus / 1.8)) / 10,
       agi: Math.floor(1 + floorBonus * 12 + Math.random() * (2.2 + floorBonus / 1.8)) / 10,
       vit: calcVit,

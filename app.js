@@ -1,6 +1,6 @@
 // odieDungeon
 // Global tuning: multiplier applied to all damage dealt BY enemies (1.0 = unchanged, 0.5 = -50%)
-const ENEMY_DAMAGE_MULTIPLIER = 0.8;
+const ENEMY_DAMAGE_MULTIPLIER = 0.75;
 import assert from 'node:assert';
 import express from 'express';
 import http from 'http';
@@ -22,22 +22,11 @@ const __dirname = dirname(__filename);
 
 const abilities = loadAbilities();
 
-import weaponMelee from './public/gear/weaponMelee.json' with { type: 'json' };
-import weaponRanged from './public/gear/weaponRanged.json' with { type: 'json' };
-import weaponMagic from './public/gear/weaponMagic.json' with { type: 'json' };
-const weapons = [...weaponMelee, ...weaponRanged, ...weaponMagic];
-import armorLight from './public/gear/armorLight.json' with { type: 'json' };
-import armorMedium from './public/gear/armorMedium.json' with { type: 'json' };
-import armorHeavy from './public/gear/armorHeavy.json' with { type: 'json' };
-const armors = [...armorLight, ...armorMedium, ...armorHeavy];
-import headgearLight from './public/gear/headgearLight.json' with { type: 'json' };
-import headgearMedium from './public/gear/headgearMedium.json' with { type: 'json' };
-import headgearHeavy from './public/gear/headgearHeavy.json' with { type: 'json' };
-const headgear = [...headgearLight, ...headgearMedium, ...headgearHeavy];
-import feetWearLight from './public/gear/feetWearLight.json' with { type: 'json' };
-import feetWearMedium from './public/gear/feetWearMedium.json' with { type: 'json' };
-import feetWearHeavy from './public/gear/feetWearHeavy.json' with { type: 'json' };
-const feetWear = [...feetWearLight, ...feetWearMedium, ...feetWearHeavy];
+const catalog = itemGenerator.getCatalog();
+const weapons = catalog.weapon;
+const armors = catalog.armor;
+const headgear = catalog.headgear;
+const feetWear = catalog.shoes;
 import dungeons from './public/dungeons.json' with { type: 'json' };
 
 export { app };
@@ -271,15 +260,6 @@ function handleGearPurchase(socket, gearType, partyId) {
     cost = item.price || 40; // Use the item's price if available
     itemIndex = index;
   } else {
-    const catalog = {
-      armour: armors,
-      weapon: weapons,
-      weaponMelee: weaponMelee,
-      weaponRanged: weaponRanged,
-      weaponMagic: weaponMagic,
-      helmet: headgear,
-      shoes: feetWear,
-    };
     const itemPool = catalog[gearType] || [];
     item = itemPool[0];
     slot =
@@ -1331,8 +1311,19 @@ function clearPartyDeltaState(partyId) {
 function startSpawnTimer(partyId, party) {
   if (party.floor < 1 || spawnTimers.has(partyId)) return;
 
+  const autoProgressTimestamp = party._autoProgressTimestamp;
+  delete party._autoProgressTimestamp;
+
   const timer = setTimeout(() => {
-    if (!party.combatActive && (!party.enemies || party.enemies.length === 0)) {
+    const elapsed = autoProgressTimestamp ? Date.now() - autoProgressTimestamp : null;
+    const live = (party.enemies || []).filter((e) => e.hp > 0);
+    const reason = !party.combatActive ? (live.length > 0 ? 'enemies-remain' : 'ok') : 'combat-active';
+
+    if (reason !== 'ok') {
+      console.log(`[DEBUG-SKIP-SPAWN-TIMER] party=${partyId} reason=${reason} elapsedMs=${elapsed} combatActive=${party.combatActive} enemies=${(party.enemies || []).length} live=${live.length} enemyHps=${(party.enemies || []).map((e) => `${e.name}:${e.hp}`).join(', ')}`);
+      return;
+    }
+    if (!party.combatActive && (!party.enemies || liveEnemies(party).length === 0)) {
       generateEnemies(party);
       party.combatActive = true;
       // Prefer WebRTC over TCP
@@ -1639,13 +1630,16 @@ function startActionBarSystem(partyId, party) {
       // enemies or flip combatActive back on the client.
       resetPartyDeltaBaseline(partyId);
 
-      // Generate combat summary using shared function
-      generateCombatSummary(partyId, party, 'Victory! You can move now!');
-
-      // Mark dungeon completion when the party defeats the boss on the last floor (per floorAmount)
       const dungeonDataForCompletion = party.dungeon ? characters.getDungeonData(party.dungeon) : null;
       const dungeonFloorMaxForCompletion = dungeonDataForCompletion?.floorAmount ?? 100;
 
+      // Generate combat summary using shared function
+      generateCombatSummary(partyId, party, 'Victory! You can move now!');
+      console.log(`[DEBUG-VICTORY] party=${partyId} dungeon=${party.dungeon} floor=${party.floor} dungeonFloor=${party.dungeonFloors?.[party.dungeon]} maxFloor=${dungeonFloorMaxForCompletion} enemies=${(party.enemies || []).length} live=${liveEnemiesList.length} enemyHps=${(party.enemies || []).map((e) => `${e.name}:${e.hp}`).join(', ')}`);
+
+      party.enemies = [];
+
+      // Mark dungeon completion when the party defeats the boss on the last floor (per floorAmount)
       if (party.dungeon && party.dungeonFloors?.[party.dungeon] === dungeonFloorMaxForCompletion) {
         if (!party.completedDungeons) party.completedDungeons = {};
         if (party.completedDungeons[party.dungeon] !== true) {
@@ -1713,6 +1707,8 @@ function startActionBarSystem(partyId, party) {
       const dungeonDataForAutoProgress = characters.getDungeonData(party.dungeon);
       const dungeonFloorMaxForAutoProgress = dungeonDataForAutoProgress?.floorAmount ?? 100;
       const newDungeonFloor = Math.min(currentDungeonFloor + 1, dungeonFloorMaxForAutoProgress);
+      console.log(`[DEBUG-AUTOPROGRESS] party=${partyId} dungeon=${party.dungeon} oldFloor=${currentDungeonFloor} newFloor=${newDungeonFloor} maxFloor=${dungeonFloorMaxForAutoProgress} enemiesBefore=${(party.enemies || []).length} liveBefore=${liveEnemies(party).length}`);
+
       party.dungeonFloors[party.dungeon] = newDungeonFloor;
 
       // Calculate absolute floor for display
@@ -1727,6 +1723,7 @@ function startActionBarSystem(partyId, party) {
       setTimeout(() => {
         // Prefer WebRTC for nextFloor event
         const nextFloorPacket = { partyId: party.partyId };
+        party._autoProgressTimestamp = Date.now();
         broadcastToParty(partyId, 'nextFloor', nextFloorPacket);
       }, 1000);
 
@@ -1965,11 +1962,11 @@ function resolveAttackHit(actor, target, accuracyMod, damageMod, party, partyId)
       0.6 * (1.75 + Math.random()) * (target.equipment?.armour?.defense || target.armour || 1) +
       0.6 * (1.75 + Math.random()) * (target.equipment?.shoes?.defense || target.shoes || 1) +
       0.6 * (1.75 + Math.random()) * offHandDef +
-      0.03 * (1.75 + Math.random()) * target.vit) / 6;
+      0.05 * (1.75 + Math.random()) * target.vit) / 5;
   const defenseUp = buffEngine.sumEffectAmount(target.effects, 'defenseUp', 0.5);
   const effectiveMitigation = (defenseDown > 0 ? mitigationTerm * (1 - defenseDown) : mitigationTerm) + defenseUp;
   const cappedMitigation = Math.min(effectiveMitigation, rawDamage * 0.75);
-  damage = Math.max(0, Math.round(damage - cappedMitigation / 1.2) / 0.99 + mitigationTerm / 40);
+  damage = Math.max(0, Math.round(damage - cappedMitigation / 3) / 0.999 + mitigationTerm / 60);
   const mitigated = Math.max(0, rawDamage - damage + 0.1);
 
   updateCombatStats(actor, party, true, crit, damage, roll);
