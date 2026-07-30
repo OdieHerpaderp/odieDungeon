@@ -5,14 +5,14 @@
     "type": "light",
     "slot": "offHand",
     "subType": "shield",
-    "defense": 5,
+    "defense": 7,
     "magicResist": 2,
     "bonuses": {
       "DEX": 4,
       "AGI": 2
     },
     "range": 1,
-    "value": 23,
+    "value": 25,
     "description": "A light shield"
   },
   {
@@ -21,7 +21,7 @@
     "type": "medium",
     "slot": "offHand",
     "subType": "shield",
-    "defense": 7,
+    "defense": 9,
     "magicResist": 3,
     "bonuses": {
       "STR": 4,
@@ -37,7 +37,7 @@
     "type": "heavy",
     "slot": "offHand",
     "subType": "shield",
-    "defense": 9,
+    "defense": 11,
     "magicResist": 4,
     "bonuses": {
       "VIT": 6,
@@ -62,7 +62,7 @@
       "AP": 5
     },
     "range": 1,
-    "value": 22,
+    "value": 20,
     "description": "A light spellbook"
   },
   {
@@ -79,7 +79,7 @@
       "AP": 6
     },
     "range": 1,
-    "value": 24,
+    "value": 22,
     "description": "A weighty tome"
   },
   {
@@ -97,7 +97,7 @@
       "MP": 4
     },
     "range": 1,
-    "value": 29,
+    "value": 27,
     "description": "A forbidden grimoire"
   }
 ]

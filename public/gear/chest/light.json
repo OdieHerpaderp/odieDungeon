@@ -3,21 +3,21 @@
     "id": "rags",
     "name": "Rags",
     "type": "light",
-    "defense": 6,
+    "defense": 10,
     "magicResist": 4,
     "bonuses": {
       "AGI": 2,
       "VIT": 2
     },
     "range": 1,
-    "value": 23,
+    "value": 24,
     "description": "Light protective armor made from animal hide."
   },
   {
     "id": "wizardRobe",
     "name": "Wizard Robe",
     "type": "light",
-    "defense": 7,
+    "defense": 11,
     "magicResist": 5,
     "bonuses": {
       "INT": 5,
@@ -25,14 +25,14 @@
       "AP": 11
     },
     "range": 1,
-    "value": 33,
+    "value": 34,
     "description": "A light robe woven for spellcasters, shielding the mind more than the body."
   },
   {
     "id": "clericRobe",
     "name": "Cleric Robe",
     "type": "light",
-    "defense": 7,
+    "defense": 11,
     "magicResist": 5,
     "bonuses": {
       "CNC": 6,
@@ -40,28 +40,28 @@
       "AP": 11
     },
     "range": 1,
-    "value": 33,
+    "value": 34,
     "description": "A light robe woven for devout casters, shielding the spirit more than the body."
   },
   {
     "id": "leatherArmor",
     "name": "Leather Armor",
     "type": "light",
-    "defense": 9,
+    "defense": 11,
     "magicResist": 2,
     "bonuses": {
       "AGI": 5,
       "DEX": 5
     },
     "range": 1,
-    "value": 28,
+    "value": 27,
     "description": "Light protective armor made from animal hide."
   },
   {
     "id": "assassinArmor",
     "name": "Assassin Vest",
     "type": "light",
-    "defense": 8,
+    "defense": 10,
     "magicResist": 1,
     "bonuses": {
       "AGI": 5,

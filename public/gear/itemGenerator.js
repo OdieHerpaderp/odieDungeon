@@ -105,8 +105,8 @@ function clamp(value, min, max) {
 
 export function calculateItemStat(baseValue, level, rarity) {
   if (typeof baseValue !== 'number') return baseValue;
-  var levelMultiplier = 0.6 + level / 21;
-  var rarityMultiplier = 0.6 + rarity / 11;
+  var levelMultiplier = 0.6 + level / 17;
+  var rarityMultiplier = 0.6 + rarity / 10;
   return Math.round(baseValue * levelMultiplier * rarityMultiplier * 100) / 100;
 }
 
@@ -114,14 +114,14 @@ export function calculateItemTier(item) {
   if (!item) return null;
   var level = Number.isFinite(item.level) ? item.level : 1;
   var rarity = Number.isFinite(item.rarity) ? item.rarity : 1;
-  return (calculateItemStat(51.1, level, rarity) - 20.3) / 2.45;
+  return (calculateItemStat(51.1, level, rarity) - 21.1) / 2.5;
 }
 
 export function calculateItemPrice(baseValue, level, rarity) {
   if (typeof baseValue !== 'number') return baseValue;
   const levelMult = Math.pow(0.65 + level * 0.9, 1.3);
   const rarityMult = Math.pow(0.65 + rarity * 1.5, 1.5);
-  return Math.round(Math.pow(baseValue * (0.7 + levelMult / 11) * (0.7 + rarityMult / 8) * 1.8, 1.5)) / 10;
+  return Math.round(Math.pow(baseValue * (0.7 + levelMult / 11) * (0.7 + rarityMult / 8) * 1.7, 1.4)) / 10;
 }
 
 function calculateBonuses(baseBonuses, level, rarity) {

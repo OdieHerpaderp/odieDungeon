@@ -5,7 +5,7 @@
     "type": "ranged",
     "subType": "thrown",
     "range": 6,
-    "damage": 4,
+    "damage": 10,
     "spellPower": 0,
     "attackSpeed": 1.6,
     "bonuses": {
@@ -25,7 +25,7 @@
     "type": "ranged",
     "subType": "thrown",
     "range": 8,
-    "damage": 7,
+    "damage": 10,
     "spellPower": 0,
     "attackSpeed": 1.7,
     "bonuses": {
@@ -36,7 +36,7 @@
       "CNC": 0.7,
       "AGI": 0.3
     },
-    "value": 23,
+    "value": 21,
     "description": "A throwing blade used for quick strikes."
   },
   {
@@ -45,7 +45,7 @@
     "type": "ranged",
     "subType": "thrown",
     "range": 10,
-    "damage": 9,
+    "damage": 12,
     "spellPower": 0,
     "attackSpeed": 1.8,
     "bonuses": {
@@ -56,7 +56,7 @@
       "CNC": 0.7,
       "AGI": 0.3
     },
-    "value": 25,
+    "value": 23,
     "description": "A sharp multi-pointed throwing weapon."
   }
 ]

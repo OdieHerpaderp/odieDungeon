@@ -3,7 +3,7 @@
     "id": "plateArmor",
     "name": "Plate Armor",
     "type": "heavy",
-    "defense": 16,
+    "defense": 18,
     "magicResist": 1,
     "bonuses": {
       "VIT": 6,
@@ -21,7 +21,7 @@
     "id": "ironArmor",
     "name": "Iron Armor",
     "type": "heavy",
-    "defense": 14,
+    "defense": 16,
     "magicResist": 1,
     "bonuses": {
       "STR": 6,
@@ -39,7 +39,7 @@
     "id": "runicCuirass",
     "name": "Runic Cuirass",
     "type": "heavy",
-    "defense": 14,
+    "defense": 16,
     "magicResist": 2,
     "bonuses": {
       "VIT": 5,

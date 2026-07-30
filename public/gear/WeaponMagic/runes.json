@@ -4,7 +4,7 @@
     "name": "Magic Rune",
     "type": "magic",
     "subType": "runes",
-    "damage": 6,
+    "damage": 9,
     "spellPower": 4,
     "attackSpeed": 0.9,
     "bonuses": {

@@ -3,7 +3,7 @@
     "id": "chitinHelmet",
     "name": "Chitin Helmet",
     "type": "medium",
-    "defense": 7,
+    "defense": 11,
     "magicResist": 3,
     "bonuses": {
       "STR": 4,
@@ -18,21 +18,21 @@
     "id": "chainCoif",
     "name": "Chain Coif",
     "type": "medium",
-    "defense": 8,
+    "defense": 12,
     "magicResist": 3,
     "bonuses": {
       "STR": 6,
       "DEX": 4
     },
     "range": 1,
-    "value": 27,
+    "value": 28,
     "description": "Medium headwear made of interlinked metal rings."
   },
   {
     "id": "scaleHelm",
     "name": "Scale Helm",
     "type": "medium",
-    "defense": 8,
+    "defense": 13,
     "magicResist": 3,
     "bonuses": {
       "STR": 3,
@@ -40,14 +40,14 @@
       "VIT": 3
     },
     "range": 1,
-    "value": 27,
+    "value": 28,
     "description": "Medium helm of overlapping metal scales, offering balanced protection."
   },
   {
     "id": "wyrmhideCap",
     "name": "Wyrmhide Cap",
     "type": "medium",
-    "defense": 10,
+    "defense": 12,
     "magicResist": 4,
     "bonuses": {
       "AGI": 4,
@@ -55,14 +55,14 @@
       "CNC": 3
     },
     "range": 1,
-    "value": 28,
+    "value": 27,
     "description": "Medium cap of alchemically hardened wyrmhide, balancing agility with resilience."
   },
   {
     "id": "spellfortCoif",
     "name": "Spellfort Coif",
     "type": "medium",
-    "defense": 9,
+    "defense": 11,
     "magicResist": 4,
     "bonuses": {
       "VIT": 5,

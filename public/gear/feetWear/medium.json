@@ -3,7 +3,7 @@
     "id": "chitinBoots",
     "name": "Chitin Boots",
     "type": "medium",
-    "defense": 5,
+    "defense": 9,
     "magicResist": 2,
     "bonuses": {
       "STR": 3,
@@ -11,14 +11,14 @@
       "AGI": 2
     },
     "range": 1,
-    "value": 24,
+    "value": 25,
     "description": "Medium boots of chitin that spring with every step."
   },
   {
     "id": "chainBoots",
     "name": "Chain Boots",
     "type": "medium",
-    "defense": 6,
+    "defense": 10,
     "magicResist": 2,
     "bonuses": {
       "STR": 5,
@@ -26,14 +26,14 @@
       "VIT": 2
     },
     "range": 1,
-    "value": 26,
+    "value": 27,
     "description": "Medium boots reinforced with interlinked metal rings."
   },
   {
     "id": "scaleBoots",
     "name": "Scale Boots",
     "type": "medium",
-    "defense": 6,
+    "defense": 10,
     "magicResist": 2,
     "bonuses": {
       "STR": 3,
@@ -41,14 +41,14 @@
       "VIT": 2
     },
     "range": 1,
-    "value": 25,
+    "value": 26,
     "description": "Medium boots of overlapping metal scales that absorb hard impacts."
   },
   {
     "id": "wyrmhideBoots",
     "name": "Wyrmhide Boots",
     "type": "medium",
-    "defense": 8,
+    "defense": 10,
     "magicResist": 3,
     "bonuses": {
       "AGI": 2,
@@ -56,14 +56,14 @@
       "CNC": 3
     },
     "range": 1,
-    "value": 27,
+    "value": 26,
     "description": "Medium boots of textured wyrmhide that spring with every step yet shrug off heavy blows."
   },
   {
     "id": "spellfortGreaves",
     "name": "Spellfort Greaves",
     "type": "medium",
-    "defense": 7,
+    "defense": 9,
     "magicResist": 3,
     "bonuses": {
       "VIT": 4,
@@ -73,7 +73,7 @@
       "AGI": -0.5
     },
     "range": 1,
-    "value": 27,
+    "value": 26,
     "description": "Medium greaves inscribed with sustaining runes, steadying the body and replenishing arcane reserves."
   }
 ]

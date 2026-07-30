@@ -4,7 +4,7 @@
     "name": "Shiv",
     "type": "melee",
     "subType": "shortBlade",
-    "damage": 6,
+    "damage": 8,
     "spellPower": 1,
     "attackSpeed": 1.6,
     "bonuses": {
@@ -16,7 +16,7 @@
       "AGI": 0.7
     },
     "range": 1,
-    "value": 24,
+    "value": 22,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -24,7 +24,7 @@
     "name": "Knife",
     "type": "melee",
     "subType": "shortBlade",
-    "damage": 7,
+    "damage": 9,
     "spellPower": 1,
     "attackSpeed": 1.6,
     "bonuses": {
@@ -36,7 +36,7 @@
       "AGI": 0.7
     },
     "range": 1,
-    "value": 26,
+    "value": 24,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -44,7 +44,7 @@
     "name": "Dagger",
     "type": "melee",
     "subType": "shortBlade",
-    "damage": 8,
+    "damage": 10,
     "spellPower": 1,
     "attackSpeed": 1.6,
     "bonuses": {
@@ -56,7 +56,7 @@
       "AGI": 0.7
     },
     "range": 1,
-    "value": 28,
+    "value": 26,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -64,7 +64,7 @@
     "name": "Rapier",
     "type": "melee",
     "subType": "shortBlade",
-    "damage": 9,
+    "damage": 11,
     "spellPower": 1,
     "attackSpeed": 1.6,
     "bonuses": {
@@ -76,7 +76,7 @@
       "AGI": 0.7
     },
     "range": 1,
-    "value": 31,
+    "value": 28,
     "description": "A classic single-edged thrusting blade — finesse playstyle with high power ceiling."
   }
 ]

@@ -5,7 +5,7 @@
     "type": "ranged",
     "subType": "slings",
     "range": 12,
-    "damage": 7,
+    "damage": 10,
     "spellPower": 0,
     "attackSpeed": 1.4,
     "bonuses": {
@@ -16,7 +16,7 @@
       "CNC": 0.6,
       "AGI": 0.4
     },
-    "value": 22,
+    "value": 20,
     "description": "A basic slingshot for quick ranged attacks."
   }
 ]

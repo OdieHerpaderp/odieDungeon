@@ -3,7 +3,7 @@
     "id": "ironHelm",
     "name": "Iron Helm",
     "type": "heavy",
-    "defense": 9,
+    "defense": 11,
     "magicResist": 4,
     "bonuses": {
       "STR": 4,
@@ -14,14 +14,14 @@
       "CNC": -0.5
     },
     "range": 1,
-    "value": 31,
+    "value": 33,
     "description": "A sturdy iron helm offering reliable protection."
   },
   {
     "id": "runicCrown",
     "name": "Runic Crown",
     "type": "heavy",
-    "defense": 9,
+    "defense": 12,
     "magicResist": 4,
     "bonuses": {
       "VIT": 4,
@@ -31,14 +31,14 @@
       "AGI": -0.3
     },
     "range": 1,
-    "value": 29,
+    "value": 31,
     "description": "Heavy crown of rune-forged metal, hardening against both blade and spell while fueling hybrid resolve."
   },
   {
     "id": "plateHelmet",
     "name": "Plate Helmet",
     "type": "heavy",
-    "defense": 11,
+    "defense": 13,
     "magicResist": 5,
     "bonuses": {
       "STR": 4,
@@ -49,14 +49,14 @@
       "CNC": -1
     },
     "range": 1,
-    "value": 34,
+    "value": 35,
     "description": "Heavy protective helmet made of metal plates."
   },
   {
     "id": "greatHelm",
     "name": "Great Helm",
     "type": "heavy",
-    "defense": 13,
+    "defense": 14,
     "magicResist": 6,
     "bonuses": {
       "VIT": 6,

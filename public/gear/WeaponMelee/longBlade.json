@@ -4,7 +4,7 @@
     "name": "Long Sword",
     "type": "melee",
     "subType": "longBlade",
-    "damage": 7,
+    "damage": 10,
     "spellPower": 1,
     "attackSpeed": 1.2,
     "bonuses": {
@@ -15,7 +15,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 29,
+    "value": 28,
     "description": "A basic sword for melee combat."
   },
   {
@@ -23,7 +23,7 @@
     "name": "Falchion",
     "type": "melee",
     "subType": "longBlade",
-    "damage": 8,
+    "damage": 11,
     "spellPower": 1,
     "attackSpeed": 1.2,
     "bonuses": {
@@ -35,7 +35,7 @@
       "STR": 0.8
     },
     "range": 1,
-    "value": 30,
+    "value": 29,
     "description": "A broad, single-edged long blade designed for swift, precise strikes. Favored by duelists who rely on agility over brute force."
   },
   {
@@ -43,7 +43,7 @@
     "name": "Claymore",
     "type": "melee",
     "subType": "longBlade",
-    "damage": 9,
+    "damage": 12,
     "spellPower": 1,
     "attackSpeed": 1.2,
     "bonuses": {
@@ -54,7 +54,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 29,
+    "value": 30,
     "description": "A canonical longBlade upgrade."
   },
   {
@@ -63,7 +63,7 @@
     "type": "melee",
     "subType": "longBlade",
     "twoHanded": true,
-    "damage": 13,
+    "damage": 16,
     "spellPower": 1,
     "attackSpeed": 0.9,
     "bonuses": {

@@ -3,7 +3,7 @@
     "id": "chitinArmor",
     "name": "Chitin Armor",
     "type": "medium",
-    "defense": 11,
+    "defense": 13,
     "magicResist": 2,
     "bonuses": {
       "STR": 4,
@@ -11,14 +11,14 @@
       "AGI": 5
     },
     "range": 1,
-    "value": 31,
+    "value": 32,
     "description": "Medium armor formed from layered chitin, balancing mobility and guard."
   },
   {
     "id": "chainMail",
     "name": "Chain Mail",
     "type": "medium",
-    "defense": 13,
+    "defense": 14,
     "magicResist": 1,
     "bonuses": {
       "STR": 6,
@@ -33,7 +33,7 @@
     "id": "scaleArmor",
     "name": "Scale Armor",
     "type": "medium",
-    "defense": 12,
+    "defense": 15,
     "magicResist": 2,
     "bonuses": {
       "STR": 5,
@@ -42,14 +42,14 @@
       "AGI": -0.3
     },
     "range": 1,
-    "value": 32,
+    "value": 31,
     "description": "Medium armor of overlapping metal scales that shifts with your movement."
   },
   {
     "id": "wyrmhideJerkin",
     "name": "Wyrmhide Jerkin",
     "type": "medium",
-    "defense": 13,
+    "defense": 14,
     "magicResist": 3,
     "bonuses": {
       "AGI": 4,
@@ -64,7 +64,7 @@
     "id": "spellfortCuirass",
     "name": "Spellfort Cuirass",
     "type": "medium",
-    "defense": 12,
+    "defense": 14,
     "magicResist": 3,
     "bonuses": {
       "VIT": 6,

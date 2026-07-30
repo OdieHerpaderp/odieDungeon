@@ -4,7 +4,7 @@
     "name": "Magic Rod",
     "type": "magic",
     "subType": "rods",
-    "damage": 7,
+    "damage": 10,
     "spellPower": 9,
     "attackSpeed": 0.9,
     "bonuses": {

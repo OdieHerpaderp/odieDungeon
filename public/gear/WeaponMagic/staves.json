@@ -4,7 +4,7 @@
     "name": "Magic Staff",
     "type": "magic",
     "subType": "staves",
-    "damage": 8,
+    "damage": 11,
     "spellPower": 9,
     "attackSpeed": 0.8,
     "bonuses": {
