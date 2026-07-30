@@ -1,289 +1,289 @@
 {
   "field": {
-    "floorBase": 0.722,
+    "floorBase": 0.701,
     "floorMult": 0.058,
     "floorAmount": 8,
     "background": "#224422",
     "emoji": "🌿"
   },
   "backyard": {
-    "floorBase": 3.1216,
+    "floorBase": 3.0979,
     "floorMult": 0.0588,
     "floorAmount": 9,
     "background": "#2d2a1d",
-    "emoji": "🎻"
+    "emoji": "🌻"
   },
   "meadow": {
-    "floorBase": 5.9042,
+    "floorBase": 5.8775,
     "floorMult": 0.0596,
     "floorAmount": 10,
     "background": "#1a3a1a",
     "emoji": "🌱"
   },
   "farm": {
-    "floorBase": 9.1214,
+    "floorBase": 9.0912,
     "floorMult": 0.0604,
     "floorAmount": 11,
     "background": "#323311",
     "emoji": "🌾"
   },
   "orchard": {
-    "floorBase": 12.8314,
+    "floorBase": 12.7973,
     "floorMult": 0.0612,
     "floorAmount": 12,
     "background": "#24411a",
     "emoji": "🍎"
   },
   "garden": {
-    "floorBase": 17.1,
+    "floorBase": 17.0614,
     "floorMult": 0.062,
     "floorAmount": 13,
     "background": "#72485f",
     "emoji": "🌷"
   },
   "cellar": {
-    "floorBase": 22.0015,
+    "floorBase": 21.9579,
     "floorMult": 0.0628,
     "floorAmount": 14,
     "background": "#48301c",
     "emoji": "🪥"
   },
   "village": {
-    "floorBase": 27.62,
+    "floorBase": 27.5708,
     "floorMult": 0.0636,
     "floorAmount": 15,
     "background": "#2a3a2a",
-    "emoji": "🏨️"
+    "emoji": "🏘️"
   },
   "school": {
-    "floorBase": 34.0505,
+    "floorBase": 33.9949,
     "floorMult": 0.0644,
     "floorAmount": 16,
     "background": "#111122",
     "emoji": "📖"
   },
   "dojo": {
-    "floorBase": 41.4002,
+    "floorBase": 41.3374,
     "floorMult": 0.0652,
     "floorAmount": 17,
     "background": "#23363b",
     "emoji": "🥋"
   },
   "chapel": {
-    "floorBase": 49.7904,
+    "floorBase": 49.7194,
     "floorMult": 0.066,
     "floorAmount": 18,
     "background": "#2b2230",
     "emoji": "🕯️"
   },
   "shrine": {
-    "floorBase": 59.3581,
+    "floorBase": 59.2778,
     "floorMult": 0.0669,
     "floorAmount": 19,
     "background": "#2a1a2a",
     "emoji": "⛪"
   },
   "forest": {
-    "floorBase": 70.2602,
+    "floorBase": 70.1694,
     "floorMult": 0.0678,
     "floorAmount": 20,
     "background": "#112200",
     "emoji": "🌲"
   },
   "watchtower": {
-    "floorBase": 82.6721,
+    "floorBase": 82.5695,
     "floorMult": 0.0687,
     "floorAmount": 21,
     "background": "#22304a",
     "emoji": "🗼"
   },
   "outpost": {
-    "floorBase": 96.792,
+    "floorBase": 96.6761,
     "floorMult": 0.0696,
     "floorAmount": 22,
     "background": "#2b2b1f",
     "emoji": "⚔️"
   },
   "sewers": {
-    "floorBase": 112.844,
+    "floorBase": 112.713,
     "floorMult": 0.0705,
     "floorAmount": 23,
     "background": "#10231d",
-    "emoji": "🕰️"
+    "emoji": "🚰"
   },
   "mine": {
-    "floorBase": 131.0812,
+    "floorBase": 130.9331,
     "floorMult": 0.0714,
     "floorAmount": 24,
     "background": "#2a2520",
     "emoji": "⛏️"
   },
   "cave": {
-    "floorBase": 151.7896,
+    "floorBase": 151.6222,
     "floorMult": 0.0723,
     "floorAmount": 25,
     "background": "#332200",
     "emoji": "🪨"
   },
   "desert": {
-    "floorBase": 175.2924,
+    "floorBase": 175.1033,
     "floorMult": 0.0732,
     "floorAmount": 26,
     "background": "#cc9933",
-    "emoji": "🏔️"
+    "emoji": "🏜️"
   },
   "canyon": {
-    "floorBase": 201.9549,
+    "floorBase": 201.7412,
     "floorMult": 0.0741,
     "floorAmount": 27,
     "background": "#cc7711",
-    "emoji": "🏔"
+    "emoji": "🌄"
   },
   "clocktower": {
-    "floorBase": 232.1898,
+    "floorBase": 231.9483,
     "floorMult": 0.075,
     "floorAmount": 28,
     "background": "#2b241b",
     "emoji": "🕰️"
   },
   "ruins": {
-    "floorBase": 266.4635,
+    "floorBase": 266.1906,
     "floorMult": 0.076,
     "floorAmount": 29,
     "background": "#111122",
-    "emoji": "\ud83dd\uddff"
+    "emoji": "🗿"
   },
   "temple": {
-    "floorBase": 305.3061,
+    "floorBase": 304.9977,
     "floorMult": 0.077,
     "floorAmount": 30,
     "background": "#2a1b2f",
-    "emoji": "🕕"
+    "emoji": "🛕"
   },
   "graveyard": {
-    "floorBase": 349.3138,
+    "floorBase": 348.9653,
     "floorMult": 0.078,
     "floorAmount": 31,
     "background": "#1a1a22",
     "emoji": "⚰️"
   },
   "mausoleum": {
-    "floorBase": 399.1602,
+    "floorBase": 398.7664,
     "floorMult": 0.079,
     "floorAmount": 32,
     "background": "#221a22",
     "emoji": "🪦"
   },
   "catacombs": {
-    "floorBase": 455.6065,
+    "floorBase": 455.1616,
     "floorMult": 0.08,
     "floorAmount": 33,
     "background": "#151018",
     "emoji": "🕸️"
   },
   "crypt": {
-    "floorBase": 519.5129,
+    "floorBase": 519.0102,
     "floorMult": 0.081,
     "floorAmount": 34,
     "background": "#1a1015",
     "emoji": "💀"
   },
   "swamp": {
-    "floorBase": 591.8514,
+    "floorBase": 591.2834,
     "floorMult": 0.082,
     "floorAmount": 35,
     "background": "#0b2b1f",
     "emoji": "🪤"
   },
   "castle": {
-    "floorBase": 673.7204,
+    "floorBase": 673.0785,
     "floorMult": 0.083,
     "floorAmount": 36,
     "background": "#330000",
     "emoji": "🏰"
   },
   "fortress": {
-    "floorBase": 766.361,
+    "floorBase": 765.6356,
     "floorMult": 0.0841,
     "floorAmount": 37,
     "background": "#2a0a0a",
-    "emoji": "🏟️"
+    "emoji": "🏯"
   },
   "labyrinth": {
-    "floorBase": 871.1797,
+    "floorBase": 870.36,
     "floorMult": 0.0852,
     "floorAmount": 38,
     "background": "#1b1b2a",
     "emoji": "🌀"
   },
   "laboratory": {
-    "floorBase": 989.762,
+    "floorBase": 988.8358,
     "floorMult": 0.0863,
     "floorAmount": 39,
     "background": "#111111",
     "emoji": "🔬"
   },
   "frozen wasteland": {
-    "floorBase": 1123.8997,
+    "floorBase": 1122.8531,
     "floorMult": 0.0874,
     "floorAmount": 40,
     "background": "#1a2433",
     "emoji": "❄️"
   },
-  "sky": {
-    "floorBase": 1275.6173,
+  "collusseum": {
+    "floorBase": 1274.4346,
     "floorMult": 0.0885,
     "floorAmount": 41,
     "background": "#1b2b3a",
-    "emoji": "☁️"
+    "emoji": "🏟️"
   },
   "sanctum": {
-    "floorBase": 1447.2026,
+    "floorBase": 1445.8662,
     "floorMult": 0.0896,
     "floorAmount": 42,
     "background": "#1a1330",
-    "emoji": "✨"
+    "emoji": "🕍"
   },
   "volcano": {
-    "floorBase": 1641.2408,
+    "floorBase": 1639.7307,
     "floorMult": 0.0907,
     "floorAmount": 43,
     "background": "#330800",
     "emoji": "🌋"
   },
   "starfield": {
-    "floorBase": 1860.6532,
+    "floorBase": 1858.9468,
     "floorMult": 0.0918,
     "floorAmount": 44,
     "background": "#0f1a33",
     "emoji": "⭐"
   },
   "nebula": {
-    "floorBase": 2108.7408,
+    "floorBase": 2106.8126,
     "floorMult": 0.093,
     "floorAmount": 45,
     "background": "#2d1b4e",
     "emoji": "🌌"
   },
   "abyss": {
-    "floorBase": 2389.2388,
+    "floorBase": 2387.0599,
     "floorMult": 0.0942,
     "floorAmount": 46,
     "background": "#050505",
     "emoji": "🕳️"
   },
   "void": {
-    "floorBase": 2706.363,
+    "floorBase": 2703.9009,
     "floorMult": 0.0954,
     "floorAmount": 47,
     "background": "#1a0a0a",
     "emoji": "🌑"
   },
   "apotheosis": {
-    "floorBase": 3064.8775,
+    "floorBase": 3062.0954,
     "floorMult": 0.0966,
     "floorAmount": 48,
     "background": "#040202",
-    "emoji": "🗋"
+    "emoji": "🕋"
   }
 }

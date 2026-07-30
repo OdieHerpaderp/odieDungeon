@@ -47,7 +47,7 @@ export function generateEnemies(party) {
         (enemyBonus * 0.6 + (0.2 + enemyBonus / 1.7) * effectiveFloor * 1.1) / (0.8 + enemyCount / 17) +
           Math.random() * (0.1 + effectiveFloor / 44),
         1.15 ) * 0.32 + 0.2;
-    let calcVit = Math.floor(2 + floorBonus / 1.3 + Math.random() * (0.5 + floorBonus / 9));
+    let calcVit = Math.floor(2 + floorBonus / 1.2 + Math.random() * (0.5 + floorBonus / 9));
     let calcHp = Math.floor(
       Math.pow(
         floorBonus * 0.08 * (0.04 + calcVit * 0.04) +
@@ -56,7 +56,7 @@ export function generateEnemies(party) {
           effectiveFloor * 5 +
           48 +
           Math.random() * (calcVit * 0.05 + 0.02 + floorBonus / 55),
-        1.03,
+        1.04,
       ),
     );
     calcHp = Math.round(((1.1 * calcHp) / (1.1 + enemyCount / 16)) * (0.65 + enemyBonus / 2.1));
@@ -80,7 +80,7 @@ export function generateEnemies(party) {
       maxAp: enemyAp,
       mp: Math.floor(8 + floorBonus * 1.1),
       maxMp: Math.floor(8 + floorBonus * 1.1),
-      str: Math.floor((1.1 + enemyBonus / 2.9) * floorBonus * 13 + Math.random() * (1.8 + floorBonus / 2.1)) / 10,
+      str: Math.floor((0.9 + enemyBonus / 2.8) * floorBonus * 16 + Math.random() * (1.8 + floorBonus / 2.1)) / 10,
       dex: Math.floor(1 + floorBonus * 12 + Math.random() * (2.2 + floorBonus / 1.8)) / 10,
       agi: Math.floor(1 + floorBonus * 12 + Math.random() * (2.2 + floorBonus / 1.8)) / 10,
       vit: calcVit,

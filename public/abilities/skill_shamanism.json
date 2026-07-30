@@ -7,7 +7,7 @@
     "unlockSkillLevelMin": 0,
     "mpCostBase": 3,
     "cooldownMsBase": 2200,
-    "damageBase": 4,
+    "damageBase": 5,
     "maxTargets": 1,
     "allowedWeaponClasses": ["magic"],
     "requiresWeaponEquipped": false,

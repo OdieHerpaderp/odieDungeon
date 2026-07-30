@@ -63,28 +63,31 @@ export function getCatalog() {
   return defaultCatalog;
 }
 
-export function getWeapons() {
-  return weapons;
-}
-
-function randomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 function randomFloat(min, max) {
   return Math.random() * (max - min) + min;
 }
 
-function pickRandom(items) {
+function pickRandom(items, weightFn) {
   if (!items || !items.length) return null;
-  return items[randomInt(0, items.length - 1)];
+  if (!weightFn) {
+    return items[Math.floor(Math.random() * items.length)];
+  }
+  var weights = items.map(function(i) { return weightFn(i) || 0; });
+  var total = 0;
+  for (var i = 0; i < weights.length; i++) total += weights[i];
+  if (total === 0) return items[0];
+  var r = Math.random() * total;
+  for (i = 0; i < items.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return items[i];
+  }
+  return items[items.length - 1];
 }
 
 export function normalizeCategory(category) {
   if (!category) return pickRandom(Object.keys(defaultCatalog));
   var normalized = String(category).toLowerCase();
   var aliases = {
-    weapons: 'weapon',
-    weapon: 'weapon',
     headgear: 'headgear',
     helmet: 'headgear',
     armor: 'chest',
@@ -102,8 +105,8 @@ function clamp(value, min, max) {
 
 export function calculateItemStat(baseValue, level, rarity) {
   if (typeof baseValue !== 'number') return baseValue;
-  var levelMultiplier = 0.7 + level / 16;
-  var rarityMultiplier = 0.6 + rarity / 7;
+  var levelMultiplier = 0.6 + level / 21;
+  var rarityMultiplier = 0.6 + rarity / 11;
   return Math.round(baseValue * levelMultiplier * rarityMultiplier * 100) / 100;
 }
 
@@ -111,14 +114,14 @@ export function calculateItemTier(item) {
   if (!item) return null;
   var level = Number.isFinite(item.level) ? item.level : 1;
   var rarity = Number.isFinite(item.rarity) ? item.rarity : 1;
-  return (calculateItemStat(43.7, level, rarity) - 21.8) / 3.1;
+  return (calculateItemStat(51.1, level, rarity) - 20.3) / 2.45;
 }
 
 export function calculateItemPrice(baseValue, level, rarity) {
   if (typeof baseValue !== 'number') return baseValue;
-  const levelMult = Math.pow(0.65 + level * 0.9, 1.2);
-  const rarityMult = Math.pow(0.65 + rarity * 1.5, 1.4);
-  return Math.round(Math.pow(baseValue * (0.75 + levelMult / 11) * (0.75 + rarityMult / 8) * 1.9, 1.4)) / 10;
+  const levelMult = Math.pow(0.65 + level * 0.9, 1.3);
+  const rarityMult = Math.pow(0.65 + rarity * 1.5, 1.5);
+  return Math.round(Math.pow(baseValue * (0.7 + levelMult / 11) * (0.7 + rarityMult / 8) * 1.8, 1.5)) / 10;
 }
 
 function calculateBonuses(baseBonuses, level, rarity) {
@@ -130,15 +133,21 @@ function calculateBonuses(baseBonuses, level, rarity) {
   return calculatedBonuses;
 }
 
-export function generateRandomItem(category, options, catalog) {
+export function generateRandomItem(category, options, catalog, baseItemId) {
   var normalizedCategory = normalizeCategory(category);
   var itemCatalog =
     catalog && catalog[normalizedCategory] ? catalog[normalizedCategory] : defaultCatalog[normalizedCategory];
   if (!itemCatalog || !itemCatalog.length) throw new Error('No items available for category: ' + normalizedCategory);
 
-  var baseItem = pickRandom(itemCatalog);
-  var level = options && Number.isFinite(options.level) ? clamp(options.level, 1, 99) : randomInt(1, 30);
-  var rarity = options && Number.isFinite(options.rarity) ? clamp(options.rarity, 1, 6) : randomFloat(1, 6);
+  var baseItem;
+  if (baseItemId !== undefined) {
+    baseItem = itemCatalog.find(function(i) { return i.id === baseItemId; });
+    if (!baseItem) throw new Error('Base item not found: ' + baseItemId);
+  } else {
+    baseItem = pickRandom(itemCatalog);
+  }
+  var level = options && Number.isFinite(options.level) ? clamp(options.level, 1, 255) : Math.floor(Math.random() * 30) + 1;
+  var rarity = options && Number.isFinite(options.rarity) ? clamp(options.rarity, 1, 7) : randomFloat(1, 6);
 
   return {
     id: baseItem.id + '-' + Math.random().toString(36).slice(2, 8),
@@ -221,14 +230,18 @@ export function generateScaledItem(dungeonData, categoryPool) {
   var dungeonDifficulty = floorBase + floorMult * floorAmount;
   var baseLevel = Math.max(0.1, 0.5 + dungeonDifficulty / 2);
   var category = categoryPool[Math.floor(Math.random() * categoryPool.length)];
-  var itemLevel =
-    0.2 + Math.pow(0.2 + (baseLevel / 1.2 + floorAmount / 13) + Math.random() * (baseLevel * 3.8 + 1), 0.9) / 1.9;
-  var itemRarity = 0.4 + Math.pow(0.7 + Math.random() * (baseLevel * 2.6 + 7), 0.65) / 2.3;
+  var itemCatalog = defaultCatalog[category];
+  var baseItem = pickRandom(itemCatalog, function(i) { return 1 / (i.value + 1); });
+  var itemLevel = 0.1 + Math.pow(0.1 + (baseLevel / 1.3 + floorAmount / 13) + Math.random() * (baseLevel * 3.6 + 1), 0.9) / 2;
+  var itemRarity = 0.3 + Math.pow(0.5 + Math.random() * (baseLevel * 2.5 + 6), 0.65) / 2.4;
   itemRarity = Number(itemRarity.toFixed(1));
-  var logMsg = `Generating item for dungeon difficulty ${dungeonDifficulty.toFixed(2)}: level ${itemLevel.toFixed(2)}, rarity ${itemRarity}, category ${category}`;
-  console.log(logMsg);
-
-  var generatedItem = generateRandomItem(category, { level: Math.round(itemLevel), rarity: itemRarity });
+  var avgValue = itemCatalog.reduce(function(s, i) { return s + (i.value || 1); }, 0) / itemCatalog.length;
+  var bias = Math.sqrt((avgValue + 1) / (baseItem.value + 1));
+  itemLevel /= bias;
+  itemRarity /= bias;
+  itemLevel = Math.max(1, Math.min(99, Math.round(itemLevel)));
+  itemRarity = Math.max(1, Math.min(6, Number(itemRarity.toFixed(1))));
+  var generatedItem = generateRandomItem(category, { level: itemLevel, rarity: itemRarity }, itemCatalog, baseItem.id);
   var calculatedValue = calculateItemPrice(generatedItem.baseValue, generatedItem.level, generatedItem.rarity);
   generatedItem.price = Math.max(10, Number.isFinite(calculatedValue) ? calculatedValue : 10);
   return generatedItem;

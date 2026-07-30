@@ -211,7 +211,7 @@ export function calculateHealAmount(ability, player) {
 
   let healAmount = ability.healAmount || 0;
   const skillLevel = getSkillLevel(player.skillsState, ability.skillId);
-  const skillMultiplier = 1 + skillLevel * 0.01;
+  const skillMultiplier = 1 + skillLevel * 0.03;
 
   if (!ability.castUsesWeaponDamageModel) {
     const weapon = getEquippedItem(player, 'weapon');
@@ -223,12 +223,12 @@ export function calculateHealAmount(ability, player) {
 
   const attributeMultiplier = calculateAttributeScaling(player, ability.attributeDamageScale);
 
-  return Math.floor(healAmount * skillMultiplier * attributeMultiplier);
+  return Math.floor((healAmount + attributeMultiplier / 3) * skillMultiplier * attributeMultiplier);
 }
 
 // New function to award XP for healing actions
 export function awardHealXp(skillsState, amountHealed, skillId) {
-  const healingXp = 3 + amountHealed / 4;
+  const healingXp = 3 + amountHealed / 1.5;
   return awardSkillXp(skillsState, skillId, healingXp);
 }
 

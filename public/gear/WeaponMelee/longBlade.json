@@ -23,9 +23,9 @@
     "name": "Falchion",
     "type": "melee",
     "subType": "longBlade",
-    "damage": 9,
+    "damage": 8,
     "spellPower": 1,
-    "attackSpeed": 1,
+    "attackSpeed": 1.2,
     "bonuses": {
       "DEX": 7,
       "STR": 7
@@ -43,9 +43,9 @@
     "name": "Claymore",
     "type": "melee",
     "subType": "longBlade",
-    "damage": 8,
+    "damage": 9,
     "spellPower": 1,
-    "attackSpeed": 1.1,
+    "attackSpeed": 1.2,
     "bonuses": {
       "STR": 9,
       "DEX": 4
@@ -55,7 +55,7 @@
     },
     "range": 1,
     "value": 29,
-    "description": "A canonical longBlade upgrade — slowest ASPD for pure brute force."
+    "description": "A canonical longBlade upgrade."
   },
   {
     "id": "greatSword",
@@ -63,7 +63,7 @@
     "type": "melee",
     "subType": "longBlade",
     "twoHanded": true,
-    "damage": 12,
+    "damage": 13,
     "spellPower": 1,
     "attackSpeed": 0.9,
     "bonuses": {

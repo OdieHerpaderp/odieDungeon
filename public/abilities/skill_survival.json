@@ -5,9 +5,9 @@
     "description": "Applies a bandage to self. Heals a small amount instantly and sustains recovery over time.",
     "skillId": "skill_survival",
     "unlockSkillLevelMin": 0,
-    "mpCostBase": 3,
+    "mpCostBase": 4,
     "cooldownMsBase": 2000,
-    "healAmount": 5,
+    "healAmount": 6,
         "effects": [
       { "type": "hot", "amount": 2, "duration": 6 }
     ],
@@ -58,7 +58,7 @@
     "unlockSkillLevelMin": 12,
     "mpCostBase": 12,
     "cooldownMsBase": 3000,
-    "healAmount": 12,
+    "healAmount": 14,
     "targets": [2, 3, 0.7],
     "allowedWeaponClasses": ["magic","ranged","melee"],
     "requiresWeaponEquipped": false,

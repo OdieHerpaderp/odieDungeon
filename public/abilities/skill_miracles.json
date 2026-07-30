@@ -7,7 +7,7 @@
     "unlockSkillLevelMin": 0,
     "mpCostBase": 3,
     "cooldownMsBase": 2200,
-    "damageBase": 4,
+    "damageBase": 5,
     "maxTargets": 1,
     "allowedWeaponClasses": ["magic"],
     "requiresWeaponEquipped": true,
@@ -18,8 +18,8 @@
     "name": "Blessed Touch",
     "description": "Places a blessing on one ally, healing them and sustaining recovery over time.",
     "skillId": "skill_miracles",
-    "unlockSkillLevelMin": 1,
-    "mpCostBase": 8,
+    "unlockSkillLevelMin": 2,
+    "mpCostBase": 7,
     "cooldownMsBase": 3200,
     "healAmount": 9,
     "effects": [
@@ -37,7 +37,7 @@
     "description": "Channels divine light to heal all allies within range instantly.",
     "skillId": "skill_miracles",
     "unlockSkillLevelMin": 6,
-    "mpCostBase": 14,
+    "mpCostBase": 13,
     "cooldownMsBase": 4000,
     "healAmount": 16,
     "targets": [2, 3, 0.5],
@@ -45,24 +45,6 @@
     "requiresWeaponEquipped": true,
     "isHeal": true,
     "abilityType": "aoe",
-    "attributeDamageScale": {"INT": 0.5, "CNC": 0.2}
-  },
-  {
-    "id": "miracle_divine_mend",
-    "name": "Divine Mend",
-    "description": "Channels divine power to heal one ally up to a percentage of their max HP.",
-    "skillId": "skill_miracles",
-    "unlockSkillLevelMin": 14,
-    "mpCostBase": 25,
-    "cooldownMsBase": 5000,
-    "healAmount": 22,
-    "effects": [
-      { "type": "hot", "amount": 6, "duration": 8 }
-    ],
-    "maxTargets": 1,
-    "allowedWeaponClasses": ["magic"],
-    "requiresWeaponEquipped": true,
-    "isHeal": true,
     "attributeDamageScale": {"INT": 0.5, "CNC": 0.2}
   }
 ]

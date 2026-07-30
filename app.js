@@ -1,6 +1,6 @@
 // odieDungeon
 // Global tuning: multiplier applied to all damage dealt BY enemies (1.0 = unchanged, 0.5 = -50%)
-const ENEMY_DAMAGE_MULTIPLIER = 0.75;
+const ENEMY_DAMAGE_MULTIPLIER = 0.8;
 import assert from 'node:assert';
 import express from 'express';
 import http from 'http';
@@ -1961,11 +1961,11 @@ function resolveAttackHit(actor, target, accuracyMod, damageMod, party, partyId)
       0.6 * (1.75 + Math.random()) * (target.equipment?.chest?.defense || target.chest || 1) +
       0.6 * (1.75 + Math.random()) * (target.equipment?.shoes?.defense || target.shoes || 1) +
       0.6 * (1.75 + Math.random()) * offHandDef +
-      0.05 * (1.75 + Math.random()) * target.vit) / 5;
+      0.05 * (1.75 + Math.random()) * target.vit) / 6;
   const defenseUp = buffEngine.sumEffectAmount(target.effects, 'defenseUp', 0.5);
   const effectiveMitigation = (defenseDown > 0 ? mitigationTerm * (1 - defenseDown) : mitigationTerm) + defenseUp;
   const cappedMitigation = Math.min(effectiveMitigation, rawDamage * 0.75);
-  damage = Math.max(0, Math.round(damage - cappedMitigation / 3) / 0.999 + mitigationTerm / 60);
+  damage = Math.max(0, Math.round(damage - cappedMitigation / 5) / 0.999 + mitigationTerm / 120);
   const mitigated = Math.max(0, rawDamage - damage + 0.1);
 
   updateCombatStats(actor, party, true, crit, damage, roll);
@@ -2147,10 +2147,10 @@ function startRegenSystem() {
         // HP Regen (effective attributes include equipment bonuses)
         let hpRegen =
           (inCombat ? 0.09 : 0.18) +
-          characters.getEffectiveAttribute(p, 'vit') / 266 +
-          characters.getEffectiveAttribute(p, 'str') / 344 +
+          characters.getEffectiveAttribute(p, 'vit') / 366 +
+          characters.getEffectiveAttribute(p, 'str') / 444 +
           characters.getEffectiveAttribute(p, 'for') / 677;
-        p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 1.9 : 3.6));
+        p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 1.8 : 3.5));
 
         // MP Regen (effective attributes include equipment bonuses)
         let mpRegen =
@@ -2158,7 +2158,7 @@ function startRegenSystem() {
           characters.getEffectiveAttribute(p, 'int') / 422 +
           characters.getEffectiveAttribute(p, 'cnc') / 311 +
           characters.getEffectiveAttribute(p, 'wis') / 677;
-        p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 1.9 : 3.2));
+        p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 2.1 : 3.4));
 
         // AP Regen (effective attributes include equipment bonuses)
         let apRegen =

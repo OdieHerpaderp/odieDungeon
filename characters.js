@@ -348,14 +348,14 @@ export function calcMaxHp(player) {
 
   // Get base HP from core stats
   let baseHP =
-    180 +
+    190 +
     player.level * 7 +
     (player.vit + getEquipmentBonus(player, 'vit')) * 7 +
-    (player.str + getEquipmentBonus(player, 'str')) * 3 +
+    (player.str + getEquipmentBonus(player, 'str')) * 2 +
     player.for * 0.5 +
     player.wis * 0.1;
   baseHP +=
-    ((player.level / 9 + 35) *
+    ((player.level / 9 + 45) *
       (0.8 +
         (player.vit + getEquipmentBonus(player, 'vit')) / 2 +
         (player.str + getEquipmentBonus(player, 'str')) / 9 +

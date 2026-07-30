@@ -44,7 +44,7 @@
     "name": "Dagger",
     "type": "melee",
     "subType": "shortBlade",
-    "damage": 9,
+    "damage": 8,
     "spellPower": 1,
     "attackSpeed": 1.6,
     "bonuses": {
@@ -64,7 +64,7 @@
     "name": "Rapier",
     "type": "melee",
     "subType": "shortBlade",
-    "damage": 11,
+    "damage": 9,
     "spellPower": 1,
     "attackSpeed": 1.6,
     "bonuses": {
