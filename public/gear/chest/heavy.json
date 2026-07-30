@@ -34,5 +34,22 @@
     "range": 1,
     "value": 38,
     "description": "Heavy armor forged from iron plates, balancing weight and protection."
+  },
+  {
+    "id": "runicCuirass",
+    "name": "Runic Cuirass",
+    "type": "heavy",
+    "defense": 14,
+    "magicResist": 2,
+    "bonuses": {
+      "VIT": 5,
+      "CNC": 6,
+      "AP": 2,
+      "MP": 2,
+      "AGI": -0.3
+    },
+    "range": 1,
+    "value": 35,
+    "description": "Heavy cuirass etched with calibration runes, turning endurance into unyielding resilience and arcane discipline."
   }
 ]

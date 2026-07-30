@@ -13,7 +13,7 @@
     "requiredWeaponSubTypes": ["polearms"],
     "requiresWeaponEquipped": true,
     "castUsesWeaponDamageModel": true,
-    "attributeDamageScale": {"STR": 0.9, "VIT": 0.1}
+    "attributeDamageScale": {"STR": 0.8, "DEX": 0.2}
   },
   {
     "id": "polearm_impale",
@@ -30,7 +30,7 @@
     "requiresWeaponEquipped": true,
     "castUsesWeaponDamageModel": true,
     "abilityType": "damage",
-    "attributeDamageScale": {"STR": 0.9, "VIT": 0.1}
+    "attributeDamageScale": {"STR": 0.8, "DEX": 0.2}
   },
   {
     "id": "polearm_sweep",
@@ -50,6 +50,6 @@
     "requiresWeaponEquipped": true,
     "castUsesWeaponDamageModel": true,
     "abilityType": "aoe",
-    "attributeDamageScale": {"STR": 0.9, "VIT": 0.1}
+    "attributeDamageScale": {"STR": 0.8, "DEX": 0.2}
   }
 ]

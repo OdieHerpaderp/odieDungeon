@@ -6,17 +6,17 @@
     "subType": "runes",
     "damage": 6,
     "spellPower": 4,
-    "attackSpeed": 0.8,
+    "attackSpeed": 0.9,
     "bonuses": {
-      "CNC": 2,
-      "INT": 2
+      "CNC": 4,
+      "INT": 4
     },
     "damageModifiers": {
-      "CNC": 0.4,
-      "INT": 0.4
+      "CNC": 0.5,
+      "INT": 0.5
     },
     "range": 16,
-    "value": 23,
+    "value": 26,
     "description": "A powerful magic rod that casts spells with high damage."
   }
 ]

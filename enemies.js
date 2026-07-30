@@ -44,7 +44,7 @@ export function generateEnemies(party) {
     const enemyName = boss ? getRandomEnemyFromTier(enemyTiers.boss) : getRandomEnemyFromTier(tier);
     let floorBonus =
       Math.pow(
-        (enemyBonus * 0.7 + (0.2 + enemyBonus / 1.5) * effectiveFloor * 1.1) / (0.8 + enemyCount / 17) +
+        (enemyBonus * 0.6 + (0.2 + enemyBonus / 1.7) * effectiveFloor * 1.1) / (0.8 + enemyCount / 17) +
           Math.random() * (0.1 + effectiveFloor / 44),
         1.15 ) * 0.32 + 0.2;
     let calcVit = Math.floor(2 + floorBonus / 1.3 + Math.random() * (0.5 + floorBonus / 9));
@@ -54,7 +54,7 @@ export function generateEnemies(party) {
           calcVit * 7 +
           floorBonus * 4 +
           effectiveFloor * 5 +
-          68 +
+          48 +
           Math.random() * (calcVit * 0.05 + 0.02 + floorBonus / 55),
         1.03,
       ),

@@ -15,9 +15,9 @@ import magicStaves from './WeaponMagic/staves.json' with { type: 'json' };
 import headgearLight from './headGear/light.json' with { type: 'json' };
 import headgearMedium from './headGear/medium.json' with { type: 'json' };
 import headgearHeavy from './headGear/heavy.json' with { type: 'json' };
-import armorLight from './armor/light.json' with { type: 'json' };
-import armorMedium from './armor/medium.json' with { type: 'json' };
-import armorHeavy from './armor/heavy.json' with { type: 'json' };
+import chestLight from './chest/light.json' with { type: 'json' };
+import chestMedium from './chest/medium.json' with { type: 'json' };
+import chestHeavy from './chest/heavy.json' with { type: 'json' };
 import feetWearLight from './feetWear/light.json' with { type: 'json' };
 import feetWearMedium from './feetWear/medium.json' with { type: 'json' };
 import feetWearHeavy from './feetWear/heavy.json' with { type: 'json' };
@@ -25,8 +25,7 @@ import offHand from './offHand/offHand.json' with { type: 'json' };
 
 export const SLOT_CATEGORY = {
   weapon: 'weapon',
-  armour: 'armor',
-  armor: 'armor',
+  chest: 'chest',
   helmet: 'headgear',
   headgear: 'headgear',
   shoes: 'shoes',
@@ -55,7 +54,7 @@ let defaultCatalog = {
   weaponRanged: [...rangedSlings, ...rangedBow, ...rangedThrown],
   weaponMagic: [...magicRunes, ...magicRods, ...magicStaves],
   headgear: [...headgearLight, ...headgearMedium, ...headgearHeavy],
-  armor: [...armorLight, ...armorMedium, ...armorHeavy],
+  chest: [...chestLight, ...chestMedium, ...chestHeavy],
   shoes: [...feetWearLight, ...feetWearMedium, ...feetWearHeavy],
   offHand: [...offHand],
 };
@@ -88,8 +87,8 @@ export function normalizeCategory(category) {
     weapon: 'weapon',
     headgear: 'headgear',
     helmet: 'headgear',
-    armor: 'armor',
-    armors: 'armor',
+    armor: 'chest',
+    armors: 'chest',
     shield: 'offHand',
     book: 'offHand',
     offhand: 'offHand',

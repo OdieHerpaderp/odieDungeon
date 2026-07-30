@@ -415,7 +415,7 @@ const EQUIPMENT_CATEGORIES = [
   { label: "Weapon", icon: "⚔️", equippedKey: "weapon", slots: ["weapon"] },
   { label: "Off-Hand", icon: "📖", equippedKey: "offHand", slots: ["offHand", "shield", "book"] },
   { label: "Headgear", icon: "🪖", equippedKey: "helmet", slots: ["headgear", "helmet"] },
-  { label: "Armor", icon: "🛡️", equippedKey: "armour", slots: ["armor", "armour"] },
+  { label: "Chest", icon: "🛡️", equippedKey: "chest", slots: ["chest"] },
   { label: "Shoes", icon: "👢", equippedKey: "shoes", slots: ["shoes"] },
 ];
 
@@ -1090,7 +1090,7 @@ function statBonusHtml(player, stat) {
 }
 
 function getAverageItemTier(player) {
-  const slots = ["weapon", "armour", "helmet", "shoes"];
+  const slots = ["weapon", "chest", "helmet", "shoes"];
   let sum = 0,
     count = 0;
   for (const s of slots) {
@@ -1299,7 +1299,7 @@ function groupItems(items, keyFn) {
 // Equipment/inventory change signature - avoids JSON.stringify allocation
 function equipmentInventorySig(equipment, inventory) {
   const eq = equipment || {};
-  const eqSig = ["weapon", "armour", "helmet", "shoes"]
+  const eqSig = ["weapon", "chest", "helmet", "shoes"]
     .map((s) => {
       const it = eq[s];
       if (!it) return "-";
@@ -1319,7 +1319,7 @@ function equipmentSig(player) {
   if (!player) return "none";
   const equipment = player.equipment || {};
   const inventory = safeArray(player.inventory);
-  const eqSig = ["weapon", "armour", "helmet", "shoes"]
+  const eqSig = ["weapon", "chest", "helmet", "shoes"]
     .map((s) => {
       const it = equipment[s];
       if (!it) return "-";
@@ -1549,7 +1549,7 @@ function syncEmbarkAndAuto(data) {
 // of the whole player object on every render tick.
 function playerRenderSig(p) {
   const eq = p.equipment || {};
-  const eqSig = ["weapon", "armour", "helmet", "shoes"]
+  const eqSig = ["weapon", "chest", "helmet", "shoes"]
     .map((s) => {
       const it = eq[s];
       if (!it) return "-";
@@ -1657,7 +1657,7 @@ function computePlayerGearStats(player) {
     bonuses[k] = getEquipmentStatBonus(player, k);
   });
   const totalDmg = getWeaponDamageForClass(player, "melee") + getWeaponDamageForClass(player, "ranged") + getWeaponDamageForClass(player, "magic");
-  const totalArmour = getGearDefense(player, "armour") + getGearDefense(player, "helmet") + getGearDefense(player, "shoes");
+  const totalArmour = getGearDefense(player, "chest") + getGearDefense(player, "helmet") + getGearDefense(player, "shoes");
   return { bonuses, totalDmg, totalArmour };
 }
 
@@ -1705,7 +1705,7 @@ function buildPlayerCard(player, { statsClass, includeStatButtons }) {
 <div class="gold-display">
                💰 <span class="gold-text">${player.gold}</span>
                ⚔️ <span class="total-damage-text">${getWeaponDamageForClass(player, "melee") + getWeaponDamageForClass(player, "ranged") + getWeaponDamageForClass(player, "magic")}</span>
-               🛡️ <span class="total-armour-text">${getGearDefense(player, "armour") + getGearDefense(player, "helmet") + getGearDefense(player, "shoes")}</span>
+                🛡️ <span class="total-armour-text">${getGearDefense(player, "chest") + getGearDefense(player, "helmet") + getGearDefense(player, "shoes")}</span>
            </div>
           <div class="xp-bar"><div class="xp-fill"></div></div>
           <div class="xp-points">📖XP: <span class="xp-text">0/0</span> | Points: <span class="points-text">0</span></div>
@@ -1917,7 +1917,7 @@ function updatePlayerShopAndGear(ui, c, player, isOwnPlayer) {
   }
   const dmg =
     c._gearStats?.totalDmg ?? getWeaponDamageForClass(player, "melee") + getWeaponDamageForClass(player, "ranged") + getWeaponDamageForClass(player, "magic");
-  const arm = c._gearStats?.totalArmour ?? getGearDefense(player, "armour") + getGearDefense(player, "helmet") + getGearDefense(player, "shoes");
+  const arm = c._gearStats?.totalArmour ?? getGearDefense(player, "chest") + getGearDefense(player, "helmet") + getGearDefense(player, "shoes");
   if (ui.totalDmgText && c._lastTotalDmg !== dmg) {
     ui.totalDmgText.textContent = dmg;
     c._lastTotalDmg = dmg;
@@ -1967,7 +1967,7 @@ function updatePlayerDebuffs(ui, c, player) {
 function updatePlayerEquipped(el, c, player) {
   if (!el.dataset.collapsed && el._ui?.playerEquipped) {
     const eq = player.equipment || {};
-    const snap = ["weapon", "armour", "helmet", "shoes"]
+    const snap = ["weapon", "chest", "helmet", "shoes"]
       .map((s) => {
         const it = eq[s];
         if (!it) return "-";

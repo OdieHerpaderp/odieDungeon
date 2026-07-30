@@ -95,9 +95,18 @@ export function loadCharacter(name) {
       characterData.skillsState = characterData.skillsState || {};
       characterData.abilitySlots = characterData.abilitySlots || [];
       characterData.abilityCooldowns = characterData.abilityCooldowns || {};
-      characterData.equipment = characterData.equipment || {};
-      characterData.effects = characterData.effects || []; // Initialize effects array
-      characterData.inventory = safeArray(characterData.inventory);
+       characterData.equipment = characterData.equipment || {};
+       // Migrate legacy equipment key 'armour' → 'chest'
+       if (characterData.equipment.armour && !characterData.equipment.chest) {
+         characterData.equipment.chest = characterData.equipment.armour;
+         delete characterData.equipment.armour;
+       }
+       characterData.effects = characterData.effects || []; // Initialize effects array
+       characterData.inventory = safeArray(characterData.inventory);
+       // Migrate legacy inventory slot 'armor' → 'chest'
+       for (const item of characterData.inventory) {
+         if (item?.slot === 'armor') item.slot = 'chest';
+       }
       delete characterData.currentVenture;
       delete characterData.ventures;
 

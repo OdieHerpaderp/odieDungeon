@@ -12,6 +12,7 @@
     "allowedWeaponClasses": ["magic"],
     "requiredWeaponSubTypes": ["rods", "staves"],
     "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
     "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
   },
   {
@@ -27,6 +28,7 @@
     "allowedWeaponClasses": ["magic"],
     "requiredWeaponSubTypes": ["rods", "staves"],
     "requiresWeaponEquipped": true,
+    "castUsesWeaponDamageModel": true,
     "abilityType": "damage",
     "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
   },
@@ -47,6 +49,7 @@
     "requiredWeaponSubTypes": ["rods", "staves"],
     "requiresWeaponEquipped": true,
     "abilityType": "aoe",
+    "castUsesWeaponDamageModel": true,
     "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
   }
 ]

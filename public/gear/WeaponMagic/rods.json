@@ -6,7 +6,7 @@
     "subType": "rods",
     "damage": 7,
     "spellPower": 9,
-    "attackSpeed": 0.8,
+    "attackSpeed": 0.9,
     "bonuses": {
       "CNC": 12,
       "INT": 10

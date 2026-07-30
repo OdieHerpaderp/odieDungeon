@@ -76,14 +76,14 @@
     "id": "leatherBoots",
     "name": "Leather Boots",
     "type": "light",
-    "defense": 3,
+    "defense": 5,
     "magicResist": 1,
     "bonuses": {
       "AGI": 5,
       "DEX": 5
     },
     "range": 1,
-    "value": 24,
+    "value": 25,
     "description": "Light boots of cured hide, offering quiet tread and agile movement."
   }
 ]

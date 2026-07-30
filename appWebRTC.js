@@ -4,6 +4,7 @@ import wrtc from "wrtc";
 const { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate } = wrtc;
 import { deepEqual } from "./utils.js";
 import { buildSnapshot } from "./utilities/deltaTracker.js";
+import { PacketTracker } from "./utils.js";
 
 // Batching configuration - a single coalescing pool for all periodic state.
 // maxBatchSize only bounds memory; flushes are driven by the time interval
@@ -14,74 +15,7 @@ import { buildSnapshot } from "./utilities/deltaTracker.js";
 // from traffic volume — only batch SIZE scales with players, not packet count.
 const DEFAULT_BATCH_CONFIG = { interval: 70, maxBatchSize: 1024 };
 
-// ═══════════════════════════════════════════════════════════════════
-// PACKET TRACKING CLASS - For tracking sent/received packet counts and sizes
-// ═══════════════════════════════════════════════════════════════════
-class PacketTracker {
-  constructor() {
-    this.sent = { total: { count: 0, bytes: 0 }, byType: {} };
-    this.received = { total: { count: 0, bytes: 0 }, byType: {} };
-  }
 
-  trackSent(type, data) {
-    const size = Buffer.byteLength(JSON.stringify(data), "utf8");
-    this.sent.total.count++;
-    this.sent.total.bytes += size;
-    if (!this.sent.byType[type]) {
-      this.sent.byType[type] = { count: 0, bytes: 0 };
-    }
-    this.sent.byType[type].count++;
-    this.sent.byType[type].bytes += size;
-  }
-
-  trackReceived(type, data) {
-    const size = Buffer.byteLength(JSON.stringify(data), "utf8");
-    this.received.total.count++;
-    this.received.total.bytes += size;
-    if (!this.received.byType[type]) {
-      this.received.byType[type] = { count: 0, bytes: 0 };
-    }
-    this.received.byType[type].count++;
-    this.received.byType[type].bytes += size;
-  }
-
-  reset() {
-    this.sent = { total: { count: 0, bytes: 0 }, byType: {} };
-    this.received = { total: { count: 0, bytes: 0 }, byType: {} };
-  }
-
-  getStats() {
-    return {
-      sent: this.sent,
-      received: this.received,
-    };
-  }
-
-  formatStats(prefix = "") {
-    const formatBytes = (bytes) => {
-      if (bytes < 1024) return `${bytes} B`;
-      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
-      return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-    };
-
-    const formatType = (typeStats) => {
-      const lines = [];
-      const types = Object.keys(typeStats).sort((a, b) => typeStats[b].count - typeStats[a].count);
-      for (const type of types) {
-        const stats = typeStats[type];
-        lines.push(`    ${type}: ${stats.count} packets, ${formatBytes(stats.bytes)}`);
-      }
-      return lines.join("\n");
-    };
-
-    return `${prefix}Sent: ${this.sent.total.count} packets, ${formatBytes(this.sent.total.bytes)}
-${prefix}  By Type:
-${formatType(this.sent.byType)}
-${prefix}Received: ${this.received.total.count} packets, ${formatBytes(this.received.total.bytes)}
-${prefix}  By Type:
-${formatType(this.received.byType)}`;
-  }
-}
 
 // ═══════════════════════════════════════════════════════════════════
 // BATCH ACCUMULATOR CLASS
@@ -353,13 +287,6 @@ export class WebRTCServer extends EventEmitter {
             "for",
             "luk",
             "pie",
-            "armour",
-            "weapon",
-            "weaponMelee",
-            "weaponRanged",
-            "weaponMagic",
-            "shoes",
-            "helmet",
             "abilityCooldowns",
           ]
         : ["hp", "maxHp", "ap", "maxAp", "actionBar", "mp", "maxMp"];

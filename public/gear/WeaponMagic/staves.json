@@ -6,7 +6,7 @@
     "subType": "staves",
     "damage": 8,
     "spellPower": 9,
-    "attackSpeed": 0.7,
+    "attackSpeed": 0.8,
     "bonuses": {
       "INT": 15,
       "CNC": 10

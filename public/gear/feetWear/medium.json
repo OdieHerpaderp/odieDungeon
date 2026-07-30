@@ -58,5 +58,22 @@
     "range": 1,
     "value": 27,
     "description": "Medium boots of textured wyrmhide that spring with every step yet shrug off heavy blows."
+  },
+  {
+    "id": "spellfortGreaves",
+    "name": "Spellfort Greaves",
+    "type": "medium",
+    "defense": 7,
+    "magicResist": 3,
+    "bonuses": {
+      "VIT": 4,
+      "CNC": 3,
+      "AP": 1,
+      "MP": 1,
+      "AGI": -0.5
+    },
+    "range": 1,
+    "value": 27,
+    "description": "Medium greaves inscribed with sustaining runes, steadying the body and replenishing arcane reserves."
   }
 ]

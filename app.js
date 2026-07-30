@@ -24,7 +24,7 @@ const abilities = loadAbilities();
 
 const catalog = itemGenerator.getCatalog();
 const weapons = catalog.weapon;
-const armors = catalog.armor;
+const chests = catalog.chest;
 const headgear = catalog.headgear;
 const feetWear = catalog.shoes;
 import dungeons from './public/dungeons.json' with { type: 'json' };
@@ -239,13 +239,13 @@ function handleGearPurchase(socket, gearType, partyId) {
   let itemIndex = -1; // For identifying items from shop stock
 
   if (gearType === 'randomGear') {
-    const categoryPool = ['weapon', 'armor', 'headgear', 'shoes'];
+    const categoryPool = ['weapon', 'chest', 'headgear', 'shoes'];
     const category = categoryPool[Math.floor(Math.random() * categoryPool.length)];
     const level = Math.max(1, Math.min(99, (player.level || 1) + Math.floor(Math.random() * 5) - 2));
     const rarity = 1 + Math.floor(Math.random() * 6);
     item = itemGenerator.generateRandomItem(category, { level, rarity });
     slot =
-      category === 'weapon' ? 'weapon' : category === 'armor' ? 'armour' : category === 'shoes' ? 'shoes' : 'helmet';
+      category === 'weapon' ? 'weapon' : category === 'chest' ? 'chest' : category === 'shoes' ? 'shoes' : 'helmet';
     const calculatedValue = itemGenerator.calculateItemPrice(item.baseValue, item.level, item.rarity);
     cost = Math.max(10, Number.isFinite(calculatedValue) ? calculatedValue : 10);
   } else if (gearType.startsWith('shop_')) {
@@ -265,8 +265,8 @@ function handleGearPurchase(socket, gearType, partyId) {
     slot =
       gearType === 'weapon' || gearType === 'weaponMelee' || gearType === 'weaponRanged' || gearType === 'weaponMagic'
         ? 'weapon'
-        : gearType === 'armour'
-          ? 'armour'
+        : gearType === 'chest'
+          ? 'chest'
           : gearType === 'helmet'
             ? 'helmet'
             : gearType === 'shoes'
@@ -331,7 +331,7 @@ function handleEquipItem(socket, data) {
     return;
   }
 
-  const normalizedSlot = slot === 'headgear' ? 'helmet' : slot === 'armor' ? 'armour' : slot === 'shield' || slot === 'book' ? 'offHand' : slot;
+  const normalizedSlot = slot === 'headgear' ? 'helmet' : slot === 'chest' ? 'chest' : slot === 'shield' || slot === 'book' ? 'offHand' : slot;
   player.equipment = player.equipment || {};
 
   // Get the currently equipped item in this slot (if any) to put back in inventory
@@ -466,7 +466,7 @@ function handleUnequipItem(socket, data) {
   const player = party.players.get(socket.id);
   if (!player) return;
 
-  const normalizedSlot = slot === 'headgear' ? 'helmet' : slot === 'armor' ? 'armour' : slot === 'shield' || slot === 'book' ? 'offHand' : slot;
+  const normalizedSlot = slot === 'headgear' ? 'helmet' : slot === 'chest' ? 'chest' : slot === 'shield' || slot === 'book' ? 'offHand' : slot;
   player.equipment = player.equipment || {};
   const unequippedItem = player.equipment[normalizedSlot];
 
@@ -1114,7 +1114,7 @@ app.get('/api/abilities', (req, res) => res.json(loadAbilities()));
 
 // 60-second packet statistics logging
 setInterval(() => {
-  const webrtcStats = webrtcServer.packetTracker.getStats();
+  const webrtcStats = webrtcServer.packetTracker;
 
   const socketIoTotal = {
     sent: utils.socketIoPacketTracker.sent,
@@ -1130,8 +1130,7 @@ setInterval(() => {
   console.log('[Packet Stats]', { socketIoSent: utils.socketIoPacketTracker.sent, socketIoReceived: utils.socketIoPacketTracker.received, webrtcSent: webrtcStats.sent, webrtcReceived: webrtcStats.received, combinedSentPackets: combinedSent, combinedSentBytes: combinedSentBytes, combinedReceivedPackets: combinedReceived, combinedReceivedBytes: combinedReceivedBytes });
 
   // Reset Socket.IO stats (WebRTC stats are reset externally if needed)
-  utils.socketIoPacketTracker.sent = { total: { count: 0, bytes: 0 }, byType: {} };
-  utils.socketIoPacketTracker.received = { total: { count: 0, bytes: 0 }, byType: {} };
+  utils.socketIoPacketTracker.reset();
   webrtcServer.packetTracker.reset();
 }, 60000);
 
@@ -1451,7 +1450,7 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
       // Use the same damage calculation as regular attacks
       const { accuracyMod, damageMod } = calculateAttackMods(combatant);
       const baseRoll = 50; // Base roll for abilities - adjust as needed
-      baseDamage = calculateDamage(combatant, damageMod, baseRoll);
+      baseDamage = calculateDamage(combatant, damageMod, baseRoll) / 1.5;
 
       const attributeMultiplier = skillEngine.calculateAttributeScaling(combatant, ability.attributeDamageScale);
       baseDamage *= attributeMultiplier;
@@ -1959,7 +1958,7 @@ function resolveAttackHit(actor, target, accuracyMod, damageMod, party, partyId)
   const defenseDown = buffEngine.sumEffectAmount(target.effects, 'defenseDown', 0.9);
   const mitigationTerm =
     (0.6 * (1.75 + Math.random()) * (target.equipment?.helmet?.defense || target.helmet || 1) +
-      0.6 * (1.75 + Math.random()) * (target.equipment?.armour?.defense || target.armour || 1) +
+      0.6 * (1.75 + Math.random()) * (target.equipment?.chest?.defense || target.chest || 1) +
       0.6 * (1.75 + Math.random()) * (target.equipment?.shoes?.defense || target.shoes || 1) +
       0.6 * (1.75 + Math.random()) * offHandDef +
       0.05 * (1.75 + Math.random()) * target.vit) / 5;
@@ -2159,7 +2158,7 @@ function startRegenSystem() {
           characters.getEffectiveAttribute(p, 'int') / 422 +
           characters.getEffectiveAttribute(p, 'cnc') / 311 +
           characters.getEffectiveAttribute(p, 'wis') / 677;
-        p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 1.8 : 3.1));
+        p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 1.9 : 3.2));
 
         // AP Regen (effective attributes include equipment bonuses)
         let apRegen =
@@ -2167,7 +2166,7 @@ function startRegenSystem() {
           characters.getEffectiveAttribute(p, 'int') / 422 +
           characters.getEffectiveAttribute(p, 'cnc') / 311 +
           characters.getEffectiveAttribute(p, 'wis') / 677;
-        p.ap = Math.min(p.maxAp, p.ap + apRegen * (inCombat ? 0.01 : 1.9));
+        p.ap = Math.min(p.maxAp, p.ap + apRegen * (inCombat ? 0.01 : 2.1));
 
         // HP/MP changes are emitted by the consolidated delta broadcaster
         // on the critical cadence (≤200ms), so no extra queueing here.
@@ -2488,7 +2487,7 @@ io.on('connection', (socket) => {
 
   // Register shop purchase handlers
   socket.on('buyRandomGear', (partyId) => handleGearPurchase(socket, 'randomGear', partyId));
-  socket.on('buyArmour', (partyId) => handleGearPurchase(socket, 'armour', partyId));
+  socket.on('buyChest', (partyId) => handleGearPurchase(socket, 'chest', partyId));
   socket.on('buyWeapon', (partyId) => handleGearPurchase(socket, 'weapon', partyId));
   socket.on('buyWeaponMelee', (partyId) => handleGearPurchase(socket, 'weaponMelee', partyId));
   socket.on('buyWeaponRanged', (partyId) => handleGearPurchase(socket, 'weaponRanged', partyId));

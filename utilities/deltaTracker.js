@@ -25,8 +25,6 @@ export const PLAYER_FIELDS = [
   "pie",
   "equipment",
   "inventory",
-  "armor",
-  "weapon",
   "actionBar",
   "maxActionBar",
   "currentVenture",

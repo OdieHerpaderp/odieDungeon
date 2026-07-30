@@ -18,6 +18,23 @@
     "description": "Heavy greaves crafted from solid iron for unwavering defense."
   },
   {
+    "id": "runicGreaves",
+    "name": "Runic Greaves",
+    "type": "heavy",
+    "defense": 7,
+    "magicResist": 2,
+    "bonuses": {
+      "VIT": 3,
+      "CNC": 4,
+      "AP": 1,
+      "MP": 1,
+      "AGI": -0.3
+    },
+    "range": 1,
+    "value": 26,
+    "description": "Heavy greaves inscribed with sustaining runes, steadying the body and replenishing arcane reserves."
+  },
+  {
     "id": "plateGreaves",
     "name": "Plate Greaves",
     "type": "heavy",

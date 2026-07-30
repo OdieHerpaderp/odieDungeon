@@ -226,7 +226,7 @@ async function gearUp() {
       const t = descTier(it.desc);
       if (!best[it.slot] || t > best[it.slot].t) best[it.slot] = { ...it, t };
     }
-    for (const slot of ["weapon", "armour", "helmet", "shoes"]) {
+    for (const slot of ["weapon", "chest", "helmet", "shoes"]) {
       const b = best[slot];
       const cur = equippedTiers[slot] ?? 0;
       if (b && b.t > cur + 0.01) {

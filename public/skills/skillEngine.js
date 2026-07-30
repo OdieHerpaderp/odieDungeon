@@ -105,7 +105,7 @@ function getArmorPieceType(slot, piece) {
 export function awardArmorProficiencyXp(skillsState, mitigatedAmount, player) {
   if (!skillsState || !player || !(mitigatedAmount > 0)) return skillsState;
 
-  const SLOTS = ['armour', 'helmet', 'shoes', 'offHand'];
+  const SLOTS = ['chest', 'helmet', 'shoes', 'offHand'];
   const equipment = player.equipment || {};
   const typeCounts = {};
   let total = 0;

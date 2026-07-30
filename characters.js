@@ -61,8 +61,8 @@ export function restockShopWithDungeonScaling(party, dungeon, dungeonData) {
   party.shopStock = party.shopStock || [];
 
   // Generate 2-4 items for every category so each restock always covers all
-  // gear types (weapon, armor, headgear, shoes).
-  const categoryPool = ['weapon', 'armor', 'headgear', 'shoes', 'offHand'];
+  // gear types (weapon, chest, headgear, shoes).
+  const categoryPool = ['weapon', 'chest', 'headgear', 'shoes', 'offHand'];
 
   for (const category of categoryPool) {
     const count = 3 + Math.floor(Math.random() * 2); // 2-4 items
@@ -99,7 +99,7 @@ export function rewardPlayersOnDungeonClear(party, dungeon, dungeonData) {
   const floorAmount = dungeonData?.floorAmount ?? 100;
   const dungeonDifficulty = Math.round(floorBase + floorMult * floorAmount);
 
-  const categoryPool = ['weapon', 'armor', 'headgear', 'shoes', 'offHand'];
+  const categoryPool = ['weapon', 'chest', 'headgear', 'shoes', 'offHand'];
   const results = [];
 
   for (const player of party.players.values()) {
@@ -138,12 +138,12 @@ export function rewardPlayersOnDungeonClear(party, dungeon, dungeonData) {
 
 // Compact equipment references: only id + scaling factors are persisted.
 // All other stats are calculated from the gear catalogs (e.g. WeaponMelee/blunt.json).
-const EQUIPMENT_SLOTS = ['weapon', 'armour', 'helmet', 'shoes', 'offHand'];
+const EQUIPMENT_SLOTS = ['weapon', 'chest', 'helmet', 'shoes', 'offHand'];
 
 export function getDefaultEquipment() {
   return compactEquipment({
     weapon: { id: 'newspaper', level: 1, rarity: 1 },
-    armour: { id: 'rags', level: 1, rarity: 1 },
+    chest: { id: 'rags', level: 1, rarity: 1 },
     helmet: { id: 'strawHat', level: 1, rarity: 1 },
     shoes: { id: 'sandals', level: 1, rarity: 1 },
   });
@@ -160,7 +160,7 @@ export function normalizeEquipment(equipment) {
       refs[slot] = undefined;
     } else {
       refs[slot] = {
-        id: slot === 'armour' ? 'rags' : slot === 'helmet' ? 'strawHat' : slot === 'shoes' ? 'sandals' : 'newspaper',
+        id: slot === 'chest' ? 'rags' : slot === 'helmet' ? 'strawHat' : slot === 'shoes' ? 'sandals' : 'newspaper',
         level: 1,
         rarity: 1,
       };
@@ -361,7 +361,7 @@ export function calcMaxHp(player) {
         (player.str + getEquipmentBonus(player, 'str')) / 9 +
         player.for / 11)) /
     17;
-  // Add HP equipment bonuses from every slot (weapon/armour/helmet/shoes)
+  // Add HP equipment bonuses from every slot (weapon/chest/helmet/shoes)
   baseHP += getEquipmentBonus(player, 'hp');
 
   return Math.round(baseHP);

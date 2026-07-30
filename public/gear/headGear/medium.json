@@ -57,5 +57,22 @@
     "range": 1,
     "value": 28,
     "description": "Medium cap of alchemically hardened wyrmhide, balancing agility with resilience."
+  },
+  {
+    "id": "spellfortCoif",
+    "name": "Spellfort Coif",
+    "type": "medium",
+    "defense": 9,
+    "magicResist": 4,
+    "bonuses": {
+      "VIT": 5,
+      "CNC": 4,
+      "AP": 1,
+      "MP": 1,
+      "AGI": -0.5
+    },
+    "range": 1,
+    "value": 29,
+    "description": "Medium coif of rune-forged cloth, hardening against both blade and spell while fueling hybrid resolve."
   }
 ]

@@ -16,10 +16,10 @@
 //   auto [on|off]                    toggle auto-embark
 //   allocate <stat> <points>         allocate stat points (str/dex/agi/vit/int/cnc/wis/for/luk/pie)
 //   equip <slot> <itemId>            equip an inventory item
-//   unequip <slot>                   unequip a slot (weapon/armour/helmet/shoes)
+//   unequip <slot>                   unequip a slot (weapon/chest/helmet/shoes)
 //   use <itemId>                     use a consumable
 //   sell <itemId>                    sell an inventory item
-//   buy <armour|weapon|weaponMelee|weaponRanged|weaponMagic|helmet|shoes|random>
+//   buy <chest|weapon|weaponMelee|weaponRanged|weaponMagic|helmet|shoes|random>
 //   buyshop <index>                  buy an item from the shop stock by index
 //   ability <slotIndex> <abilityId>  assign an ability to a slot (0-7); abilityId empty to clear
 //   donate                           donate 50 gold
@@ -479,7 +479,7 @@ function showTier() {
   const me = state.player;
   if (!me) return log("not joined yet");
   const eq = me.equipment || {};
-  const slotNames = ["weapon", "armour", "helmet", "shoes"];
+  const slotNames = ["weapon", "chest", "helmet", "shoes"];
   let sum = 0,
     count = 0;
   for (const s of slotNames) {
@@ -511,7 +511,7 @@ function status() {
   log(`Players: ${[...state.players.values()].map((p) => p.name).join(", ")}`);
   log(`Shop: ${state.shopStock.length} items (use 'buyshop <index>')`);
   const eq = me.equipment || {};
-  const slotNames = ["weapon", "armour", "helmet", "shoes"];
+  const slotNames = ["weapon", "chest", "helmet", "shoes"];
   log(`Equipped: ${slotNames.map((s) => `${s}=${eq[s] ? describeItem(eq[s]) : "—"}`).join(", ")}`);
   const inv = Array.isArray(me.inventory) ? me.inventory : [];
   if (inv.length) {
@@ -536,7 +536,7 @@ function showInventory() {
     const slot = item.slot ? `[${item.slot}]` : "[?]";
     log(`  ${i}. ${slot} ${id} - ${describeItem(item)}`);
   });
-  log(`Equip: equip <weapon|armour|helmet|shoes> <id>`);
+  log(`Equip: equip <weapon|chest|helmet|shoes> <id>`);
 }
 
 rl.on("line", (line) => {
@@ -634,7 +634,7 @@ rl.on("line", (line) => {
     case "buy": {
       const kind = args[0];
       const map = {
-        armour: "buyArmour",
+        chest: "buyChest",
         weapon: "buyWeapon",
         weaponmelee: "buyWeaponMelee",
         weaponranged: "buyWeaponRanged",
@@ -645,7 +645,7 @@ rl.on("line", (line) => {
       };
       const event = map[(kind || "").toLowerCase()];
       if (!event) {
-        log("usage: buy <armour|weapon|weaponMelee|weaponRanged|weaponMagic|helmet|shoes|random>");
+        log("usage: buy <chest|weapon|weaponMelee|weaponRanged|weaponMagic|helmet|shoes|random>");
         break;
       }
       sendTimed(event, PARTY, "fullState", `buy ${kind}`);
@@ -749,7 +749,7 @@ function showHelp() {
       "  unequip <slot>                   unequip a slot",
       "  use <itemId>                     use a consumable",
       "  sell <itemId>                    sell an inventory item",
-      "  buy <kind>                       buy gear (armour|weapon|weaponMelee|weaponRanged|weaponMagic|helmet|shoes|random)",
+      "  buy <kind>                       buy gear (chest|weapon|weaponMelee|weaponRanged|weaponMagic|helmet|shoes|random)",
       "  buyshop <index>                  buy from shop stock",
       "  ability <slot 0-7> <abilityId>   assign ability to slot",
       "  donate                           donate 50 gold",

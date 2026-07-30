@@ -18,6 +18,23 @@
     "description": "A sturdy iron helm offering reliable protection."
   },
   {
+    "id": "runicCrown",
+    "name": "Runic Crown",
+    "type": "heavy",
+    "defense": 9,
+    "magicResist": 4,
+    "bonuses": {
+      "VIT": 4,
+      "CNC": 5,
+      "AP": 1,
+      "MP": 1,
+      "AGI": -0.3
+    },
+    "range": 1,
+    "value": 29,
+    "description": "Heavy crown of rune-forged metal, hardening against both blade and spell while fueling hybrid resolve."
+  },
+  {
     "id": "plateHelmet",
     "name": "Plate Helmet",
     "type": "heavy",

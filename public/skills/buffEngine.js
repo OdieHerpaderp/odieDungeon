@@ -1,16 +1,14 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { calcSkillLv, calcXpForLevel, calcXpForNextLevel, attributeScaling } from '../../utils.js';
+import { attributeScaling } from '../../utils.js';
 import * as itemGenerator from '../gear/itemGenerator.js';
+import { getSkillLevel } from './skillEngine.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export function getSkillLevel(skillsState, skillId) {
-  const xp = skillsState?.[skillId]?.xp || 0;
-  return Math.floor(calcSkillLv(xp));
-}
+
 
 export const MAX_EFFECT_STACKS = 9;
 

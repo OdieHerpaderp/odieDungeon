@@ -41,7 +41,7 @@ function bonuses(player) {
   assert.ok(hatBonuses.int > 0, `wizardHat should grant INT bonus, got ${hatBonuses.int}`);
   assert.ok(hatBonuses.cnc > 0, `wizardHat should grant CNC bonus, got ${hatBonuses.cnc}`);
 
-  const robePlayer = { equipment: { armour: makeRef(CLERIC_ROBE) } };
+  const robePlayer = { equipment: { chest: makeRef(CLERIC_ROBE) } };
   const robeBonuses = bonuses(robePlayer);
   assert.ok(robeBonuses.int > 0, `clericRobe should grant INT bonus, got ${robeBonuses.int}`);
   assert.ok(robeBonuses.cnc > 0, `clericRobe should grant CNC bonus, got ${robeBonuses.cnc}`);
@@ -57,7 +57,7 @@ function bonuses(player) {
   const player = {
     equipment: {
       helmet: makeRef(WIZARD_HAT),
-      armour: makeRef(CLERIC_ROBE),
+      chest: makeRef(CLERIC_ROBE),
       weapon: makeRef(MAGIC_ROD),
     },
   };
@@ -67,7 +67,7 @@ function bonuses(player) {
 
   // Verify the stacked value is at least as large as any single-item contribution.
   const hatBonuses = bonuses({ equipment: { helmet: makeRef(WIZARD_HAT) } });
-  const robeBonuses = bonuses({ equipment: { armour: makeRef(CLERIC_ROBE) } });
+  const robeBonuses = bonuses({ equipment: { chest: makeRef(CLERIC_ROBE) } });
   const rodBonuses = bonuses({ equipment: { weapon: makeRef(MAGIC_ROD) } });
 
   assert.ok(
@@ -87,7 +87,7 @@ function bonuses(player) {
   assert.ok((hatBase.bonuses?.INT || 0) > 0, "wizardHat base INT should be positive");
   assert.ok((hatBase.bonuses?.CNC || 0) > 0, "wizardHat base CNC should be positive");
 
-  const robeBase = itemGenerator.findBaseItem("armour", CLERIC_ROBE);
+  const robeBase = itemGenerator.findBaseItem("chest", CLERIC_ROBE);
   assert.ok(robeBase, "clericRobe should exist in catalog");
   assert.ok((robeBase.bonuses?.INT || 0) > 0, "clericRobe base INT should be positive");
   assert.ok((robeBase.bonuses?.CNC || 0) > 0, "clericRobe base CNC should be positive");

@@ -25,7 +25,7 @@
     "subType": "longBlade",
     "damage": 9,
     "spellPower": 1,
-    "attackSpeed": 1.0,
+    "attackSpeed": 1,
     "bonuses": {
       "DEX": 7,
       "STR": 7
@@ -35,7 +35,7 @@
       "STR": 0.8
     },
     "range": 1,
-    "value": 31,
+    "value": 30,
     "description": "A broad, single-edged long blade designed for swift, precise strikes. Favored by duelists who rely on agility over brute force."
   },
   {
@@ -54,7 +54,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 30,
+    "value": 29,
     "description": "A canonical longBlade upgrade — slowest ASPD for pure brute force."
   },
   {
@@ -75,7 +75,7 @@
       "VIT": 0.1
     },
     "range": 1,
-    "value": 34,
+    "value": 35,
     "description": "A basic sword for melee combat."
   }
 ]

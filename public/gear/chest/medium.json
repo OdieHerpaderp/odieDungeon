@@ -23,7 +23,7 @@
     "bonuses": {
       "STR": 6,
       "VIT": 3,
-      "AGI": -0.5
+      "AGI": -0.3
     },
     "range": 1,
     "value": 30,
@@ -39,10 +39,10 @@
       "STR": 5,
       "DEX": 3,
       "VIT": 4,
-      "AGI": -0.5
+      "AGI": -0.3
     },
     "range": 1,
-    "value": 31,
+    "value": 32,
     "description": "Medium armor of overlapping metal scales that shifts with your movement."
   },
   {
@@ -59,5 +59,22 @@
     "range": 1,
     "value": 31,
     "description": "Medium jerkin of enchanted wyrmhide — no metal, yet as tough as the best plate studded mail."
+  },
+  {
+    "id": "spellfortCuirass",
+    "name": "Spellfort Cuirass",
+    "type": "medium",
+    "defense": 12,
+    "magicResist": 3,
+    "bonuses": {
+      "VIT": 6,
+      "CNC": 4,
+      "AP": 1,
+      "MP": 1,
+      "AGI": -0.5
+    },
+    "range": 1,
+    "value": 32,
+    "description": "Medium cuirass etched with calibration runes, granting vitality and combat focus to the hybrid warrior."
   }
 ]

@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
-import skillCurve from './public/skills/skillCurve.json' with { type: 'json' };
 import * as characters from './characters.js';
+import { calcSkillLv, calcXpForLevel, calcXpForNextLevel } from './public/skills/skillMath.js';
 
 export function deepEqual(obj1, obj2) {
   if (obj1 === obj2) return true;
@@ -22,32 +22,54 @@ export function formatBytes(bytes) {
 // ═══════════════════════════════════════════════════════════════════
 // PACKET TRACKING - Track sent/received packet counts and sizes
 // ═══════════════════════════════════════════════════════════════════
-export const socketIoPacketTracker = {
-  sent: { total: { count: 0, bytes: 0 }, byType: {} },
-  received: { total: { count: 0, bytes: 0 }, byType: {} },
-};
+
+export class PacketTracker {
+  constructor() {
+    this.sent = { total: { count: 0, bytes: 0 }, byType: {} };
+    this.received = { total: { count: 0, bytes: 0 }, byType: {} };
+  }
+
+  trackSent(type, data) {
+    const size = Buffer.byteLength(JSON.stringify(data), 'utf8');
+    this.sent.total.count++;
+    this.sent.total.bytes += size;
+    if (!this.sent.byType[type]) {
+      this.sent.byType[type] = { count: 0, bytes: 0 };
+    }
+    this.sent.byType[type].count++;
+    this.sent.byType[type].bytes += size;
+  }
+
+  trackReceived(type, data) {
+    const jsonString = JSON.stringify(data || {});
+    const size = Buffer.byteLength(jsonString, 'utf8');
+    this.received.total.count++;
+    this.received.total.bytes += size;
+    if (!this.received.byType[type]) {
+      this.received.byType[type] = { count: 0, bytes: 0 };
+    }
+    this.received.byType[type].count++;
+    this.received.byType[type].bytes += size;
+  }
+
+  reset() {
+    this.sent = { total: { count: 0, bytes: 0 }, byType: {} };
+    this.received = { total: { count: 0, bytes: 0 }, byType: {} };
+  }
+
+  formatStats(prefix = '') {
+    return formatPacketStats(prefix, this);
+  }
+}
+
+export const socketIoPacketTracker = new PacketTracker();
 
 export function trackSocketIoSent(type, data) {
-  const size = Buffer.byteLength(JSON.stringify(data), 'utf8');
-  socketIoPacketTracker.sent.total.count++;
-  socketIoPacketTracker.sent.total.bytes += size;
-  if (!socketIoPacketTracker.sent.byType[type]) {
-    socketIoPacketTracker.sent.byType[type] = { count: 0, bytes: 0 };
-  }
-  socketIoPacketTracker.sent.byType[type].count++;
-  socketIoPacketTracker.sent.byType[type].bytes += size;
+  socketIoPacketTracker.trackSent(type, data);
 }
 
 export function trackSocketIoReceived(type, data) {
-  const jsonString = JSON.stringify(data || {});
-  const size = Buffer.byteLength(jsonString, 'utf8');
-  socketIoPacketTracker.received.total.count++;
-  socketIoPacketTracker.received.total.bytes += size;
-  if (!socketIoPacketTracker.received.byType[type]) {
-    socketIoPacketTracker.received.byType[type] = { count: 0, bytes: 0 };
-  }
-  socketIoPacketTracker.received.byType[type].count++;
-  socketIoPacketTracker.received.byType[type].bytes += size;
+  socketIoPacketTracker.trackReceived(type, data);
 }
 
 export function formatPacketStats(prefix = '', stats) {
@@ -68,20 +90,9 @@ ${prefix}Received: ${stats.received.total.count} packets, ${formatBytes(stats.re
 ${prefix}  By Type:
 ${formatType(stats.received.byType)}`;
 }
+export { calcSkillLv, calcXpForLevel, calcXpForNextLevel } from './public/skills/skillMath.js';
 
-export function calcSkillLv(xp) {
-  const { xpDivisor, exponent, levelDivisor, minLevel } = skillCurve;
-  return Math.max(minLevel, Math.floor(Math.pow(xp / xpDivisor, exponent) / levelDivisor));
-}
 
-export function calcXpForLevel(level) {
-  const { xpDivisor, exponent, levelDivisor } = skillCurve;
-  return Math.pow(level * levelDivisor, 1 / exponent) * xpDivisor;
-}
-
-export function calcXpForNextLevel(level) {
-  return calcXpForLevel(level + 1);
-}
 
 export const DEFAULT_CHARACTER_STATS = {
   hp: 60,
@@ -117,7 +128,7 @@ export function createDefaultCharacter(name) {
 }
 
 export function compactEquipment(equipment) {
-  const slots = ['weapon', 'armour', 'helmet', 'shoes', 'offHand'];
+  const slots = ['weapon', 'chest', 'helmet', 'shoes', 'offHand'];
   const out = {};
   for (const slot of slots) {
     const item = equipment ? equipment[slot] : undefined;
@@ -152,7 +163,7 @@ export function toInventoryItem(raw, slot) {
   const rarity = Number.isFinite(Number(raw.rarity)) ? Number(raw.rarity) : 1;
   let itemSlot = raw.slot || slot || '';
   if (itemSlot === 'helmet') itemSlot = 'headgear';
-  if (itemSlot === 'armour') itemSlot = 'armor';
+  if (itemSlot === 'armour') itemSlot = 'chest';
   if (itemSlot === 'shield' || itemSlot === 'book') itemSlot = 'offHand';
   return {
     id,
@@ -266,9 +277,6 @@ export function createEmptyCombatStats() {
 export default {
   deepEqual,
   formatBytes,
-  calcSkillLv,
-  calcXpForLevel,
-  calcXpForNextLevel,
   DEFAULT_CHARACTER_STATS,
   createDefaultCharacter,
   compactEquipment,

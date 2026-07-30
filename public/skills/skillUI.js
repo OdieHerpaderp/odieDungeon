@@ -10,31 +10,14 @@ let showAvailableOnly = false;
 const expandedSkills = new Set();
 const collapsedGroups = new Set();
 const collapsedAbilityGroups = new Set();
+import { calcSkillLv, calcXpForLevel, calcXpForNextLevel } from './skillMath.js';
 
 // Local safeArray so browser code can normalize references without a server import.
 function safeArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
-// Client-side skill curve config (loaded once from shared JSON)
-let _skillCurve = null;
-async function loadSkillCurve() {
-  if (_skillCurve) return _skillCurve;
-  try {
-    const response = await fetch("/skills/skillCurve.json");
-    _skillCurve = await response.json();
-  } catch (error) {
-    console.warn("Unable to load skill curve config:", error);
-    _skillCurve = { xpDivisor: 5, exponent: 0.72, levelDivisor: 15, minLevel: 0 };
-  }
-  return _skillCurve;
-}
 
-// Client-side copy of the skill level calculation formula
-function calcSkillLv(xp) {
-  const { xpDivisor, exponent, levelDivisor, minLevel } = _skillCurve || { xpDivisor: 5, exponent: 0.72, levelDivisor: 15, minLevel: 0 };
-  return Math.max(minLevel, Math.floor(Math.pow(xp / xpDivisor, exponent) / levelDivisor));
-}
 
 // Client-side function to get skill level from skills state (mirrors server-side getSkillLevel)
 function getSkillLevelFromClient(skillsState, skillId) {
@@ -55,14 +38,7 @@ function getUnlockedAbilitySignature(player) {
     .join(",");
 }
 
-function calcXpForLevel(level) {
-  const { xpDivisor, exponent, levelDivisor } = _skillCurve || { xpDivisor: 5, exponent: 0.72, levelDivisor: 15 };
-  return Math.pow(level * levelDivisor, 1 / exponent) * xpDivisor;
-}
 
-function calcXpForNextLevel(level) {
-  return calcXpForLevel(level + 1);
-}
 
 // Client-side tick that refreshes the cooldown countdown text based on local time,
 // independent of server state pushes. Only updates text/color in place (no innerHTML rebuild).
@@ -124,7 +100,7 @@ export function stopCooldownsTick() {
   }
 }
 
-export { calcSkillLv };
+
 
 function formatDisplayLabel(id) {
   if (!id) return "Unknown";
@@ -648,7 +624,6 @@ export async function renderSkillPanel(player, force = false) {
   const now = Date.now();
   if (!force && now - _skillPanelLastRender < 500) return;
   _skillPanelLastRender = now;
-  await loadSkillCurve();
   await Promise.all([renderSkillsPanel(player), renderAbilitySlotsPanel(player)]);
 }
 

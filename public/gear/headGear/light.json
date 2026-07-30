@@ -34,7 +34,7 @@
     "defense": 4,
     "magicResist": 4,
     "bonuses": {
-      "INT": 4,
+      "INT": 5,
       "CNC": 4,
       "AP": 5
     },
@@ -50,7 +50,7 @@
     "magicResist": 4,
     "bonuses": {
       "CNC": 6,
-      "INT": 2,
+      "INT": 3,
       "AP": 5
     },
     "range": 1,

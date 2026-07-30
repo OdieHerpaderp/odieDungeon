@@ -8,9 +8,9 @@ const __dirname = path.dirname(__filename);
 const GEAR_DIR = path.join(__dirname, "..", "public", "gear");
 
 const FILES = {
-  armorsLight: { file: path.join('armor', 'light.json'), kind: 'defensive', slot: 'armor' },
-  armorsMedium: { file: path.join('armor', 'medium.json'), kind: 'defensive', slot: 'armor' },
-  armorsHeavy: { file: path.join('armor', 'heavy.json'), kind: 'defensive', slot: 'armor' },
+  chestLight: { file: path.join('chest', 'light.json'), kind: 'defensive', slot: 'chest' },
+  chestMedium: { file: path.join('chest', 'medium.json'), kind: 'defensive', slot: 'chest' },
+  chestHeavy: { file: path.join('chest', 'heavy.json'), kind: 'defensive', slot: 'chest' },
   feetWearLight: { file: path.join('feetWear', 'light.json'), kind: 'defensive', slot: 'shoes' },
   feetWearMedium: { file: path.join('feetWear', 'medium.json'), kind: 'defensive', slot: 'shoes' },
   feetWearHeavy: { file: path.join('feetWear', 'heavy.json'), kind: 'defensive', slot: 'shoes' },
@@ -31,7 +31,7 @@ const FILES = {
   weaponMagicStaves: { file: path.join('WeaponMagic', 'staves.json'), kind: 'weapon', slot: 'weapon' },
 };
 
-const DEFENSE_WEIGHT = { armor: 1.0, helmet: 0.99, shoes: 0.99, offHand: 0.99 };
+const DEFENSE_WEIGHT = { chest: 1.0, helmet: 0.99, shoes: 0.99, offHand: 0.99 };
 
 const SURVIVABILITY = new Set(["VIT", "HP"]);
 
