@@ -63,7 +63,7 @@
     "type": "melee",
     "subType": "longBlade",
     "twoHanded": true,
-    "damage": 16,
+    "damage": 15,
     "spellPower": 1,
     "attackSpeed": 0.9,
     "bonuses": {

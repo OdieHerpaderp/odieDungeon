@@ -81,12 +81,12 @@
     "type": "melee",
     "subType": "blunt",
     "twoHanded": true,
-    "damage": 16,
+    "damage": 15,
     "spellPower": 1,
     "attackSpeed": 0.9,
     "bonuses": {
-      "STR": 9,
-      "VIT": 6
+      "STR": 10,
+      "VIT": 7
     },
     "damageModifiers": {
       "STR": 0.9,

@@ -7,7 +7,7 @@ import * as itemGenerator from '../gear/itemGenerator.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const weapons = itemGenerator.getCatalog().weapon;
+const catalog = itemGenerator.getCatalog();
 
 // Load skill definitions from skills.json file
 const skillDefinitionsRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'skills.json'), 'utf8'));
@@ -39,7 +39,7 @@ export function getSkillXp(skillsState, skillId) {
 // weaponClass/type, so resolve the full weapon definition by id when a compact ref is passed.
 function resolveFullWeapon(weapon) {
   if (!weapon || !weapon.id) return weapon;
-  return weapons.find((w) => w.id === weapon.id) || weapon;
+  return catalog.weapon.find((w) => w.id === weapon.id) || weapon;
 }
 
 // Map a melee weapon `subType` to its proficiency skill id. Derived from the
@@ -236,7 +236,7 @@ export function awardHealXp(skillsState, amountHealed, skillId) {
 export function calculateDamageScalingForMultipleTargets(baseDamage, numTargets, abilityType = 'damage', player) {
   if (numTargets <= 1) return baseDamage;
   const weapon = getEquippedItem(player, 'weapon');
-  const fullWeapon = weapon?.id ? weapons.find((w) => w.id === weapon.id) : null;
+  const fullWeapon = weapon?.id ? catalog.weapon.find((w) => w.id === weapon.id) : null;
   const damageModifiers = fullWeapon?.damageModifiers || {};
   const entries = Object.entries(damageModifiers);
   if (entries.length === 0) return baseDamage;

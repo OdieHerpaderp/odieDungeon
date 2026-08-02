@@ -843,7 +843,7 @@ class ClientNetwork {
   handleGameDelta(data) {
     const prevCombatActive = this.currentState.combatActive;
     const inTown = this.currentState.floor === 0 && !this.currentState.combatActive;
-    const ENEMY_FIELDS = ["hp", "maxHp", "ap", "maxAp", "mp", "maxMp", "isDead"];
+    const ENEMY_FIELDS = ["hp", "maxHp", "ap", "maxAp", "mp", "maxMp", "actionBar", "maxActionBar", "isDead"];
 
     // Gear/inventory payload (broadcastCriticalGearUpdate): refresh equipment,
     // inventory and shop frames. The server emits this as a `gameDelta` with

@@ -11,7 +11,7 @@ import * as utils from './utils.js';
 import { saveCharacter, loadCharacter } from './database.js';
 import * as characters from './characters.js';
 import { WebRTCServer } from './appWebRTC.js';
-import { extractDelta, buildSnapshot } from './utilities/deltaTracker.js';
+import { DeltaTracker } from './utilities/deltaTracker.js';
 import { generateEnemies } from './enemies.js';
 import * as buffEngine from './public/skills/buffEngine.js';
 import * as skillEngine from './public/skills/skillEngine.js';
@@ -23,10 +23,6 @@ const __dirname = dirname(__filename);
 const abilities = loadAbilities();
 
 const catalog = itemGenerator.getCatalog();
-const weapons = catalog.weapon;
-const chests = catalog.chest;
-const headgear = catalog.headgear;
-const feetWear = catalog.shoes;
 import dungeons from './public/dungeons.json' with { type: 'json' };
 
 export { app };
@@ -946,7 +942,7 @@ function handleDisconnect(socket, reason) {
   socketMap.delete(socket.id);
 
   // Clean up delta tracking for this socket
-  playerLastState.delete(socket.id);
+  deltaTracker.deletePlayer(socket.id);
 
   // Handle party cleanup
   for (const [partyId, party] of parties.entries()) {
@@ -1164,13 +1160,13 @@ webrtcServer.on('webrtcStateRestore', (socketId) => {
   }
 
   // Re-baseline deltas so the freshly pushed full state becomes the new reference.
-  webrtcServer.resetDeltaStateForSocket(socketId);
+  deltaTracker.resetBaseline(targetPartyId, targetParty);
   const fullState = buildFullStatePacket(targetParty, targetPartyId);
   const sent = webrtcServer.sendMessage(socketId, 'partyUpdate', fullState);
     console.log(`[WebRTC Restore] Sent full state to reconnected socket ${socketId}: ${sent ? 'ok' : 'failed'}`);
 
   // Re-apply the delta baseline now that the client has the canonical state.
-  webrtcServer.initializePlayerDeltaState(targetPartyId, targetParty, socketId);
+  deltaTracker.resetBaseline(targetPartyId, targetParty);
 });
 
 // Helper function to broadcast to party via WebRTC (delegated to webrtcServer)
@@ -1183,127 +1179,19 @@ const socketMap = new Map(); // socketId -> socket object
 // ═══════════════════════════════════════════════════════════════════
 // DELTA COMPRESSION: Track previous state for efficient delta updates
 // ═══════════════════════════════════════════════════════════════════
-
-// Track last sent state per player (socketId -> { field: value })
-const playerLastState = new Map(); // socketId -> { hp, ap, maxHp, maxAp, actionBar, level, ... }
-
-// Track last sent state per enemy (enemyId -> { hp, maxHp, ap, actionBar })
-const enemyLastState = new Map(); // enemyId -> { hp, maxHp, ap, actionBar }
-
-// Track last sent party-level state
-const partyLastState = new Map(); // partyId -> { floor, combatActive, combatTurn, highestVisitedFloors, dungeon, dungeonFloors, completedDungeons, autoEmbark }
-
-// Track enemies that have already received a full snapshot on the gameDelta
-// channel, so subsequent emits can ship partial (ENEMY_DELTA_FIELDS only) deltas.
-// Cleared on embark / combatStart / dungeon rebaseline so full snapshots resume.
-const enemyFullSent = new Set(); // enemyId
+const deltaTracker = new DeltaTracker();
 
 // Mark enemies as already full-synced after a channel other than gameDelta has
 // shipped their complete object (dungeonChange / combatStart). Without this, the
 // next gameDelta would emit a partial (no name) and the client would skip it.
 function seedEnemyFullSent(party) {
-  if (!party.enemies) return;
-  for (const enemy of party.enemies) enemyFullSent.add(enemy.id);
-}
-// Fields tracked for per-player broadcast deltas (server-authoritative state).
-const PLAYER_DELTA_FIELDS = [
-  'hp',
-  'ap',
-  'maxHp',
-  'maxAp',
-  'level',
-  'xp',
-  'xpToNext',
-  'gold',
-  'mp',
-  'maxMp',
-  'pointsToAllocate',
-  'abilityCooldowns',
-  'str',
-  'dex',
-  'agi',
-  'vit',
-  'int',
-  'cnc',
-  'wis',
-  'for',
-  'luk',
-  'pie',
-  'actionBar',
-  'maxActionBar',
-  'equipment',
-  'inventory',
-  'skillsState',
-];
-
-// Fields tracked for per-enemy broadcast deltas.
-const ENEMY_DELTA_FIELDS = ['hp', 'maxHp', 'ap', 'maxAp', 'mp', 'maxMp'];
-
-// Get delta for a single player - only return changed fields.
-// consumeFields: list of field names this pass actually transmits. Only those
-// fields are advanced in the baseline snapshot, so a pass that only sends HP/MP
-// (or HP/AP) does not discard changes meant for another pass (e.g. skillsState).
-// Pass null/undefined to compute the delta without advancing the baseline.
-function getPlayerDelta(socketId, player, consumeFields = null) {
-  const lastState = playerLastState.get(socketId) || {};
-  const delta = extractDelta(lastState, player, PLAYER_DELTA_FIELDS);
-  if (Object.keys(delta).length === 0) return null;
-  // Only build the (relatively expensive) snapshot once we know a change exists.
-  if (consumeFields) {
-    const merged = { ...lastState };
-    for (const f of consumeFields) merged[f] = player[f];
-    playerLastState.set(socketId, merged);
-  }
-  return delta;
-}
-
-// Get delta for a single enemy - only return changed fields.
-// Only advance the baseline when a real change is detected (BUG 3: was
-// unconditionally setting enemyLastState even when delta was empty).
-function getEnemyDelta(enemyId, enemy) {
-  const lastState = enemyLastState.get(enemyId) || {};
-  const delta = extractDelta(lastState, enemy, ENEMY_DELTA_FIELDS);
-  const wasDead = lastState.hp !== undefined && lastState.hp <= 0;
-  const isDead = enemy.hp <= 0;
-  if (wasDead !== isDead) delta.isDead = isDead;
-  if (Object.keys(delta).length === 0) return null;
-  enemyLastState.set(enemyId, { ...enemy });
-  return delta;
-}
-
-// Initialize delta state for a new player (send full state, then switch to deltas)
-function initializePlayerDeltaState(partyId, party, socketId) {
-  const player = party.players.get(socketId);
-  if (player) playerLastState.set(socketId, buildSnapshot(player));
-  if (party.enemies) {
-    for (const enemy of party.enemies) {
-      enemyLastState.set(enemy.id, { ...enemy });
-    }
-  }
-  partyLastState.set(partyId, {
-    floor: party.floor,
-    combatActive: party.combatActive,
-    combatTurn: party.combatTurn,
-    highestVisitedFloors: party.highestVisitedFloors ? { ...party.highestVisitedFloors } : {},
-  });
-  webrtcServer.initializePlayerDeltaState(partyId, party, socketId);
+  deltaTracker.seedEnemyFullSent(party);
 }
 
 // Clear delta tracking for a party (when party disbands)
 function clearPartyDeltaState(partyId) {
   const party = parties.get(partyId);
-  if (party) {
-    for (const socketId of party.players.keys()) {
-      playerLastState.delete(socketId);
-    }
-    // Delete this party's enemy delta snapshots. Enemy IDs come from
-    // generateEnemies (no 'enemy_' prefix), so match by live enemy id.
-    for (const enemy of party.enemies || []) {
-      enemyLastState.delete(enemy.id);
-    }
-  }
-  partyLastState.delete(partyId);
-  webrtcServer.clearPartyDeltaState(partyId);
+  deltaTracker.clearParty(partyId, party);
 }
 
 // Global function that can be used anywhere in the application
@@ -1378,17 +1266,7 @@ function liveEnemies(party) {
 function resetPartyDeltaBaseline(partyId) {
   const party = parties.get(partyId);
   if (!party) return;
-  for (const [socketId, player] of party.players) {
-    playerLastState.set(socketId, buildSnapshot(player));
-  }
-  if (party.enemies) {
-    for (const enemy of party.enemies) {
-      enemyLastState.set(enemy.id, { ...enemy });
-    }
-  }
-  // Re-baselining resets comparison points; also clear the "full snapshot sent"
-  // tracker so the freshly-synced enemies re-send full state on next gameDelta.
-  enemyFullSent.clear();
+  deltaTracker.resetBaseline(partyId, party);
 }
 
 // Cast a single already-selected ability for a player. Spends MP and sets the cooldown via
@@ -1560,7 +1438,7 @@ function startActionBarSystem(partyId, party) {
   party.combatStats = new Map();
   party.combatStartMs = Date.now();
 
-  // Spell-cast timer: independent of the action bar. Every ~100ms each live player attempts
+  // Spell-cast timer: independent of the action bar. Every ~200ms each live player attempts
   // to cast their first available spell (cooldown + MP + weapon requirements still apply).
   const spellInterval = setInterval(() => {
     if (!party.combatActive) {
@@ -1573,7 +1451,7 @@ function startActionBarSystem(partyId, party) {
       const ability = skillEngine.selectAbilityToCast(player, abilities, Date.now(), alive);
       if (ability) castAbilityForPlayer(player, partyId, party, ability);
     });
-  }, 100);
+  }, 200);
   spellCastIntervals.set(partyId, spellInterval);
 
   const interval = setInterval(() => {
@@ -1819,7 +1697,7 @@ function calculateDamage(actor, damageMod, roll) {
   const effectiveDamage = resolvedWeapon?.damage || 3;
   const damMod = damageMod / 1.1 + effectiveDamage / 1.1;
   let damage = Math.random() * (0.5 + damageMod * 0.3) + damMod * 1.16 + damageMod * 1.16;
-  const weaponData = weapons.find((w) => w.id === activeWeapon?.id) || activeWeapon;
+  const weaponData = catalog.weapon.find((w) => w.id === activeWeapon?.id) || activeWeapon;
   damage *= characters.getAttributeDamageModifier(actor, weaponData);
   if (actor.isEnemy) damage *= ENEMY_DAMAGE_MULTIPLIER;
   return damage;
@@ -2237,62 +2115,23 @@ function emitPartyDeltas(partyId, party, now) {
   // Party-level fields: only include a field when it differs from the last
   // sent value. Advances the baseline per field so unchanged fields are not
   // re-shipped every tick (the three map fields are large and change rarely).
-  const PARTY_DELTA_FIELDS = [
-    'combatActive',
-    'combatTurn',
-    'floor',
-    'dungeon',
-    'dungeonFloors',
-    'highestVisitedFloors',
-    'completedDungeons',
-    'autoEmbark',
-  ];
-  const partyPrev = partyLastState.get(partyId) || {};
-  const partyNext = {};
-  let partyDirty = false;
-  for (const f of PARTY_DELTA_FIELDS) {
-    const cur =
-      party[f] !== undefined
-        ? party[f]
-        : f === 'dungeonFloors' || f === 'highestVisitedFloors' || f === 'completedDungeons'
-          ? {}
-          : undefined;
-    const prev =
-      partyPrev[f] !== undefined
-        ? partyPrev[f]
-        : f === 'dungeonFloors' || f === 'highestVisitedFloors' || f === 'completedDungeons'
-          ? {}
-          : undefined;
-    partyNext[f] = cur;
-    if (utils.deepEqual(cur, prev)) continue;
-    delta[f] = cur;
-    partyDirty = true;
-  }
+  const { delta: partyDelta, partyNext, partyDirty } = deltaTracker.getPartyDelta(partyId, party);
+  for (const f of Object.keys(partyDelta)) delta[f] = partyDelta[f];
 
   // Per-player: snapshot the union of all changed PLAYER_DELTA_FIELDS.
   for (const [socketId, player] of party.players) {
-    const playerDelta = getPlayerDelta(socketId, player, PLAYER_DELTA_FIELDS);
-    if (!playerDelta) continue;
-    delta.playerUpdates[socketId] = {
-      id: socketId,
-      name: player.name,
-      isDead: player.hp <= 0,
-      ...playerDelta,
-    };
+    const entry = deltaTracker.collectPlayerUpdate(socketId, player);
+    if (!entry) continue;
+    delta.playerUpdates[socketId] = entry;
   }
 
   // Enemy deltas: full snapshot only the first time an enemy is seen on this
   // channel, partial (changed ENEMY_DELTA_FIELDS + id + isDead) thereafter.
   if (party.enemies?.length) {
     for (const enemy of party.enemies) {
-      const enemyDelta = getEnemyDelta(enemy.id, enemy);
-      if (!enemyDelta) continue;
-      if (enemyFullSent.has(enemy.id)) {
-        delta.enemyUpdates[enemy.id] = { id: enemy.id, isDead: enemy.hp <= 0, ...enemyDelta };
-      } else {
-        delta.enemyUpdates[enemy.id] = { ...enemy, id: enemy.id, isDead: enemy.hp <= 0 };
-        enemyFullSent.add(enemy.id);
-      }
+      const entry = deltaTracker.collectEnemyUpdate(enemy.id, enemy);
+      if (!entry) continue;
+      delta.enemyUpdates[enemy.id] = entry;
     }
   }
 
@@ -2302,7 +2141,7 @@ function emitPartyDeltas(partyId, party, now) {
   }
 
   // Advance the party-level baseline for every field we tracked.
-  partyLastState.set(partyId, partyNext);
+  deltaTracker.commitPartyBaseline(partyId, partyNext);
 
   broadcastToParty(partyId, 'gameDelta', delta);
 }

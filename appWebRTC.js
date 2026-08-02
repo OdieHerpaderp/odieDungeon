@@ -2,8 +2,6 @@ import { v4 as uuidv4 } from "uuid";
 import { EventEmitter } from "events";
 import wrtc from "wrtc";
 const { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate } = wrtc;
-import { deepEqual } from "./utils.js";
-import { buildSnapshot } from "./utilities/deltaTracker.js";
 import { PacketTracker } from "./utils.js";
 
 // Batching configuration - a single coalescing pool for all periodic state.
@@ -98,8 +96,6 @@ export class WebRTCServer extends EventEmitter {
     super();
     this.peers = new Map();
     this.iceServers = [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }];
-    this.playerLastState = new Map();
-    this.enemyLastState = new Map();
     this.parties = null;
     this.batchQueues = new Map();
     this.batchTimers = {
@@ -255,75 +251,6 @@ export class WebRTCServer extends EventEmitter {
         return;
       }
     }
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // DELTA TRACKING - Optimized unified delta function
-  // ═══════════════════════════════════════════════════════════════
-  getDelta(entityId, entity, type = "player") {
-    const lastState = this[`${type}LastState`].get(entityId) || {};
-    const delta = {};
-    const fields =
-      type === "player"
-        ? [
-            "hp",
-            "ap",
-            "maxHp",
-            "maxAp",
-            "actionBar",
-            "maxActionBar",
-            "level",
-            "xp",
-            "gold",
-            "mp",
-            "maxMp",
-            "str",
-            "dex",
-            "agi",
-            "vit",
-            "int",
-            "cnc",
-            "wis",
-            "for",
-            "luk",
-            "pie",
-            "abilityCooldowns",
-          ]
-        : ["hp", "maxHp", "ap", "maxAp", "actionBar", "mp", "maxMp"];
-
-    fields.forEach((f) => {
-      if (entity[f] !== undefined && !deepEqual(entity[f], lastState[f])) delta[f] = entity[f];
-    });
-
-    if (type === "enemy") {
-      const wasDead = lastState.hp !== undefined && lastState.hp <= 0;
-      const isDead = entity.hp <= 0;
-      if (wasDead !== isDead) delta.isDead = isDead;
-    }
-
-    if (Object.keys(delta).length > 0) {
-      this[`${type}LastState`].set(entityId, buildSnapshot(entity));
-      return delta;
-    }
-    return null;
-  }
-
-  initializePlayerDeltaState(partyId, party, socketId) {
-    const player = party.players.get(socketId);
-    if (player) this.playerLastState.set(socketId, buildSnapshot(player));
-    if (party.enemies) party.enemies.forEach((e) => this.enemyLastState.set(e.id, { ...e }));
-  }
-
-  clearPartyDeltaState(partyId) {
-    if (!this.parties) return;
-    const party = this.parties.get(partyId);
-    if (party) {
-      party.players.forEach((_, s) => {
-        this.playerLastState.delete(s);
-        this.clientBatchPreferences.delete(s);
-      });
-    }
-    this.enemyLastState.forEach((_, k) => k.startsWith("enemy_") && this.enemyLastState.delete(k));
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -751,15 +678,6 @@ export class WebRTCServer extends EventEmitter {
     return true;
   }
 
-  /**
-   * Reset the per-socket delta baseline so a freshly pushed full state becomes
-   * the new reference for subsequent deltas after a reconnect.
-   */
-  resetDeltaStateForSocket(socketId) {
-    this.playerLastState.delete(socketId);
-    this.enemyLastState.forEach((_, k) => k.startsWith("enemy_") && this.enemyLastState.delete(k));
-  }
-
   createPeer(socketId) {
     // Reconnection without a socket.io drop: tear down any pre-existing peer
     // for this socketId first so we don't leak RTCPeerConnections.
@@ -982,7 +900,6 @@ export class WebRTCServer extends EventEmitter {
       Object.values(accumulators).forEach((a) => a.clear());
     }
     this.batchQueues.delete(socketId);
-    this.playerLastState.delete(socketId);
     this.connectionHealth.delete(socketId);
     this.clientBatchPreferences.delete(socketId);
   }

@@ -770,7 +770,7 @@ createWindowManagerFrame();
 
 // Global variables for state
 currentState = {};
-var ownName,
+let ownName,
   ownId,
   clientNetwork,
   ownPlayerElement = null;
