@@ -15,18 +15,19 @@ const ABILITY_FILE_GLOB = /^skill_.*\.json$/;
 
 let cache = null;
 
-export function loadAbilities() {
+export async function loadAbilities() {
   if (cache) return cache;
 
   let merged = [];
   try {
-    const files = fs.readdirSync(ABILITIES_DIR);
+    const files = await fs.promises.readdir(ABILITIES_DIR);
     for (const file of files.sort()) {
       if (!ABILITY_FILE_GLOB.test(file)) continue;
       const filePath = path.join(ABILITIES_DIR, file);
       let parsed;
       try {
-        parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+        const raw = await fs.promises.readFile(filePath, "utf8");
+        parsed = JSON.parse(raw);
       } catch (err) {
         throw new Error(`Failed to parse ability file ${file}: ${err.message}`);
       }
@@ -47,7 +48,7 @@ export function loadAbilities() {
 }
 
 export function getAbilityById(id) {
-  return loadAbilities().find((a) => a.id === id) || null;
+  return (cache || []).find((a) => a.id === id) || null;
 }
 
 // Clear the memoized result (e.g. for hot reload after editing files).

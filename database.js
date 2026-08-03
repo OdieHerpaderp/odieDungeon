@@ -8,9 +8,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const CHARACTERS_DIR = path.join(__dirname, 'characters');
-if (!fs.existsSync(CHARACTERS_DIR)) {
-  fs.mkdirSync(CHARACTERS_DIR);
-}
 
 export function sanitizeName(name) {
   return (name || '').replace(/[^a-zA-Z0-9]/g, '_');
@@ -20,18 +17,23 @@ function canonicalKey(name) {
   return sanitizeName(name);
 }
 
-export function saveCharacter(name, character) {
+async function ensureCharactersDir() {
+  try {
+    await fs.promises.mkdir(CHARACTERS_DIR, { recursive: true });
+  } catch (error) {
+    console.error('Failed to create characters directory', { err: error.message });
+  }
+}
+
+export async function saveCharacter(name, character) {
   const key = canonicalKey(name);
   const filePath = path.join(CHARACTERS_DIR, `${key}.json`);
 
-  // Ensure effects array exists
   if (!character.effects) {
     character.effects = [];
   }
 
   const characterData = {
-    // NOTE: The 'id' field is NOT saved here because it's a session-specific identifier (socket.id)
-    // Each player connection gets a unique ID assigned by the server at join time
     name: character.name,
     level: character.level,
     skillsState: character.skillsState,
@@ -40,8 +42,8 @@ export function saveCharacter(name, character) {
     equipment: character.equipment ? compactEquipment(character.equipment) : {},
     xp: character.xp,
     xpToNext: character.xpToNext,
-    gold: character.gold, // Gold
-    donated: character.donated, // Donations
+    gold: character.gold,
+    donated: character.donated,
     pointsToAllocate: character.pointsToAllocate,
     ap: character.ap,
     maxAp: character.maxAp,
@@ -64,73 +66,57 @@ export function saveCharacter(name, character) {
     spells: character.spells,
     lastSpellCast: character.lastSpellCast,
     abilities: character.abilities || [],
-    effects: character.effects, // Active buff/debuff effects
-    inventory: character.inventory || [], // Player inventory
+    effects: character.effects,
+    inventory: character.inventory || [],
     lastUpdated: new Date().toISOString(),
   };
 
+  const tmpPath = `${filePath}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
   try {
-    fs.writeFileSync(filePath, JSON.stringify(characterData, null, 2));
-    // console.log(`Saved character ${name} to ${filePath}`);
+    await ensureCharactersDir();
+    await fs.promises.writeFile(tmpPath, JSON.stringify(characterData, null, 2), 'utf8');
+    await fs.promises.rename(tmpPath, filePath);
   } catch (error) {
+    try { await fs.promises.unlink(tmpPath); } catch {}
     console.error('Failed to save character ' + name, { err: error.message, name });
   }
 }
 
-export function loadCharacter(name) {
+export async function loadCharacter(name) {
   const key = canonicalKey(name);
   const filePath = path.join(CHARACTERS_DIR, `${key}.json`);
 
-  if (fs.existsSync(filePath)) {
-    try {
-      const data = fs.readFileSync(filePath, 'utf8');
-      const characterData = JSON.parse(data);
-      // Initialize missing fields
-      characterData.gold = characterData.gold || 0;
-      characterData.actionBar = characterData.actionBar || 0;
-      characterData.maxActionBar = characterData.maxActionBar || 100;
-      characterData.spells = characterData.spells || {};
-      characterData.lastSpellCast = characterData.lastSpellCast || {};
-      characterData.abilities = characterData.abilities || [];
-      characterData.skillsState = characterData.skillsState || {};
-      characterData.abilitySlots = characterData.abilitySlots || [];
-      characterData.abilityCooldowns = characterData.abilityCooldowns || {};
-       characterData.equipment = characterData.equipment || {};
-       // Migrate legacy equipment key 'armour' → 'chest'
-       if (characterData.equipment.armour && !characterData.equipment.chest) {
-         characterData.equipment.chest = characterData.equipment.armour;
-         delete characterData.equipment.armour;
-       }
-       characterData.effects = characterData.effects || []; // Initialize effects array
-       characterData.inventory = safeArray(characterData.inventory);
-       // Migrate legacy inventory slot 'armor' → 'chest'
-       for (const item of characterData.inventory) {
-         if (item?.slot === 'armor') item.slot = 'chest';
-       }
-      delete characterData.currentVenture;
-      delete characterData.ventures;
-
-      console.log('Loaded character ' + name + ' (Gold: ' + characterData.gold + ') from ' + filePath);
-
-      return characterData;
-    } catch (error) {
-      console.error('Failed to load character ' + name, { err: error.message, name });
+  try {
+    const data = await fs.promises.readFile(filePath, 'utf8');
+    const characterData = JSON.parse(data);
+    characterData.gold = characterData.gold || 0;
+    characterData.actionBar = characterData.actionBar || 0;
+    characterData.maxActionBar = characterData.maxActionBar || 100;
+    characterData.spells = characterData.spells || {};
+    characterData.lastSpellCast = characterData.lastSpellCast || {};
+    characterData.abilities = characterData.abilities || [];
+    characterData.skillsState = characterData.skillsState || {};
+    characterData.abilitySlots = characterData.abilitySlots || [];
+    characterData.abilityCooldowns = characterData.abilityCooldowns || {};
+    characterData.equipment = characterData.equipment || {};
+    if (characterData.equipment.armour && !characterData.equipment.chest) {
+      characterData.equipment.chest = characterData.equipment.armour;
+      delete characterData.equipment.armour;
     }
-  }
-  return null;
-}
+    characterData.effects = characterData.effects || [];
+    characterData.inventory = safeArray(characterData.inventory);
+    for (const item of characterData.inventory) {
+      if (item?.slot === 'armor') item.slot = 'chest';
+    }
+    delete characterData.currentVenture;
+    delete characterData.ventures;
 
-export function graveyardCharacter(name) {
-  const key = canonicalKey(name);
-  const primarySource = path.join(CHARACTERS_DIR, `${key}.json`);
-  const graveyardDir = path.join(__dirname, 'graveyard');
-  if (!fs.existsSync(graveyardDir)) {
-    fs.mkdirSync(graveyardDir);
-  }
-  const destPath = path.join(graveyardDir, `${key}.json`);
+    console.log('Loaded character ' + name + ' (Gold: ' + characterData.gold + ') from ' + filePath);
 
-  if (fs.existsSync(primarySource)) {
-    fs.renameSync(primarySource, destPath);
-      console.log('Moved ' + name + ' to graveyard as ' + key + '.json');
+    return characterData;
+  } catch (error) {
+    if (error.code === 'ENOENT') return null;
+    console.error('Failed to load character ' + name, { err: error.message, name });
+    return null;
   }
 }

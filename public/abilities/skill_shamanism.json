@@ -23,7 +23,7 @@
     "cooldownMsBase": 2400,
     "healAmount": 7,
     "effects": [
-      { "type": "hot", "amount": 2, "duration": 6 }
+      { "type": "HPup", "amount": 2, "duration": 6 }
     ],
     "maxTargets": 1,
     "allowedWeaponClasses": ["magic"],
@@ -41,7 +41,7 @@
     "cooldownMsBase": 2800,
     "healAmount": 8,
     "effects": [
-      { "type": "hot", "amount": 2, "duration": 9 }
+      { "type": "HPup", "amount": 2, "duration": 9 }
     ],
     "maxTargets": 1,
     "allowedWeaponClasses": ["magic"],
@@ -59,7 +59,7 @@
     "cooldownMsBase": 3500,
     "healAmount": 8,
     "effects": [
-      { "type": "hot", "amount": 3, "duration": 9 }
+      { "type": "HPup", "amount": 3, "duration": 9 }
     ],
     "maxTargets": 3,
     "allowedWeaponClasses": ["magic"],

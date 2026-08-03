@@ -9,7 +9,7 @@
     "cooldownMsBase": 2800,
     "damageBase": 10,
     "effects": [
-      { "type": "dot", "amount": 5, "duration": 6 }
+      { "type": "HPdown", "amount": 5, "duration": 6 }
     ],
     "maxTargets": 1,
     "allowedWeaponClasses": ["ranged"],

@@ -1,6 +1,6 @@
 // Character Management Module
 
-import { saveCharacter, loadCharacter } from './database.js';
+import { saveCharacter } from './database.js';
 import { getRandomEnemy, getRandomEnemyName, generateEnemies } from './enemies.js';
 import {
   getDefaultSkillsState,
@@ -26,11 +26,12 @@ import {
   toInventoryItem,
   safeArray,
   normalizeCharacterStats,
+  getEffectiveAttribute,
+  getEquipmentBonus,
+  getMappedEquipmentBonuses,
 } from './utils.js';
 import dungeons from './public/dungeons.json' with { type: 'json' };
 
-
-const abilities = loadAbilities();
 export { getEffectiveAttribute, getAttributeDamageModifier } from './utils.js';
 
 // Maximum number of items a shop can hold. Shared so the sell-to-shop path can
@@ -188,12 +189,6 @@ export function ensureSkillAndAbilityState(character) {
   return character;
 }
 
-export function getEquipmentBonus(player, statName) {
-  if (!statName) return 0;
-  const mapped = getMappedEquipmentBonuses(player);
-  return mapped[statName.toLowerCase()] || 0;
-}
-
 export function logGearBonuses(player, changeType = 'calculated') {
   const mapped = getMappedEquipmentBonuses(player);
   const bonusList = [
@@ -209,34 +204,6 @@ export function logGearBonuses(player, changeType = 'calculated') {
 
   const withSign = bonusList.map((b) => `${b.stat}: ${b.val >= 0 ? '+' : ''}${b.val}`).join(', ');
   console.log(`[${changeType}] ${player?.name || 'Unknown'} gear bonuses: [${withSign}]`);
-}
-
-// Compact equipment refs persist only { id, level, rarity } and carry no bonuses
-// of their own, so resolve each ref against its gear catalog to obtain the
-// level/rarity-scaled bonus object before summing.
-function resolveEquippedItemBonuses(slot, item) {
-  if (!item || typeof item !== 'object' || !item.id) return {};
-  if (item.bonuses) return item.bonuses;
-  if (item.baseBonuses) return item.baseBonuses;
-  if (!itemGenerator || typeof itemGenerator.resolveItem !== 'function') return {};
-  const resolved = itemGenerator.resolveItem(slot, item.id, item.level, item.rarity);
-  return (resolved && resolved.bonuses) || {};
-}
-
-// Return equipment bonuses with lowercase stat keys (e.g., STR -> str, HP -> hp)
-export function getMappedEquipmentBonuses(player) {
-  const equipment = player?.equipment || {};
-  const out = {};
-  for (const [slot, item] of Object.entries(equipment)) {
-    if (!item || typeof item !== 'object') continue;
-    const bonuses = resolveEquippedItemBonuses(slot, item);
-    for (const [k, v] of Object.entries(bonuses || {})) {
-      if (typeof v !== 'number') continue;
-      const key = String(k).toLowerCase();
-      out[key] = (out[key] || 0) + v;
-    }
-  }
-  return out;
 }
 
 export function getActiveWeapon(player) {
@@ -328,40 +295,35 @@ export function createCharacter(name) {
 }
 
 export function calcMiscStats(player) {
-  // Calculate derived stats from equipment and core stats
-  const equip = getMappedEquipmentBonuses(player);
-
-  const intEff = (player.int || 0) + (equip.int || 0);
-  const cncEff = (player.cnc || 0) + (equip.cnc || 0);
-  player.wis = (intEff / 1.9 + cncEff / 1.7 + player.level / 2.3) * 0.48 + (equip.wis || 0);
-
-  const vitEff = (player.vit || 0) + (equip.vit || 0);
-  const strEff = (player.str || 0) + (equip.str || 0);
-  player.for = (player.level / 77 + 0.2 + vitEff / 1.4 + strEff / 2.2) * 0.42 + (equip.for || 0);
-
-  player.luk = (player.level / 16 + 0.2) * 0.36 + (equip.luk || 0);
-  player.pie = (5 + player.donated / 48 - player.gold / 128000) * 0.38 + (equip.pie || 0);
+  player.wis =
+    (getEffectiveAttribute(player, 'int') / 1.9 +
+      getEffectiveAttribute(player, 'cnc') / 1.7 +
+      player.level / 2.3) *
+    0.48 +
+    getEquipmentBonus(player, 'wis');
+  player.for =
+    (player.level / 77 + 0.2 + getEffectiveAttribute(player, 'vit') / 1.4 + getEffectiveAttribute(player, 'str') / 2.2) *
+    0.42 +
+    getEquipmentBonus(player, 'for');
+  player.luk = (player.level / 16 + 0.2) * 0.36 + getEquipmentBonus(player, 'luk');
+  player.pie = (5 + player.donated / 48 - player.gold / 128000) * 0.38 + getEquipmentBonus(player, 'pie');
 }
 
 export function calcMaxHp(player) {
   calcMiscStats(player);
 
-  // Get base HP from core stats
+  const vitEff = getEffectiveAttribute(player, 'vit');
+  const strEff = getEffectiveAttribute(player, 'str');
   let baseHP =
     190 +
     player.level * 7 +
-    (player.vit + getEquipmentBonus(player, 'vit')) * 7 +
-    (player.str + getEquipmentBonus(player, 'str')) * 2 +
+    vitEff * 8 +
+    strEff * 2 +
     player.for * 0.5 +
     player.wis * 0.1;
   baseHP +=
-    ((player.level / 9 + 45) *
-      (0.8 +
-        (player.vit + getEquipmentBonus(player, 'vit')) / 2 +
-        (player.str + getEquipmentBonus(player, 'str')) / 9 +
-        player.for / 11)) /
+    ((player.level / 9 + 45) * (0.8 + vitEff / 1.8 + strEff / 9 + player.for / 11)) /
     17;
-  // Add HP equipment bonuses from every slot (weapon/chest/helmet/shoes)
   baseHP += getEquipmentBonus(player, 'hp');
 
   return Math.round(baseHP);
@@ -370,21 +332,22 @@ export function calcMaxHp(player) {
 export function calcMaxMp(player) {
   calcMiscStats(player);
 
+  const intEff = getEffectiveAttribute(player, 'int');
+  const cncEff = getEffectiveAttribute(player, 'cnc');
   let output =
     24 +
-    (player.level * 0.6 +
-      (player.int + getEquipmentBonus(player, 'int')) * 1.4 +
-      (player.cnc + getEquipmentBonus(player, 'cnc')) * 0.6 +
-      player.wis * 0.6 +
-      getEquipmentBonus(player, 'mp'));
+    (player.level * 0.6 + intEff * 1.4 + cncEff * 0.6 + player.wis * 0.1 + getEquipmentBonus(player, 'mp'));
   return Math.round(Math.pow(output * 1.3, 0.96));
 }
 
 export function calcMaxAp(player) {
   const apBonus = getEquipmentBonus(player, 'ap');
+  const vitEff = getEffectiveAttribute(player, 'vit');
+  const intEff = getEffectiveAttribute(player, 'int');
+  const cncEff = getEffectiveAttribute(player, 'cnc');
   const levelBonus = Math.floor(player.level);
-  const statBonus = (player.vit + player.int + player.cnc) / 2;
-  const hpBonus = player.maxHp * 0.012;
+  const statBonus = (vitEff + intEff + cncEff) / 3;
+  const hpBonus = player.maxHp * 0.008;
 
   return Math.floor((apBonus + levelBonus + statBonus + hpBonus) * 1.25);
 }

@@ -1,5 +1,5 @@
-import { v4 as uuidv4 } from 'uuid';
 import * as characters from './characters.js';
+import * as itemGenerator from './public/gear/itemGenerator.js';
 import { calcSkillLv, calcXpForLevel, calcXpForNextLevel } from './public/skills/skillMath.js';
 
 export function deepEqual(obj1, obj2) {
@@ -197,9 +197,37 @@ export function getEffectiveAttribute(player, statName) {
   if (!statName) return 0;
   const statKey = String(statName).toLowerCase();
   const base = Number.isFinite(player[statKey]) ? player[statKey] : 0;
-  // Note: at module load time we don't have access to character equipment bonuses yet
-  // This function is called with fully loaded character objects that include equipment
-  return base;
+  const equip = getEquipmentBonus(player, statKey);
+  return base + equip;
+}
+
+function resolveEquippedItemBonuses(slot, item) {
+  if (!item || typeof item !== 'object' || !item.id) return {};
+  if (item.bonuses) return item.bonuses;
+  if (item.baseBonuses) return item.baseBonuses;
+  const resolved = itemGenerator.resolveItem(slot, item.id, item.level, item.rarity);
+  return (resolved && resolved.bonuses) || {};
+}
+
+export function getMappedEquipmentBonuses(player) {
+  const equipment = player?.equipment || {};
+  const out = {};
+  for (const [slot, item] of Object.entries(equipment)) {
+    if (!item || typeof item !== 'object') continue;
+    const bonuses = resolveEquippedItemBonuses(slot, item);
+    for (const [k, v] of Object.entries(bonuses || {})) {
+      if (typeof v !== 'number') continue;
+      const key = String(k).toLowerCase();
+      out[key] = (out[key] || 0) + v;
+    }
+  }
+  return out;
+}
+
+export function getEquipmentBonus(player, statName) {
+  if (!statName) return 0;
+  const mapped = getMappedEquipmentBonuses(player);
+  return mapped[statName.toLowerCase()] || 0;
 }
 
 export function attributeScaling(player, modifiers, multiplier = 0.02) {
@@ -273,26 +301,3 @@ export function createEmptyCombatStats() {
     maxDamageTaken: 0,
   };
 }
-
-export default {
-  deepEqual,
-  formatBytes,
-  DEFAULT_CHARACTER_STATS,
-  createDefaultCharacter,
-  compactEquipment,
-  toCompactRef,
-  toInventoryItem,
-  generateMessageId,
-  socketIoPacketTracker,
-  trackSocketIoSent,
-  trackSocketIoReceived,
-  formatPacketStats,
-  getEffectiveAttribute,
-  getAttributeDamageModifier,
-  attributeScaling,
-  findInventoryItem,
-  safeArray,
-  normalizeCharacterStats,
-  recalcDerivedMaxAndClampCurrents,
-  createEmptyCombatStats,
-};

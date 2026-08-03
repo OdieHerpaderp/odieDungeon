@@ -34,12 +34,12 @@
     "name": "Poison Strike",
     "description": "Deals weapon damage to one foe with a magic weapon and deals damage over time.",
     "skillId": "skill_spellcasting",
-    "unlockSkillLevelMin": 3,
+    "unlockSkillLevelMin": 4,
     "mpCostBase": 8,
     "cooldownMsBase": 2800,
     "damageBase": 20,
     "effects": [
-      { "type": "dot", "amount": 5, "duration": 6 }
+      { "type": "HPdown", "amount": 5, "duration": 6 }
     ],
     "maxTargets": 1,
     "allowedWeaponClasses": ["magic"],
@@ -56,7 +56,7 @@
     "cooldownMsBase": 3200,
     "damageBase": 11,
     "effects": [
-      { "type": "dot", "amount": 3, "duration": 4 },
+      { "type": "HPdown", "amount": 3, "duration": 4 },
       { "type": "actionSlow", "amount": 25, "duration": 3 }
     ],
     "maxTargets": 1,

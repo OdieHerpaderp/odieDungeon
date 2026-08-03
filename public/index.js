@@ -7,8 +7,6 @@ function safeArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
-const SHOP_SELL_RATIO = 0.5;
-
 // Global variables for state - declared here to avoid TDZ issues
 let currentState;
 
@@ -881,7 +879,7 @@ function buildClientCallbacks() {
       const dotList = document.getElementById("dotList");
       if (!dotEffects || !dotList) return;
 
-      const dots = (data.effects || []).filter((e) => e.type === "dot");
+      const dots = (data.effects || []).filter((e) => e.type === "HPdown");
       if (dots.length > 0) {
         dotEffects.style.display = "block";
         const fragment = document.createDocumentFragment();
@@ -1066,21 +1064,6 @@ function logGearBonuses(player) {
   console.log(`[CLIENT] ${player?.name || "Unknown"} gear bonuses: [${withSign}]`);
 }
 
-function getGearStatFullName(statKey) {
-  const statUpper = String(statKey).toUpperCase();
-  const mapping = {
-    STR: "STR",
-    DEX: "DEX",
-    AGI: "AGI",
-    VIT: "VIT",
-    INT: "INT",
-    CNC: "CNC",
-    HP: "HP",
-    MP: "MP",
-  };
-  return mapping[statUpper] || statUpper;
-}
-
 function statBonusHtml(player, stat) {
   const b = getEquipmentStatBonus(player, stat);
   const rounded = Math.round(b);
@@ -1104,36 +1087,6 @@ function getAverageItemTier(player) {
     }
   }
   return count ? sum / count : 0;
-}
-
-function itemStatsHtml(calculatedItem, fontSize = "11px") {
-  const span = (text, color) => `<span style="color:${color};">${text}</span>`;
-  const row = (inner) => `<div style="font-size:${fontSize};">${inner}</div>`;
-  const parts = [];
-  const dmg = [];
-  if (calculatedItem.damage) dmg.push(span(`DMG: ${calculatedItem.damage}`, "#ff6b6b"));
-  if (calculatedItem.spellPower) dmg.push(span(`SP: ${calculatedItem.spellPower}`, "#4fc3f7"));
-  if (dmg.length) parts.push(row(dmg.join(" ")));
-  const def = [];
-  if (calculatedItem.defense) def.push(span(`DEF: ${calculatedItem.defense}`, "#4db6ac"));
-  if (calculatedItem.magicResist) def.push(span(`MR: ${calculatedItem.magicResist}`, "#9575cd"));
-  if (def.length) parts.push(row(def.join(" ")));
-  if (calculatedItem.attackSpeed) parts.push(row(span(`ASPD: ${calculatedItem.attackSpeed}`, "#ffd54f")));
-  if (calculatedItem.damageModifiers) {
-    const mods = Object.entries(calculatedItem.damageModifiers)
-      .map(([stat, weight]) => `${stat} x${Number(weight).toFixed(2)}`)
-      .join(", ");
-    parts.push(row(span(`MODS: ${mods}`, "#ff6b6b")));
-  }
-  if (calculatedItem.bonuses) {
-    for (const [stat, value] of Object.entries(calculatedItem.bonuses)) {
-      if (value === 0) continue;
-      const sign = value >= 0 ? "+" : "-";
-      const color = value >= 0 ? "#81c784" : "#ff8a65";
-      parts.push(row(span(`${sign}${Math.abs(value).toFixed(2)} ${stat}`, color)));
-    }
-  }
-  return parts.join("");
 }
 
 // Inline tier marker (e.g. "♔3.5"), shown next to the name/rarity on the card's
@@ -1168,7 +1121,7 @@ function getSellPrice(calculated) {
   } else {
     price = calc.price ?? 40;
   }
-  return Math.max(1, Math.floor(price * SHOP_SELL_RATIO));
+  return Math.max(1, Math.floor(price * (currentState?.shopSellRatio ?? 0.5)));
 }
 
 function itemTooltip(calculatedItem, extra = "") {
@@ -1198,7 +1151,7 @@ function itemTooltip(calculatedItem, extra = "") {
 }
 
 // Compact single-line stat tokens for the two-line gear card. Same colour coding as
-// itemStatsHtml but space-separated so the whole stat block fits on one wrapping line.
+// itemStatsInlineHtml but space-separated so the whole stat block fits on one wrapping line.
 function itemStatsInlineHtml(calculatedItem) {
   const span = (text, color) => `<span style="color:${color};">${text}</span>`;
   const parts = [];
@@ -1294,24 +1247,6 @@ function groupItems(items, keyFn) {
     groups.get(key).push(entry);
   }
   return Array.from(groups.values());
-}
-
-// Equipment/inventory change signature - avoids JSON.stringify allocation
-function equipmentInventorySig(equipment, inventory) {
-  const eq = equipment || {};
-  const eqSig = ["weapon", "chest", "helmet", "shoes"]
-    .map((s) => {
-      const it = eq[s];
-      if (!it) return "-";
-      return `${it.id || ""}|${it.level || ""}|${it.rarity || ""}`;
-    })
-    .join("/");
-  const invSig = (inventory || [])
-    .filter((i) => i && i.id != null)
-    .map((i) => `${i.baseItem || i.id}|${i.level ?? 1}|${i.rarity ?? 1}|${i.slot || ""}`)
-    .sort()
-    .join(",");
-  return eqSig + "#" + invSig;
 }
 
 // Equipment/inventory change signature - avoids JSON.stringify allocation

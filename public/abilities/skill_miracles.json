@@ -18,12 +18,12 @@
     "name": "Blessed Touch",
     "description": "Places a blessing on one ally, healing them and sustaining recovery over time.",
     "skillId": "skill_miracles",
-    "unlockSkillLevelMin": 2,
+    "unlockSkillLevelMin": 3,
     "mpCostBase": 7,
     "cooldownMsBase": 3200,
     "healAmount": 9,
     "effects": [
-      { "type": "hot", "amount": 2, "duration": 10 }
+      { "type": "HPup", "amount": 2, "duration": 10 }
     ],
     "maxTargets": 1,
     "allowedWeaponClasses": ["magic"],
@@ -45,6 +45,24 @@
     "requiresWeaponEquipped": true,
     "isHeal": true,
     "abilityType": "aoe",
+    "attributeDamageScale": {"INT": 0.5, "CNC": 0.2}
+  },
+  {
+    "id": "miracle_quick_mend",
+    "name": "Quick Mend",
+    "description": "Places a brief blessing on one ally, restoring HP and AP over time.",
+    "skillId": "skill_miracles",
+    "unlockSkillLevelMin": 2,
+    "mpCostBase": 5,
+    "cooldownMsBase": 2800,
+    "effects": [
+      { "type": "HPup", "amount": 1, "duration": 3 },
+      { "type": "APup", "amount": 1, "duration": 3 }
+    ],
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["magic"],
+    "requiresWeaponEquipped": true,
+    "isHeal": true,
     "attributeDamageScale": {"INT": 0.5, "CNC": 0.2}
   }
 ]

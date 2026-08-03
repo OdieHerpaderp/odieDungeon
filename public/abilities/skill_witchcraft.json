@@ -9,7 +9,7 @@
     "cooldownMsBase": 2600,
     "damageBase": 6,
     "effects": [
-      { "type": "dot", "amount": 3, "duration": 4 }
+      { "type": "HPdown", "amount": 3, "duration": 4 }
     ],
     "maxTargets": 1,
     "requiresWeaponEquipped": false,
@@ -25,7 +25,7 @@
     "cooldownMsBase": 3000,
     "damageBase": 8,
     "effects": [
-      { "type": "dot", "amount": 4, "duration": 5 },
+      { "type": "HPdown", "amount": 4, "duration": 5 },
       { "type": "weaken", "amount": 0.25, "duration": 6 }
     ],
     "maxTargets": 1,
@@ -42,7 +42,7 @@
     "cooldownMsBase": 3200,
     "damageBase": 10,
     "effects": [
-      { "type": "dot", "amount": 5, "duration": 5 },
+      { "type": "HPdown", "amount": 5, "duration": 5 },
       { "type": "vulnerability", "amount": 0.30, "duration": 6 }
     ],
     "maxTargets": 1,
@@ -59,10 +59,26 @@
     "cooldownMsBase": 3400,
     "damageBase": 12,
     "effects": [
-      { "type": "dot", "amount": 6, "duration": 6 },
+      { "type": "HPdown", "amount": 6, "duration": 6 },
       { "type": "defenseDown", "amount": 0.35, "duration": 6 }
     ],
     "maxTargets": 1,
+    "requiresWeaponEquipped": false,
+    "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
+  },
+  {
+    "id": "witch_mass_weakness",
+    "name": "Mass Weakness",
+    "description": "Weakens up to 3 enemies, reducing their outgoing damage.",
+    "skillId": "skill_witchcraft",
+    "unlockSkillLevelMin": 10,
+    "mpCostBase": 12,
+    "cooldownMsBase": 4000,
+    "damageBase": 0,
+    "effects": [
+      { "type": "weaken", "amount": 0.35, "duration": 3 }
+    ],
+    "maxTargets": 3,
     "requiresWeaponEquipped": false,
     "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
   }

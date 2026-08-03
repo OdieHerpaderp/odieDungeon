@@ -91,9 +91,9 @@ export function calculateItemTier(item) {
 
 export function calculateItemPrice(baseValue, level, rarity) {
   if (typeof baseValue !== 'number') return baseValue;
-  const levelMult = Math.pow(0.65 + level * 0.9, 1.3);
-  const rarityMult = Math.pow(0.65 + rarity * 1.5, 1.5);
-  return Math.round(Math.pow(baseValue * (0.7 + levelMult / 11) * (0.7 + rarityMult / 8) * 1.7, 1.4)) / 10;
+  const levelMult = Math.pow(0.7 + level * 0.9, 1.3);
+  const rarityMult = Math.pow(0.7 + rarity * 1.5, 1.5);
+  return Math.round(Math.pow(baseValue * (0.8 + levelMult / 11) * (0.8 + rarityMult / 8) * 1.8, 1.25)) / 10;
 }
 
 function calculateBonuses(baseBonuses, level, rarity) {

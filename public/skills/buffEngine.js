@@ -8,12 +8,10 @@ import { getSkillLevel } from './skillEngine.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
-
 export const MAX_EFFECT_STACKS = 9;
 
 export const EFFECT_HANDLERS = {
-  dot: {
+  HPdown: {
     maxStack: 9,
     apply(caster, target, ability) {
       const skillLevel = getSkillLevel(caster.skillsState, ability.skillId);
@@ -24,7 +22,7 @@ export const EFFECT_HANDLERS = {
       );
       const duration = ability.duration || ability.dotDuration || 3;
       return {
-        type: 'dot',
+        type: 'HPdown',
         amount: damagePerTick,
         duration: duration,
         sourceId: caster.id,
@@ -61,7 +59,7 @@ export const EFFECT_HANDLERS = {
     },
   },
 
-  hot: {
+  HPup: {
     maxStack: 9,
     apply(caster, target, ability) {
       const skillLevel = getSkillLevel(caster.skillsState, ability.skillId);
@@ -79,7 +77,7 @@ export const EFFECT_HANDLERS = {
         }
       }
       return {
-        type: 'hot',
+        type: 'HPup',
         amount: healPerTick,
         duration: duration,
         sourceId: caster.id,
@@ -106,6 +104,86 @@ export const EFFECT_HANDLERS = {
           stats.totalHotHealing += healAmount;
         }
       }
+    },
+  },
+
+  MPup: {
+    maxStack: 9,
+    apply(caster, target, ability) {
+      return {
+        type: 'MPup',
+        amount: ability.amount || ability.mpRegenAmount || 0,
+        duration: ability.duration || ability.mpRegenDuration || 3,
+        sourceId: caster.id,
+        sourceName: caster.name,
+        abilityId: ability.id,
+        abilityName: ability.name,
+        tickCount: 0,
+      };
+    },
+    tick(effect, target, party) {
+      const regenAmount = Math.max(1, Math.floor(effect.amount * (1 + effect.tickCount * 0.05)));
+      target.mp = Math.min(target.maxMp, target.mp + regenAmount);
+    },
+  },
+
+  APup: {
+    maxStack: 9,
+    apply(caster, target, ability) {
+      return {
+        type: 'APup',
+        amount: ability.amount || ability.apRegenAmount || 0,
+        duration: ability.duration || ability.apRegenDuration || 3,
+        sourceId: caster.id,
+        sourceName: caster.name,
+        abilityId: ability.id,
+        abilityName: ability.name,
+        tickCount: 0,
+      };
+    },
+    tick(effect, target, party) {
+      const regenAmount = Math.max(1, Math.floor(effect.amount * (1 + effect.tickCount * 0.05)));
+      target.ap = Math.min(target.maxAp, target.ap + regenAmount);
+    },
+  },
+
+  MPdown: {
+    maxStack: 9,
+    apply(caster, target, ability) {
+      return {
+        type: 'MPdown',
+        amount: ability.amount || ability.mpDrainAmount || 0,
+        duration: ability.duration || ability.mpDrainDuration || 3,
+        sourceId: caster.id,
+        sourceName: caster.name,
+        abilityId: ability.id,
+        abilityName: ability.name,
+        tickCount: 0,
+      };
+    },
+    tick(effect, target, party) {
+      const drainAmount = Math.max(1, Math.floor(effect.amount * (1 + effect.tickCount * 0.05)));
+      target.mp = Math.max(0, target.mp - drainAmount);
+    },
+  },
+
+  APdown: {
+    maxStack: 9,
+    apply(caster, target, ability) {
+      return {
+        type: 'APdown',
+        amount: ability.amount || ability.apDrainAmount || 0,
+        duration: ability.duration || ability.apDrainDuration || 3,
+        sourceId: caster.id,
+        sourceName: caster.name,
+        abilityId: ability.id,
+        abilityName: ability.name,
+        tickCount: 0,
+      };
+    },
+    tick(effect, target, party) {
+      const drainAmount = Math.max(1, Math.floor(effect.amount * (1 + effect.tickCount * 0.05)));
+      target.ap = Math.max(0, target.ap - drainAmount);
     },
   },
 
@@ -197,6 +275,11 @@ export const EFFECT_HANDLERS = {
   },
 };
 
+EFFECT_HANDLERS.hot = EFFECT_HANDLERS.HPup;
+EFFECT_HANDLERS.dot = EFFECT_HANDLERS.HPdown;
+EFFECT_HANDLERS.mpRegen = EFFECT_HANDLERS.MPup;
+EFFECT_HANDLERS.apRegen = EFFECT_HANDLERS.APup;
+
 export function applyEffect(caster, target, ability) {
   if (!ability || !target) return false;
   if (!target.effects) target.effects = [];
@@ -218,8 +301,12 @@ export function applyEffect(caster, target, ability) {
 
   for (const [type, handler] of Object.entries(EFFECT_HANDLERS)) {
     const oldFieldMap = {
-      dot: ['dotDamagePerTick', 'dotDuration'],
-      hot: ['hotHealPerTick', 'hotDuration'],
+      HPdown: ['dotDamagePerTick', 'dotDuration'],
+      HPup: ['hotHealPerTick', 'hotDuration'],
+      MPup: ['mpRegenAmount', 'mpRegenDuration'],
+      APup: ['apRegenAmount', 'apRegenDuration'],
+      MPdown: ['mpDrainAmount', 'mpDrainDuration'],
+      APdown: ['apDrainAmount', 'apDrainDuration'],
       weaken: ['weakenAmount', 'weakenDuration'],
       vulnerability: ['vulnerabilityAmount', 'vulnerabilityDuration'],
       defenseDown: ['defenseDownAmount', 'defenseDownDuration'],
@@ -257,7 +344,7 @@ export function processEffects(party) {
       effect.tickCount++;
       effect.duration--;
 
-      if (effect.type === 'dot' || effect.type === 'hot') {
+      if (['HPdown', 'HPup', 'MPup', 'MPdown', 'APup', 'APdown'].includes(effect.type)) {
         handler.tick(effect, target, party);
       }
 

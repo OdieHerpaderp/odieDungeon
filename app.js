@@ -20,10 +20,10 @@ import * as itemGenerator from './public/gear/itemGenerator.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const abilities = loadAbilities();
-
 const catalog = itemGenerator.getCatalog();
 import dungeons from './public/dungeons.json' with { type: 'json' };
+
+let abilities = [];
 
 export { app };
 export { server };
@@ -112,6 +112,7 @@ function buildFullStatePacket(party, partyId) {
   packet.combatTurn = party.combatTurn || 0;
   packet.autoEmbark = party.autoEmbark || false;
   packet.shopStock = party.shopStock || [];
+  packet.shopSellRatio = characters.SHOP_SELL_RATIO;
   packet._fullState = true;
   return packet;
 }
@@ -295,7 +296,7 @@ function handleGearPurchase(socket, gearType, partyId) {
   // Force a new array reference to ensure change detection by the delta system
   player.inventory = [...player.inventory];
 
-  saveCharacter(player.name, player);
+  void saveCharacter(player.name, player);
 
   const displayName = item.displayName || item.name || item.id || 'gear';
   const rarityText = item.rarity ? ` (${item.rarity}★)` : '';
@@ -387,7 +388,7 @@ function handleEquipItem(socket, data) {
     oldMaxMp: oldMax.mp,
     newMaxMp: player.maxMp,
   });
-  saveCharacter(player.name, player);
+  void saveCharacter(player.name, player);
   // Send gear/inventory on the critical path so the client refreshes panels immediately.
   broadcastCriticalGearUpdate(partyId, party);
   socket.emit('eventLog', {
@@ -447,7 +448,7 @@ function handleSellItem(socket, data) {
   // Add gold
   player.gold += sellPrice;
 
-  saveCharacter(player.name, player);
+  void saveCharacter(player.name, player);
   broadcastCriticalGearUpdate(partyId, party);
 
   const name = resolvedItem.displayName || resolvedItem.name || inventoryItem.id;
@@ -481,7 +482,7 @@ function handleUnequipItem(socket, data) {
   characters.logGearBonuses(player, 'unequipItem');
 
   utils.recalcDerivedMaxAndClampCurrents(player);
-  saveCharacter(player.name, player);
+  void saveCharacter(player.name, player);
   broadcastCriticalGearUpdate(partyId, party);
   socket.emit('eventLog', {
     message: `Unequipped ${unequippedItem ? unequippedItem.displayName || unequippedItem.name || unequippedItem.id : 'nothing'}.`,
@@ -521,7 +522,7 @@ function handleUseItem(socket, data) {
   }
 
   player.inventory = player.inventory.filter((entry) => entry !== inventoryItem);
-  saveCharacter(player.name, player);
+  void saveCharacter(player.name, player);
   broadcastCriticalGearUpdate(partyId, party);
   socket.emit('eventLog', {
     message: `Used ${inventoryItem.displayName || inventoryItem.name || inventoryItem.id}.`,
@@ -535,7 +536,7 @@ function handleLeaveParty(socket, partyId) {
   if (party) {
     const player = party.players.get(socket.id);
     if (player) {
-      saveCharacter(player.name, player);
+      void saveCharacter(player.name, player);
     }
     party.players.delete(socket.id);
     socket.leave(partyId);
@@ -600,7 +601,7 @@ function handleEscapeDungeon(socket, data) {
   restorePartyToFull(partyId);
   Array.from(party.players.values()).forEach((p) => {
     p.actionBar = 0;
-    saveCharacter(p.name, p);
+    void saveCharacter(p.name, p);
   });
 
   // Broadcast state change
@@ -727,7 +728,7 @@ function handleChangeDungeon(socket, data) {
   // Reset all player action bars
   Array.from(party.players.values()).forEach((p) => {
     p.actionBar = 0;
-    saveCharacter(p.name, p);
+    void saveCharacter(p.name, p);
   });
 
   // Generate enemies if not in town
@@ -760,7 +761,7 @@ function handleChangeDungeon(socket, data) {
   console.log(`[DUNGEON] Party ${partyId} changed from ${oldDungeon} to ${dungeon}`);
 }
 
-function handleJoinParty(socket, data) {
+async function handleJoinParty(socket, data) {
   utils.trackSocketIoReceived('joinParty', data);
   console.log('[SERVER] Received joinParty', data);
   const { partyId, name } = data;
@@ -792,7 +793,7 @@ function handleJoinParty(socket, data) {
 
   if (party.players.size < party.maxPlayers) {
     console.log('[SERVER] Loading character for name', name);
-    const savedData = loadCharacter(name);
+    const savedData = await loadCharacter(name);
     console.log('[SERVER] Loaded character data', savedData ? 'exists' : 'null');
 
     let character = savedData || utils.createDefaultCharacter(name);
@@ -869,7 +870,7 @@ function handleJoinParty(socket, data) {
     party.players.set(socket.id, character);
     socket.join(partyId);
     console.log(`[SERVER] Player ${name} joined with socket.id: ${socket.id} to party ${partyId}`);
-    saveCharacter(name, character);
+    void saveCharacter(name, character);
 
     const fullState = buildFullStatePacket(party, partyId);
     broadcastFullState(partyId, party);
@@ -930,7 +931,7 @@ function handleAllocatePoints(socket, data) {
   utils.trackSocketIoSent('eventLog', { message: `Allocated ${points} points to ${stat}.`, type: 'info' });
   socket.emit('eventLog', { message: `Allocated ${points} points to ${stat}.`, type: 'info' });
 
-  saveCharacter(player.name, player);
+  void saveCharacter(player.name, player);
 
   // OPTIMIZATION: Use targeted broadcast instead of full state
   broadcastFullState(partyId, party);
@@ -949,7 +950,7 @@ function handleDisconnect(socket, reason) {
     if (party.players.has(socket.id)) {
       const player = party.players.get(socket.id);
       if (player) {
-        saveCharacter(player.name, player);
+        void saveCharacter(player.name, player);
       }
       party.players.delete(socket.id);
       socket.leave(partyId);
@@ -1106,7 +1107,7 @@ app.use('/vendor/socket.io-client', express.static(join(__dirname, 'node_modules
 app.use(express.static('public'));
 
 // Merged ability definitions (auto-discovered per-skill JSON files).
-app.get('/api/abilities', (req, res) => res.json(loadAbilities()));
+app.get('/api/abilities', async (req, res) => res.json(abilities.length ? abilities : await loadAbilities()));
 
 // 60-second packet statistics logging
 setInterval(() => {
@@ -1116,7 +1117,6 @@ setInterval(() => {
     sent: utils.socketIoPacketTracker.sent,
     received: utils.socketIoPacketTracker.received,
   };
-  const webrtcTotal = webrtcStats;
 
   const combinedSent = utils.socketIoPacketTracker.sent.total.count + webrtcStats.sent.total.count;
   const combinedSentBytes = utils.socketIoPacketTracker.sent.total.bytes + webrtcStats.sent.total.bytes;
@@ -1235,7 +1235,7 @@ function restorePartyToFull(partyId) {
     p.ap = p.maxAp;
     p.actionBar = 0;
     buffEngine.clearEffects(p);
-    saveCharacter(p.name, p);
+    void saveCharacter(p.name, p);
   });
 }
 
@@ -1244,7 +1244,7 @@ function restorePartyToFull(partyId) {
 function resetPlayersActionBars(party) {
   Array.from(party.players.values()).forEach((p) => {
     p.actionBar = 0;
-    saveCharacter(p.name, p);
+    void saveCharacter(p.name, p);
   });
 }
 
@@ -1308,7 +1308,7 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
       totalHealed += target.hp - before;
 
       // Apply HoT effect if specified in ability
-      if (ability.effects?.some((e) => e.type === 'hot')) {
+      if (ability.effects?.some((e) => e.type === 'HPup')) {
         buffEngine.applyEffect(combatant, target, ability);
       }
     });
@@ -1370,7 +1370,7 @@ function castAbilityForPlayer(combatant, partyId, party, ability) {
         }
 
         // Apply DoT effect if specified in ability
-      if (ability.effects?.some((e) => e.type === 'dot')) {
+      if (ability.effects?.some((e) => e.type === 'HPdown')) {
         buffEngine.applyEffect(combatant, target, ability);
       }
 
@@ -1604,7 +1604,7 @@ function startActionBarSystem(partyId, party) {
         broadcastToParty(partyId, 'nextFloor', nextFloorPacket);
       }, 1000);
 
-      Array.from(party.players.values()).forEach((p) => saveCharacter(p.name, p));
+      Array.from(party.players.values()).forEach((p) => void saveCharacter(p.name, p));
       startSpawnTimer(partyId, party);
       return;
     }
@@ -1745,7 +1745,7 @@ function handlePlayerDeath(partyId, party, player) {
   player.actionBar = 0;
 
   // Save character state after permanent gear loss
-  saveCharacter(player.name, player);
+  void saveCharacter(player.name, player);
 
   // Remove from current party
   party.players.delete(player.id);
@@ -1951,7 +1951,7 @@ function awardXP(partyId, party) {
           broadcastToParty(partyId, 'eventLog', levelUpPacket);
         }
         characters.calcMiscStats(player);
-        saveCharacter(player.name, player);
+        void saveCharacter(player.name, player);
       });
     }
   });
@@ -2086,7 +2086,7 @@ function startBroadcastSystem() {
       // this probability yields ~2.5s between saves (0.02 * 50ms = 1s avg,
       // ~2.5s expected for the loop to land true per player).
       if (Math.random() < 0.02) {
-        for (const p of party.players.values()) if (p.hp > 0) saveCharacter(p.name, p);
+        for (const p of party.players.values()) if (p.hp > 0) void saveCharacter(p.name, p);
       }
     }
   }, 70); // Coalescing cadence: produce a gameDelta every ~70ms
@@ -2194,7 +2194,7 @@ function embarkParty(partyId, party, dungeon) {
   // Reset player action bars
   Array.from(party.players.values()).forEach((p) => {
     p.actionBar = 0;
-    saveCharacter(p.name, p);
+    void saveCharacter(p.name, p);
   });
 
   generateEnemies(party);
@@ -2314,7 +2314,7 @@ io.on('connection', (socket) => {
 
     nextSlots[slot] = abilityId;
     player.abilitySlots = nextSlots;
-    saveCharacter(player.name, player);
+    void saveCharacter(player.name, player);
     broadcastPlayerUpdate(partyId, party, socket.id);
     socket.emit('eventLog', { message: `Assigned ${abilityId || 'nothing'} to slot ${slot + 1}.`, type: 'success' });
   });
@@ -2369,6 +2369,13 @@ function initDotSystem() {
 // Start DoT system
 const dotIntervalId = initDotSystem();
 
-server.listen(25561, () => {
-    console.log('AGI Action Bar RPG with VIT Regeneration on port 25561');
+server.listen(25561, async () => {
+  try {
+    abilities = await loadAbilities();
+    skillEngine.initSkillEngine(abilities);
+    console.log('[INIT] Loaded ' + abilities.length + ' abilities and initialized skill engine');
+  } catch (err) {
+    console.error('[INIT] Failed to initialize abilities/skill engine:', err);
+  }
+  console.log('AGI Action Bar RPG with VIT Regeneration on port 25561');
 });

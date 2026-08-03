@@ -1,22 +1,22 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { calcSkillLv, calcXpForLevel, calcXpForNextLevel, getEffectiveAttribute, attributeScaling } from '../../utils.js';
 import * as itemGenerator from '../gear/itemGenerator.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const catalog = itemGenerator.getCatalog();
 
-// Load skill definitions from skills.json file
-const skillDefinitionsRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'skills.json'), 'utf8'));
+let skillDefinitions = [];
 
-// Add xpCurve function to each skill definition for backward compatibility
-const skillDefinitions = skillDefinitionsRaw.map((skill) => ({
-  ...skill,
-  xpCurve: skill.xpCurve || ((level) => 20 + level * 10), // Default curve if not specified in JSON
-}));
+export function initSkillEngine(defs) {
+  const bySkill = new Map();
+  for (const ability of defs || []) {
+    const skillId = ability.skillId;
+    if (!skillId) continue;
+    if (!bySkill.has(skillId)) {
+      bySkill.set(skillId, { id: skillId, abilities: [], xpCurve: ability.xpCurve || ((level) => 20 + level * 10) });
+    }
+    bySkill.get(skillId).abilities.push(ability);
+  }
+  skillDefinitions = Array.from(bySkill.values());
+}
 
 export function getDefaultSkillsState() {
   return Object.fromEntries(skillDefinitions.map((skill) => [skill.id, { xp: 0 }]));

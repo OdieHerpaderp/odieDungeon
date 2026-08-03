@@ -89,8 +89,7 @@
       "VIT": 7
     },
     "damageModifiers": {
-      "STR": 0.9,
-      "VIT": 0.1
+      "STR": 1
     },
     "range": 1,
     "value": 34,

@@ -42,7 +42,7 @@
     "cooldownMsBase": 3200,
     "damageBase": 16,
     "effects": [
-      { "type": "dot", "amount": 4, "duration": 3 }
+      { "type": "HPdown", "amount": 4, "duration": 3 }
     ],
     "targets": [2, 3, 0.5],
     "allowedWeaponClasses": ["magic"],
@@ -50,6 +50,27 @@
     "requiresWeaponEquipped": true,
     "abilityType": "aoe",
     "castUsesWeaponDamageModel": true,
+    "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
+  },
+  {
+    "id": "magic_arcane_sustenance",
+    "name": "Arcane Sustenance",
+    "description": "Channels arcane energy to restore HP, MP, and AP to up to 3 allies over time.",
+    "skillId": "skill_magic",
+    "unlockSkillLevelMin": 10,
+    "mpCostBase": 10,
+    "cooldownMsBase": 4000,
+    "effects": [
+      { "type": "HPup", "amount": 1, "duration": 3 },
+      { "type": "MPup", "amount": 1, "duration": 3 },
+      { "type": "APup", "amount": 1, "duration": 3 }
+    ],
+    "maxTargets": 3,
+    "allowedWeaponClasses": ["magic"],
+    "requiredWeaponSubTypes": ["rods", "staves"],
+    "requiresWeaponEquipped": true,
+    "abilityType": "aoe",
+    "isHeal": true,
     "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
   }
 ]

@@ -41,7 +41,7 @@
     "cooldownMsBase": 2600,
     "damageBase": 12,
     "effects": [
-      { "type": "dot", "amount": 4, "duration": 4 }
+      { "type": "HPdown", "amount": 4, "duration": 4 }
     ],
     "maxTargets": 1,
     "allowedWeaponClasses": ["melee"],
