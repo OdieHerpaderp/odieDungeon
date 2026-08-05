@@ -4,7 +4,7 @@
     "name": "Shiv",
     "type": "melee",
     "subType": "shortBlade",
-    "damage": 8,
+    "damage": 7,
     "spellPower": 1,
     "attackSpeed": 1.6,
     "bonuses": {
@@ -16,7 +16,7 @@
       "AGI": 0.7
     },
     "range": 1,
-    "value": 22,
+    "value": 17,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -24,7 +24,7 @@
     "name": "Knife",
     "type": "melee",
     "subType": "shortBlade",
-    "damage": 9,
+    "damage": 8,
     "spellPower": 1,
     "attackSpeed": 1.6,
     "bonuses": {
@@ -36,7 +36,7 @@
       "AGI": 0.7
     },
     "range": 1,
-    "value": 24,
+    "value": 21,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -44,7 +44,7 @@
     "name": "Dagger",
     "type": "melee",
     "subType": "shortBlade",
-    "damage": 10,
+    "damage": 9,
     "spellPower": 1,
     "attackSpeed": 1.6,
     "bonuses": {
@@ -56,7 +56,27 @@
       "AGI": 0.7
     },
     "range": 1,
-    "value": 26,
+    "value": 25,
+    "description": "A small and fast melee weapon for quick strikes."
+  },
+  {
+    "id": "cleaver",
+    "name": "Cleaver",
+    "type": "melee",
+    "subType": "shortBlade",
+    "damage": 10,
+    "spellPower": 1,
+    "attackSpeed": 1.5,
+    "bonuses": {
+      "STR": 5,
+      "AGI": 6
+    },
+    "damageModifiers": {
+      "STR": 0.4,
+      "AGI": 0.6
+    },
+    "range": 1,
+    "value": 25,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -64,9 +84,9 @@
     "name": "Rapier",
     "type": "melee",
     "subType": "shortBlade",
-    "damage": 11,
+    "damage": 10,
     "spellPower": 1,
-    "attackSpeed": 1.6,
+    "attackSpeed": 1.7,
     "bonuses": {
       "DEX": 7,
       "AGI": 9

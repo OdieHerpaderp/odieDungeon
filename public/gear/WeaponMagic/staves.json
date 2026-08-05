@@ -4,9 +4,9 @@
     "name": "Magic Staff",
     "type": "magic",
     "subType": "staves",
-    "damage": 11,
+    "damage": 8,
     "spellPower": 9,
-    "attackSpeed": 0.8,
+    "attackSpeed": 0.7,
     "bonuses": {
       "INT": 15,
       "CNC": 10
@@ -16,7 +16,7 @@
       "INT": 0.7
     },
     "range": 1,
-    "value": 40,
+    "value": 45,
     "description": "A small and fast melee weapon for quick strikes."
   }
 ]

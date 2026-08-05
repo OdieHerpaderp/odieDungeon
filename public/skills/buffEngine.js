@@ -15,11 +15,9 @@ export const EFFECT_HANDLERS = {
     maxStack: 9,
     apply(caster, target, ability) {
       const skillLevel = getSkillLevel(caster.skillsState, ability.skillId);
-      const skillMultiplier = 1 + (skillLevel - 1) * 0.05;
-      const attributeMultiplier = attributeScaling(caster, ability.attributeDamageScale);
-      const damagePerTick = Math.floor(
-        (ability.damagePerTick || ability.dotDamagePerTick || 0) * skillMultiplier * attributeMultiplier,
-      );
+      const basePerTick = ability.damagePerTick || ability.dotDamagePerTick || 0;
+      const attrBonus = attributeScaling(caster, ability.attributeDamageScale);
+      const damagePerTick = (basePerTick + attrBonus) * (40 + skillLevel) / 50;
       const duration = ability.duration || ability.dotDuration || 3;
       return {
         type: 'HPdown',
@@ -63,11 +61,9 @@ export const EFFECT_HANDLERS = {
     maxStack: 9,
     apply(caster, target, ability) {
       const skillLevel = getSkillLevel(caster.skillsState, ability.skillId);
-      const skillMultiplier = 1 + (skillLevel - 1) * 0.05;
-      const attributeMultiplier = attributeScaling(caster, ability.attributeDamageScale);
-      const healPerTick = Math.floor(
-        (ability.healPerTick || ability.hotHealPerTick || 0) * skillMultiplier * attributeMultiplier,
-      );
+      const basePerTick = ability.healPerTick || ability.hotHealPerTick || 0;
+      const attrBonus = attributeScaling(caster, ability.attributeDamageScale);
+      const healPerTick = (basePerTick + attrBonus) * (40 + skillLevel) / 50;
       const duration = ability.duration || ability.hotDuration || 3;
       if (caster.combatStats) {
         const stats = caster.combatStats.get(caster.id);

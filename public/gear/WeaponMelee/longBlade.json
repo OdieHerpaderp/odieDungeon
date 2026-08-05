@@ -44,7 +44,7 @@
     "type": "melee",
     "subType": "longBlade",
     "damage": 12,
-    "spellPower": 1,
+    "spellPower": 2,
     "attackSpeed": 1.2,
     "bonuses": {
       "STR": 9,
@@ -54,7 +54,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 30,
+    "value": 31,
     "description": "A canonical longBlade upgrade."
   },
   {
@@ -63,18 +63,18 @@
     "type": "melee",
     "subType": "longBlade",
     "twoHanded": true,
-    "damage": 15,
-    "spellPower": 1,
+    "damage": 17,
+    "spellPower": 2,
     "attackSpeed": 0.9,
     "bonuses": {
-      "STR": 12,
+      "STR": 11,
       "DEX": 5
     },
     "damageModifiers": {
       "STR": 1
     },
     "range": 1,
-    "value": 35,
+    "value": 41,
     "description": "A basic sword for melee combat."
   }
 ]

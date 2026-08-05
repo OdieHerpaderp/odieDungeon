@@ -14,7 +14,7 @@
       "CNC": -0.5
     },
     "range": 1,
-    "value": 33,
+    "value": 31,
     "description": "A sturdy iron helm offering reliable protection."
   },
   {
@@ -31,7 +31,7 @@
       "AGI": -0.3
     },
     "range": 1,
-    "value": 31,
+    "value": 29,
     "description": "Heavy crown of rune-forged metal, hardening against both blade and spell while fueling hybrid resolve."
   },
   {
@@ -67,7 +67,7 @@
       "CNC": -1
     },
     "range": 1,
-    "value": 37,
+    "value": 40,
     "description": "A towering full helm forged for the heaviest of battles."
   }
 ]

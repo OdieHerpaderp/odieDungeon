@@ -1,6 +1,4 @@
 // odieDungeon
-// Global tuning: multiplier applied to all damage dealt BY enemies (1.0 = unchanged, 0.5 = -50%)
-const ENEMY_DAMAGE_MULTIPLIER = 0.8;
 import assert from 'node:assert';
 import express from 'express';
 import http from 'http';
@@ -13,14 +11,13 @@ import * as characters from './characters.js';
 import { WebRTCServer } from './appWebRTC.js';
 import { DeltaTracker } from './utilities/deltaTracker.js';
 import { generateEnemies } from './enemies.js';
-import * as buffEngine from './public/skills/buffEngine.js';
 import * as skillEngine from './public/skills/skillEngine.js';
 import { loadAbilities } from './loadAbilities.js';
 import * as itemGenerator from './public/gear/itemGenerator.js';
+import { createCombatEngine } from './combatEngine.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const catalog = itemGenerator.getCatalog();
 import dungeons from './public/dungeons.json' with { type: 'json' };
 
 let abilities = [];
@@ -598,7 +595,7 @@ function handleEscapeDungeon(socket, data) {
   party.highestVisitedFloors[oldDungeon] = 0;
 
   // Restore party
-  restorePartyToFull(partyId);
+  combat.restorePartyToFull(partyId);
   Array.from(party.players.values()).forEach((p) => {
     p.actionBar = 0;
     void saveCharacter(p.name, p);
@@ -735,7 +732,7 @@ function handleChangeDungeon(socket, data) {
   if (party.floor >= 1) {
     generateEnemies(party);
     party.combatActive = true;
-    startActionBarSystem(partyId, party);
+    combat.startActionBarSystem(partyId, party);
   }
 
   // Broadcast dungeon change to all party members
@@ -937,7 +934,7 @@ function handleAllocatePoints(socket, data) {
   broadcastFullState(partyId, party);
 }
 
-function handleDisconnect(socket, reason) {
+function handleDisconnect(socket, _reason) {
   clearInterval(socket.pingInterval);
   // Clean up performance tracking
   socketMap.delete(socket.id);
@@ -996,104 +993,6 @@ function broadcastPlayerUpdate(partyId, party, socketId) {
   emitPartyDeltas(partyId, party, Date.now());
 }
 
-// Helper function to generate combat summary
-function generateCombatSummary(partyId, party, message) {
-  let totalDamage = 0;
-  let totalAttacks = 0;
-  let totalHits = 0;
-  let totalRollSum = 0;
-  let totalHealed = 0;
-  let totalCrits = 0;
-  let totalMaxDamage = 0;
-  let totalDamageTaken = 0;
-  let totalMitigated = 0;
-  let playerEntries = [];
-
-  const durationSeconds = Math.max(1, (Date.now() - party.combatStartMs) / 1000);
-
-  for (const [playerId, stats] of party.combatStats) {
-    if (stats.attacks > 0) {
-      const hitRate = ((stats.hits / stats.attacks) * 100).toFixed(1);
-      const critRate = stats.hits > 0 ? ((stats.crits / stats.hits) * 100).toFixed(1) : '0';
-      const avgDamage = stats.hits > 0 ? (stats.totalDamage / stats.hits).toFixed(1) : '0';
-      const avgRoll = stats.hits > 0 ? (stats.rollSum / stats.hits).toFixed(1) : '0';
-      const effectiveHealed = stats.totalHealed + (stats.totalHotHealing || 0);
-      const dps = stats.hits > 0 ? (stats.totalDamage / durationSeconds) : 0;
-      const hps = effectiveHealed / durationSeconds;
-      const player = party.players.get(playerId);
-      if (player) {
-        playerEntries.push({
-          name: player.name,
-          totalDamage: stats.totalDamage,
-          maxDamage: stats.maxDamage,
-          totalHealed: effectiveHealed,
-          hits: stats.hits,
-          attacks: stats.attacks,
-          crits: stats.crits,
-          hitRate,
-          critRate,
-          avgDamage,
-          avgRoll,
-          durationSeconds,
-          dps,
-          hps,
-          totalDamageTaken: stats.totalDamageTaken || 0,
-          totalMitigated: stats.totalMitigated || 0,
-          maxDamageTaken: stats.maxDamageTaken || 0,
-        });
-      }
-      totalDamage += stats.totalDamage;
-      totalMaxDamage += stats.maxDamage;
-      totalAttacks += stats.attacks;
-      totalHits += stats.hits;
-      totalRollSum += stats.rollSum;
-      totalHealed += effectiveHealed;
-      totalCrits += stats.crits;
-      totalDamageTaken += stats.totalDamageTaken || 0;
-      totalMitigated += stats.totalMitigated || 0;
-    }
-  }
-
-  playerEntries.sort((a, b) => (b.totalDamage + b.totalHealed) - (a.totalDamage + a.totalHealed));
-
-  const overallHitRate = totalAttacks > 0 ? ((totalHits / totalAttacks) * 100).toFixed(1) : '0';
-  const overallCritRate = totalHits > 0 ? ((totalCrits / totalHits) * 100).toFixed(1) : '0';
-  const overallAvgDamage = totalHits > 0 ? (totalDamage / totalHits).toFixed(1) : '0';
-  const overallAvgRoll = totalHits > 0 ? (totalRollSum / totalHits).toFixed(1) : '0';
-  const overallDps = totalDamage / durationSeconds;
-  const overallHps = totalHealed / durationSeconds;
-
-  const summary = {
-    players: playerEntries,
-    totals: {
-      totalDamage,
-      totalMaxDamage,
-      totalHealed,
-      totalAttacks,
-      totalHits,
-      totalCrits,
-      overallHitRate,
-      overallCritRate,
-      overallAvgDamage,
-      overallAvgRoll,
-      overallDurationSeconds: durationSeconds,
-      overallDps,
-      overallHps,
-      totalDamageTaken,
-      totalMitigated,
-    },
-  };
-
-  // Emit combat end via the single combatEnd channel (WebRTC-preferred, Socket.IO fallback).
-  broadcastToParty(partyId, 'combatEnd', {
-    message,
-    summary,
-    combatActive: false,
-  });
-
-  // Note: DoT effects are handled by the global DoT system (initDotSystem)
-  // Removed redundant individual player DoT update logic
-}
 
 const app = express();
 const server = http.createServer(app);
@@ -1113,11 +1012,6 @@ app.get('/api/abilities', async (req, res) => res.json(abilities.length ? abilit
 setInterval(() => {
   const webrtcStats = webrtcServer.packetTracker;
 
-  const socketIoTotal = {
-    sent: utils.socketIoPacketTracker.sent,
-    received: utils.socketIoPacketTracker.received,
-  };
-
   const combinedSent = utils.socketIoPacketTracker.sent.total.count + webrtcStats.sent.total.count;
   const combinedSentBytes = utils.socketIoPacketTracker.sent.total.bytes + webrtcStats.sent.total.bytes;
   const combinedReceived = utils.socketIoPacketTracker.received.total.count + webrtcStats.received.total.count;
@@ -1133,10 +1027,30 @@ setInterval(() => {
 // Define parties and spawnTimers BEFORE WebRTC initialization (fixes ReferenceError at line 174)
 const parties = new Map();
 const spawnTimers = new Map();
+const actionIntervals = new Map();
+const spellCastIntervals = new Map();
 
 // Initialize WebRTC server
 const webrtcServer = new WebRTCServer();
 webrtcServer.initialize(parties, io, webrtcServer);
+
+const combat = createCombatEngine({
+  broadcastCriticalUpdate,
+  broadcastToParty,
+  broadcastFullState,
+  saveCharacter,
+  getSocket: (id) => io.sockets.sockets.get(id),
+  parties,
+  actionIntervals,
+  spellCastIntervals,
+  spawnTimers,
+  startSpawnTimer,
+  embarkParty,
+  resetPartyDeltaBaseline,
+  seedEnemyFullSent,
+  io,
+  getAbilities: () => abilities,
+});
 
 // Set up WebRTC Socket.IO handlers (webrtc-offer, webrtc-signal, batchPreference)
 webrtcServer.setupSocketIOHandlers(io);
@@ -1210,14 +1124,14 @@ function startSpawnTimer(partyId, party) {
       console.log(`[DEBUG-SKIP-SPAWN-TIMER] party=${partyId} reason=${reason} elapsedMs=${elapsed} combatActive=${party.combatActive} enemies=${(party.enemies || []).length} live=${live.length} enemyHps=${(party.enemies || []).map((e) => `${e.name}:${e.hp}`).join(', ')}`);
       return;
     }
-    if (!party.combatActive && (!party.enemies || liveEnemies(party).length === 0)) {
+    if (!party.combatActive && (!party.enemies || combat.liveEnemies(party).length === 0)) {
       generateEnemies(party);
       party.combatActive = true;
       // Prefer WebRTC over TCP
       const combatPacket = { floor: party.floor, enemies: party.enemies };
       seedEnemyFullSent(party);
       broadcastToParty(partyId, 'combatStart', combatPacket);
-      startActionBarSystem(partyId, party);
+      combat.startActionBarSystem(partyId, party);
     }
     spawnTimers.delete(partyId);
   }, 1500);
@@ -1225,38 +1139,8 @@ function startSpawnTimer(partyId, party) {
   spawnTimers.set(partyId, timer);
 }
 
-// Single source of full restoration: fully heal every player in a party and persist.
-function restorePartyToFull(partyId) {
-  const party = parties.get(partyId);
-  if (!party) return;
-  Array.from(party.players.values()).forEach((p) => {
-    p.hp = p.maxHp;
-    p.mp = p.maxMp;
-    p.ap = p.maxAp;
-    p.actionBar = 0;
-    buffEngine.clearEffects(p);
-    void saveCharacter(p.name, p);
-  });
-}
 
-// Reset every player's action bar to 0 and persist (used on embark, floor
-// change, teleport, escape, and dungeon change).
-function resetPlayersActionBars(party) {
-  Array.from(party.players.values()).forEach((p) => {
-    p.actionBar = 0;
-    void saveCharacter(p.name, p);
-  });
-}
 
-// Module-local convenience readers for the frequently-recomputed live-combatant
-// sets. Return fresh arrays each call (identity is not preserved), matching the
-// inline `Array.from(...).filter(...)` they replace. No packet-shape change.
-function livePlayers(party) {
-  return Array.from(party.players.values()).filter((p) => p.hp > 0);
-}
-function liveEnemies(party) {
-  return (party.enemies || []).filter((e) => e.hp > 0);
-}
 
 // Re-baseline the per-player/enemy delta state for a party to the current
 // server state. Used on embark/escape/dungeon-change so changes made before
@@ -1269,710 +1153,20 @@ function resetPartyDeltaBaseline(partyId) {
   deltaTracker.resetBaseline(partyId, party);
 }
 
-// Cast a single already-selected ability for a player. Spends MP and sets the cooldown via
-// skillEngine.applyAbilityCast, then applies healing/damage plus HoT/DoT/action-slow effects and awards XP.
-// Casting no longer touches the action bar (that drives weapon attacks only).
-function castAbilityForPlayer(combatant, partyId, party, ability) {
-  if (!ability) return;
-  const nextState = skillEngine.applyAbilityCast(combatant, ability, Date.now());
-  if (!nextState) return;
-  Object.assign(combatant, nextState);
 
-  const alivePlayers = livePlayers(party);
 
-  // Handle defense-up self-buff abilities (armor proficiencies) before all others.
-  if (ability.effects?.some((e) => e.type === 'defenseUp')) {
-    buffEngine.applyEffect(combatant, combatant, ability);
-    combatant.skillsState = skillEngine.awardSkillXp(combatant.skillsState, ability.skillId, 3);
-    broadcastCriticalUpdate(partyId, party, {
-      actor: { ...combatant },
-      targets: [],
-      ability: ability,
-      defenseUp: true,
-    });
-    return;
-  }
 
-  // Handle healing abilities differently from offensive abilities
-  if (ability.isHeal) {
-    // For healing abilities, calculate the heal amount
-    const healAmount = skillEngine.calculateHealAmount(ability, combatant);
 
-    // Get targets for the healing ability
-    const healTargets = skillEngine.getAbilityTargets(combatant, ability, [...alivePlayers]);
 
-    let totalHealed = 0;
-    healTargets.forEach((target) => {
-      const before = target.hp;
-      target.hp = Math.min(target.maxHp, target.hp + healAmount);
-      totalHealed += target.hp - before;
 
-      // Apply HoT effect if specified in ability
-      if (ability.effects?.some((e) => e.type === 'HPup')) {
-        buffEngine.applyEffect(combatant, target, ability);
-      }
-    });
 
-    combatant.skillsState = skillEngine.awardHealXp(combatant.skillsState, totalHealed, ability.skillId);
 
-    const casterStats = party.combatStats.get(combatant.id);
-    if (casterStats) casterStats.totalHealed += totalHealed;
-  } else {
-    // For offensive abilities, calculate damage and apply to targets
-    const damageTargets = skillEngine.getAbilityTargets(combatant, ability, liveEnemies(party));
 
-    // Calculate damage based on ability type
-    let baseDamage = 1;
 
-    if (ability.castUsesWeaponDamageModel) {
-      // Use the same damage calculation as regular attacks
-      const { accuracyMod, damageMod } = calculateAttackMods(combatant);
-      const baseRoll = 50; // Base roll for abilities - adjust as needed
-      baseDamage = calculateDamage(combatant, damageMod, baseRoll) / 1.5;
 
-      const attributeMultiplier = skillEngine.calculateAttributeScaling(combatant, ability.attributeDamageScale);
-      baseDamage *= attributeMultiplier;
-    } else {
-      // Use ability's own damage base
-      baseDamage = ability.damageBase || 10; // Default damage if not specified
-      if (combatant.isEnemy) baseDamage *= ENEMY_DAMAGE_MULTIPLIER;
 
-      // Scale damage based on the associated skill level
-      const skillLevel = skillEngine.getSkillLevel(combatant.skillsState, ability.skillId);
-      baseDamage = baseDamage * (1 + (skillLevel - 1) * 0.05); // 5% more damage per skill level
 
-      if (!ability.castUsesWeaponDamageModel) {
-        const weapon = characters.getActiveWeapon(combatant);
-        const resolvedWeapon = weapon?.id
-          ? itemGenerator.resolveItem('weapon', weapon.id, weapon.level || 1, weapon.rarity || 1)
-          : null;
-        baseDamage += resolvedWeapon?.spellPower || 0;
-      }
-
-      const attributeMultiplier = skillEngine.calculateAttributeScaling(combatant, ability.attributeDamageScale);
-      baseDamage *= attributeMultiplier;
-    }
-
-    // Apply damage scaling for multiple targets
-    const scaledDamage = skillEngine.calculateDamageScalingForMultipleTargets(
-      baseDamage,
-      damageTargets.length,
-      ability.abilityType || 'damage',
-      combatant,
-    );
-
-      // Apply damage to each target
-      damageTargets.forEach((target) => {
-        applyDamage(target, scaledDamage, partyId, party);
-
-        if (!target.isEnemy) {
-          updateIncomingCombatStats(target, party, scaledDamage, 0);
-        }
-
-        // Apply DoT effect if specified in ability
-      if (ability.effects?.some((e) => e.type === 'HPdown')) {
-        buffEngine.applyEffect(combatant, target, ability);
-      }
-
-      // Apply action bar slow effect if specified in ability
-      if (ability.effects?.some((e) => e.type === 'actionSlow')) {
-        buffEngine.applyEffect(combatant, target, ability);
-      }
-
-      // Apply witchcraft debuff effects if specified in ability
-      if (ability.effects?.some((e) => e.type === 'weaken')) {
-        buffEngine.applyEffect(combatant, target, ability);
-      }
-      if (ability.effects?.some((e) => e.type === 'vulnerability')) {
-        buffEngine.applyEffect(combatant, target, ability);
-      }
-      if (ability.effects?.some((e) => e.type === 'defenseDown')) {
-        buffEngine.applyEffect(combatant, target, ability);
-      }
-
-      // Update combat stats for the caster
-      if (!combatant.isEnemy) {
-        const stats = party.combatStats.get(combatant.id);
-        if (stats) {
-          stats.hits++;
-          stats.totalDamage += scaledDamage;
-          stats.rollSum += 50; // Using 50 as base roll for abilities
-          stats.maxDamage = Math.max(stats.maxDamage, scaledDamage);
-        }
-      }
-    });
-
-    // Award XP to the associated skill - bonus for hitting multiple targets
-    const xpPerTarget = 3;
-    combatant.skillsState = skillEngine.awardSkillXp(
-      combatant.skillsState,
-      ability.skillId,
-      xpPerTarget * damageTargets.length,
-    );
-
-    // Check for enemy deaths and award party XP/gold, remove dead enemies
-    if (damageTargets.some((t) => t.isEnemy && t.hp <= 0)) {
-      awardXP(partyId, party);
-    }
-
-    // Broadcast the ability event
-    broadcastCriticalUpdate(partyId, party, {
-      actor: { ...combatant },
-      targets: damageTargets.map((t) => ({ ...t, isEnemy: t.isEnemy || false })),
-      ability: ability,
-      damage: baseDamage,
-      scaledDamage: scaledDamage,
-      hit: true,
-    });
-  }
-}
-
-// Start action bar system for combat
-function startActionBarSystem(partyId, party) {
-  if (actionIntervals.has(partyId)) {
-    clearInterval(actionIntervals.get(partyId));
-  }
-  if (spellCastIntervals.has(partyId)) {
-    clearInterval(spellCastIntervals.get(partyId));
-  }
-  party.combatStats = new Map();
-  party.combatStartMs = Date.now();
-
-  // Spell-cast timer: independent of the action bar. Every ~200ms each live player attempts
-  // to cast their first available spell (cooldown + MP + weapon requirements still apply).
-  const spellInterval = setInterval(() => {
-    if (!party.combatActive) {
-      clearInterval(spellInterval);
-      spellCastIntervals.delete(partyId);
-      return;
-    }
-    const alive = livePlayers(party);
-    alive.forEach((player) => {
-      const ability = skillEngine.selectAbilityToCast(player, abilities, Date.now(), alive);
-      if (ability) castAbilityForPlayer(player, partyId, party, ability);
-    });
-  }, 200);
-  spellCastIntervals.set(partyId, spellInterval);
-
-  const interval = setInterval(() => {
-    if (!party.combatActive) {
-      clearInterval(interval);
-      actionIntervals.delete(partyId);
-      return;
-    }
-    const livePlayersList = livePlayers(party);
-    const liveEnemiesList = liveEnemies(party);
-    if (livePlayersList.length === 0) {
-      party.combatActive = false;
-      clearInterval(interval);
-      actionIntervals.delete(partyId);
-
-      party.floor = 0;
-      party.enemies = [];
-      // Save alive players before clearing party
-      const alivePlayers = Array.from(party.players.values()).filter((p) => p.hp > 0);
-      // Dead players have already left the party and had their gear dropped
-      party.players.clear();
-      alivePlayers.forEach((p) => {
-        party.players.set(p.id, p);
-      });
-
-      if (party.players.size === 0) {
-        // Only delete party if everyone is actually dead
-        parties.delete(partyId);
-        if (spawnTimers.has(partyId)) {
-          clearTimeout(spawnTimers.get(partyId));
-          spawnTimers.delete(partyId);
-        }
-        generateCombatSummary(partyId, party, 'All players have fallen! Party disbanded.');
-      } else {
-        // Some players survived - respawn timer for remaining players
-        startSpawnTimer(partyId, party);
-        // Prefer WebRTC for event log
-        const deathLogPacket = {
-          message: 'Some players died, but the party continues!',
-          type: 'info',
-        };
-        broadcastToParty(partyId, 'eventLog', deathLogPacket);
-      }
-      return;
-    }
-
-    if (liveEnemiesList.length === 0) {
-      party.combatActive = false;
-      clearInterval(interval);
-      actionIntervals.delete(partyId);
-
-      // Re-baseline deltas so the just-ended combat cannot re-inject old
-      // enemies or flip combatActive back on the client.
-      resetPartyDeltaBaseline(partyId);
-
-      const dungeonDataForCompletion = party.dungeon ? characters.getDungeonData(party.dungeon) : null;
-      const dungeonFloorMaxForCompletion = dungeonDataForCompletion?.floorAmount ?? 100;
-
-      // Generate combat summary using shared function
-      generateCombatSummary(partyId, party, 'Victory! You can move now!');
-      console.log(`[DEBUG-VICTORY] party=${partyId} dungeon=${party.dungeon} floor=${party.floor} dungeonFloor=${party.dungeonFloors?.[party.dungeon]} maxFloor=${dungeonFloorMaxForCompletion} enemies=${(party.enemies || []).length} live=${liveEnemiesList.length} enemyHps=${(party.enemies || []).map((e) => `${e.name}:${e.hp}`).join(', ')}`);
-
-      party.enemies = [];
-
-      // Mark dungeon completion when the party defeats the boss on the last floor (per floorAmount)
-      if (party.dungeon && party.dungeonFloors?.[party.dungeon] === dungeonFloorMaxForCompletion) {
-        if (!party.completedDungeons) party.completedDungeons = {};
-        if (party.completedDungeons[party.dungeon] !== true) {
-          party.completedDungeons[party.dungeon] = true;
-        }
-
-        console.log(`🏁 ${party.dungeon} completed!`);
-
-        // Broadcast the 🏁 completion line. These one-shot, critical
-        // messages must reach the client reliably, so emit on Socket.IO
-        // directly (TCP) AND over WebRTC without batching.
-        const completionPacket = { message: `🏁 ${party.dungeon} completed!`, type: 'success' };
-        io.to(partyId).emit('eventLog', completionPacket);
-        broadcastToParty(partyId, 'eventLog', completionPacket, { noBatch: true });
-
-        // Restock shop with items scaled to dungeon difficulty — runs on every boss clear
-        characters.restockShopWithDungeonScaling(party, party.dungeon, dungeonDataForCompletion);
-
-        // Reward every character with one scaled item or gold fallback for clearing the dungeon
-        const lootResults = characters.rewardPlayersOnDungeonClear(party, party.dungeon, dungeonDataForCompletion);
-        for (const result of lootResults) {
-          const awardPacket = { message: result.message, type: result.type === 'item' ? 'success' : 'info' };
-          io.to(partyId).emit('eventLog', awardPacket);
-          broadcastToParty(partyId, 'eventLog', awardPacket, { noBatch: true });
-        }
-
-        // Return to town immediately after boss defeat so UI reflects completion
-        party.floor = 0;
-        party.dungeonFloors[party.dungeon] = 0;
-        party.combatActive = false;
-        party.combatTurn = 0;
-        party.enemies = [];
-        restorePartyToFull(partyId);
-
-        broadcastFullState(partyId, party);
-
-        const returnPacket = { message: '🏠 Returned to Town!', type: 'info' };
-        io.to(partyId).emit('eventLog', returnPacket);
-        broadcastToParty(partyId, 'eventLog', returnPacket, { noBatch: true });
-
-        // 🔁 Auto-Embark: if enabled, immediately re-embark on the same dungeon
-        if (party.autoEmbark) {
-          embarkParty(partyId, party, party.dungeon || 'field');
-        }
-
-        return;
-      }
-
-      // 🆕 AUTO-PROGRESS: always advance to the next floor after a clear
-      // Prefer WebRTC for event log
-      const floorAdvancePacket = {
-        message: '✅ Auto-progressing to next floor...',
-        type: 'info',
-      };
-      broadcastToParty(partyId, 'eventLog', floorAdvancePacket);
-
-      // Initialize dungeonFloors and highestVisitedFloors if not exists
-      if (!party.dungeonFloors) party.dungeonFloors = {};
-      if (!party.highestVisitedFloors) party.highestVisitedFloors = {};
-
-      // Get current dungeon-relative floor
-      const currentDungeonFloor = party.dungeonFloors[party.dungeon] || 1;
-
-      // Calculate new dungeon-relative floor (max per dungeon)
-      const dungeonDataForAutoProgress = characters.getDungeonData(party.dungeon);
-      const dungeonFloorMaxForAutoProgress = dungeonDataForAutoProgress?.floorAmount ?? 100;
-      const newDungeonFloor = Math.min(currentDungeonFloor + 1, dungeonFloorMaxForAutoProgress);
-      console.log(`[DEBUG-AUTOPROGRESS] party=${partyId} dungeon=${party.dungeon} oldFloor=${currentDungeonFloor} newFloor=${newDungeonFloor} maxFloor=${dungeonFloorMaxForAutoProgress} enemiesBefore=${(party.enemies || []).length} liveBefore=${liveEnemies(party).length}`);
-
-      party.dungeonFloors[party.dungeon] = newDungeonFloor;
-
-      // Calculate absolute floor for display
-      party.floor = newDungeonFloor;
-
-      // Update highest visited floor for this dungeon
-      const currentHighest = party.highestVisitedFloors[party.dungeon] || 0;
-      if (newDungeonFloor > currentHighest) {
-        party.highestVisitedFloors[party.dungeon] = newDungeonFloor;
-      }
-
-      setTimeout(() => {
-        // Prefer WebRTC for nextFloor event
-        const nextFloorPacket = { partyId: party.partyId };
-        party._autoProgressTimestamp = Date.now();
-        broadcastToParty(partyId, 'nextFloor', nextFloorPacket);
-      }, 1000);
-
-      Array.from(party.players.values()).forEach((p) => void saveCharacter(p.name, p));
-      startSpawnTimer(partyId, party);
-      return;
-    }
-
-    const agiFillRate = 4.8;
-    const combatants = [...livePlayersList, ...liveEnemiesList];
-
-    combatants.forEach((combatant) => {
-      if (combatant.hp > 0) {
-        const weaponRef = combatant.equipment?.weapon;
-        const resolvedWeapon = weaponRef?.id
-          ? itemGenerator.resolveItem('weapon', weaponRef.id, weaponRef.level || 1, weaponRef.rarity || 1)
-          : null;
-        const weaponAspd = resolvedWeapon?.attackSpeed ?? 1.0;
-        let fillAmount =
-          (0.7 + agiFillRate * weaponAspd) *
-          (1.1 +
-            combatant.agi / 244 +
-            weaponAspd / 20 +
-            (combatant.equipment?.shoes?.defense || combatant.shoes || 3) / 122);
-        combatant.actionBar = Math.min(combatant.maxActionBar, combatant.actionBar + fillAmount);
-
-        if (combatant.actionBar >= combatant.maxActionBar) {
-          // Spell casting is handled by a separate ~100ms timer (see startActionBarSystem).
-          // The action bar now drives weapon attacks exclusively.
-          performActionBarAttack(combatant, partyId, party);
-          combatant.actionBar -= combatant.maxActionBar;
-        }
-      }
-    });
-  }, 50); // Every 50ms
-
-  actionIntervals.set(partyId, interval);
-}
-
-// Helper functions for performActionBarAttack
-function selectTarget(actor, livePlayers, liveEnemies) {
-  if (actor.isEnemy) {
-    const targetChoice = Math.round(Math.random() * 17);
-    if (targetChoice < 15) {
-      const maxPlayerHp = Math.max(...livePlayers.map((p) => p.maxHp), 1);
-      return livePlayers.sort((b, a) => {
-        const scoreA = 0.5 * a.hp + 0.5 * (a.hp / a.maxHp) * maxPlayerHp;
-        const scoreB = 0.5 * b.hp + 0.5 * (b.hp / b.maxHp) * maxPlayerHp;
-        return scoreA - scoreB;
-      })[0];
-    }
-    return livePlayers.sort((a, b) => Math.random() * a.hp - Math.random() * b.hp)[0];
-  }
-  return liveEnemies.sort((a, b) => a.hp - b.hp)[0];
-}
-
-function calculateAttackMods(actor) {
-  const activeWeapon = characters.getActiveWeapon(actor);
-  const weaponClass = characters.getActiveWeaponClass(actor);
-  const effectiveWeapon = activeWeapon?.damage || activeWeapon?.level || 0;
-  const damageMod = 0.1 + effectiveWeapon * 0.7 + effectiveWeapon * (1.3 + Math.random() / 3);
-
-  let accuracyMod = 2;
-  const classWeights = {
-    melee: { primary: 'dex', secondary: 'agi', pWeight: 0.8, sWeight: 0.2 },
-    ranged: { primary: 'dex', secondary: 'cnc', pWeight: 0.8, sWeight: 0.2 },
-    magic: { primary: 'cnc', secondary: 'dex', pWeight: 0.8, sWeight: 0.2 },
-  };
-  const weights = classWeights[weaponClass] || classWeights.melee;
-  const primary = characters.getEffectiveAttribute(actor, weights.primary);
-  const secondary = characters.getEffectiveAttribute(actor, weights.secondary);
-  accuracyMod += primary * weights.pWeight + secondary * weights.sWeight;
-
-  return { accuracyMod, damageMod, weaponClass };
-}
-
-function calculateRoll(actor, target, accuracyMod, party, partyId) {
-  const luk = characters.getEffectiveAttribute(actor, 'luk');
-  let roll = Math.floor(
-    Math.random() * (80 + accuracyMod / 2 + luk * 2) + 1 + accuracyMod / 6 + luk * Math.random() * 0.3,
-  );
-  roll = roll * (0.2 + Math.random() * 3);
-  roll -= Math.floor(target.agi / 9 + target.agi * Math.random() * 1.4);
-  roll = roll > 70 ? Math.round(Math.pow(roll, 0.9)) : Math.round(roll);
-  return roll || 0;
-}
-
-function calculateDamage(actor, damageMod, roll) {
-  const weaponClass = characters.getActiveWeaponClass(actor);
-  const activeWeapon = characters.getActiveWeapon(actor);
-  const resolvedWeapon = activeWeapon?.id
-    ? itemGenerator.resolveItem('weapon', activeWeapon.id, activeWeapon.level || 1, activeWeapon.rarity || 1)
-    : null;
-  const effectiveDamage = resolvedWeapon?.damage || 3;
-  const damMod = damageMod / 1.1 + effectiveDamage / 1.1;
-  let damage = Math.random() * (0.5 + damageMod * 0.3) + damMod * 1.16 + damageMod * 1.16;
-  const weaponData = catalog.weapon.find((w) => w.id === activeWeapon?.id) || activeWeapon;
-  damage *= characters.getAttributeDamageModifier(actor, weaponData);
-  if (actor.isEnemy) damage *= ENEMY_DAMAGE_MULTIPLIER;
-  return damage;
-}
-
-function updateCombatStats(actor, party, hit, crit, damage, roll) {
-  if (actor.isEnemy) return;
-
-  if (!party.combatStats.has(actor.id)) {
-    party.combatStats.set(actor.id, utils.createEmptyCombatStats());
-  }
-
-  const stats = party.combatStats.get(actor.id);
-  stats.attacks++;
-  if (hit) {
-    stats.hits++;
-    stats.totalDamage += damage;
-    stats.rollSum += roll;
-    stats.maxDamage = Math.max(stats.maxDamage, damage);
-    if (crit) stats.crits++;
-  }
-}
-
-function updateIncomingCombatStats(target, party, rawDamage, mitigated) {
-  if (target.isEnemy) return;
-  if (!party.combatStats.has(target.id)) {
-    party.combatStats.set(target.id, utils.createEmptyCombatStats());
-  }
-  const stats = party.combatStats.get(target.id);
-  stats.totalDamageTaken += rawDamage;
-  stats.totalMitigated += mitigated;
-  stats.maxDamageTaken = Math.max(stats.maxDamageTaken, rawDamage);
-}
-
-function handlePlayerDeath(partyId, party, player) {
-  player.equipment = {};
-  player.inventory = utils.safeArray(player.inventory);
-
-  // Recalculate derived stats without gear bonuses
-  characters.calcMiscStats(player);
-  utils.recalcDerivedMaxAndClampCurrents(player);
-
-  // Restore minimal HP so the saved character isn't permanently dead on rejoin
-  player.hp = Math.max(1, Math.floor(player.maxHp * 0.1));
-  player.actionBar = 0;
-
-  // Save character state after permanent gear loss
-  void saveCharacter(player.name, player);
-
-  // Remove from current party
-  party.players.delete(player.id);
-
-  // Disconnect the socket
-  io.sockets.sockets.get(player.id)?.disconnect();
-}
-
-function applyDamage(target, damage, partyId, party) {
-  // Vulnerability debuff: target takes increased incoming damage
-  const vulnerability = buffEngine.sumEffectAmount(target.effects, 'vulnerability', 2.0);
-  if (vulnerability > 0) {
-    damage = damage * (1 + vulnerability);
-  }
-
-  // Correct AP absorption logic: AP absorbs its full value before HP takes damage
-  const apDamage = Math.min(damage * 0.5, target.ap);
-  target.ap -= apDamage;
-  const remainingDamage = damage - apDamage;
-
-  if (remainingDamage > 0) {
-    target.hp -= remainingDamage;
-  }
-
-  // The consolidated emitter sends HP/MP/AP immediately on the critical
-  // cadence, so no separate queue call is needed here.
-
-  if (target.hp <= 0 && !target.isEnemy) {
-    handlePlayerDeath(partyId, party, target);
-    const deathMsg = `${target.name} has fallen and lost their gear! 💥`;
-    // Send death event as critical update - prefer WebRTC
-    const deathPacket = {
-      type: 'death',
-      playerId: target.id,
-      playerName: target.name,
-      message: deathMsg,
-    };
-    broadcastToParty(partyId, 'combatEvent', deathPacket);
-    // Also send event log via WebRTC
-    broadcastToParty(partyId, 'eventLog', { message: deathMsg, type: 'death' });
-  }
-}
-
-// Perform action bar attack
-function performActionBarAttack(actor, partyId, party) {
-  const target = selectTarget(actor, livePlayers(party), liveEnemies(party));
-  if (!target) return;
-
-  const { accuracyMod, damageMod } = calculateAttackMods(actor);
-  const result = resolveAttackHit(actor, target, accuracyMod, damageMod, party, partyId);
-
-  if (target.isEnemy && target.hp <= 0) awardXP(partyId, party);
-
-  if (result.hit && actor.equipment.weapon?.twoHanded && Math.random() < 0.5) {
-    const liveEnemiesList = liveEnemies(party).filter((e) => e.hp > 0 && e !== target);
-    if (liveEnemiesList.length) {
-      const extraTarget = liveEnemiesList[Math.floor(Math.random() * liveEnemiesList.length)];
-      resolveAttackHit(actor, extraTarget, accuracyMod, damageMod, party, partyId);
-    }
-  }
-}
-
-function resolveAttackHit(actor, target, accuracyMod, damageMod, party, partyId) {
-  let roll = calculateRoll(actor, target, accuracyMod, party, partyId);
-  const hit = roll > 0;
-  const crit = roll > 99;
-
-  if (!hit) {
-    broadcastCriticalUpdate(partyId, party, {
-      actor: { ...actor },
-      target: { ...target, isEnemy: target.isEnemy || false },
-      hit: false,
-      crit: false,
-      damage: 0,
-      roll,
-    });
-    return { hit, crit, damage: 0, roll };
-  }
-
-  roll += Math.round(0.5 * actor.luk + Math.random() * actor.luk * 1.2);
-  let damage = calculateDamage(actor, damageMod, roll);
-
-  const weaken = buffEngine.sumEffectAmount(actor.effects, 'weaken', 0.9);
-  if (weaken > 0) damage = damage * (1 - weaken);
-  const rawDamage = damage;
-
-  const offHandDef = target.equipment?.offHand?.defense || target.offHand || 0;
-  const defenseDown = buffEngine.sumEffectAmount(target.effects, 'defenseDown', 0.9);
-  const mitigationTerm =
-    (0.6 * (1.75 + Math.random()) * (target.equipment?.helmet?.defense || target.helmet || 1) +
-      0.6 * (1.75 + Math.random()) * (target.equipment?.chest?.defense || target.chest || 1) +
-      0.6 * (1.75 + Math.random()) * (target.equipment?.shoes?.defense || target.shoes || 1) +
-      0.6 * (1.75 + Math.random()) * offHandDef +
-      0.05 * (1.75 + Math.random()) * target.vit) / 6;
-  const defenseUp = buffEngine.sumEffectAmount(target.effects, 'defenseUp', 0.5);
-  const effectiveMitigation = (defenseDown > 0 ? mitigationTerm * (1 - defenseDown) : mitigationTerm) + defenseUp;
-  const cappedMitigation = Math.min(effectiveMitigation, rawDamage * 0.75);
-  damage = Math.max(0, Math.round(damage - cappedMitigation / 5) / 0.999 + mitigationTerm / 120);
-  const mitigated = Math.max(0, rawDamage - damage + 0.1);
-
-  updateCombatStats(actor, party, true, crit, damage, roll);
-  applyDamage(target, damage, partyId, party);
-  if (!target.isEnemy) {
-    updateIncomingCombatStats(target, party, rawDamage, mitigated);
-  }
-
-  const weaponSkillId = skillEngine.getWeaponSkillId(characters.getActiveWeapon(actor));
-  if (!actor.isEnemy && actor.skillsState) {
-    const xpAmount = Math.max(1, Math.round(damage / 32));
-    if (actor.equipment.weapon?.twoHanded) {
-      actor.skillsState = skillEngine.awardSkillXp(
-        actor.skillsState,
-        weaponSkillId,
-        Math.floor(xpAmount / 2),
-      );
-      actor.skillsState = skillEngine.awardSkillXp(
-        actor.skillsState,
-        'skill_twoHanded',
-        Math.ceil(xpAmount / 2),
-      );
-    } else {
-      actor.skillsState = skillEngine.awardSkillXp(
-        actor.skillsState,
-        weaponSkillId,
-        xpAmount,
-      );
-    }
-  }
-
-  if (!target.isEnemy && target.skillsState && mitigated > 0) {
-    target.skillsState = skillEngine.awardArmorProficiencyXp(target.skillsState, mitigated / 3, target);
-  }
-
-  broadcastCriticalUpdate(partyId, party, {
-    actor: { ...actor },
-    target: { ...target, isEnemy: target.isEnemy || false },
-    hit,
-    crit,
-    damage,
-    roll,
-  });
-
-  return { hit, crit, damage, roll };
-}
-
-// Award XP to players
-function awardXP(partyId, party) {
-  const deadEnemies = party.enemies.filter((e) => e.hp <= 0);
-  party.enemies = party.enemies.filter((e) => e.hp > 0);
-
-  const livePlayers = Array.from(party.players.values()).filter((p) => p.hp > 0);
-  let leveledUpPlayers = [];
-
-  deadEnemies.forEach((enemy) => {
-    if (livePlayers.length > 0) {
-      const xpShare = enemy.xpValue / livePlayers.length;
-      livePlayers.forEach((player) => {
-        player.xp += xpShare;
-
-        let goldShare = enemy.gold / (0.2 + livePlayers.length / 0.8);
-        player.gold += goldShare;
-        // Prevent infinite loop if xpToNext is 0 or invalid
-        if (player.xpToNext <= 0) player.xpToNext = 128;
-        while (player.xp >= player.xpToNext) {
-          player.xp -= player.xpToNext;
-          player.level++;
-          player.xpToNext = Math.floor((player.xpToNext + 16) * 1.08);
-          player.pointsToAllocate += Math.floor(3);
-
-          // 🩸 Level-up HP gain scales with vitality
-          const newMaxHp = characters.calcMaxHp(player);
-          const hpDiff = newMaxHp - player.maxHp;
-          player.maxHp = newMaxHp;
-          player.hp = Math.min(player.maxHp, player.hp + hpDiff);
-
-          const newMaxMp = characters.calcMaxMp(player);
-          const mpDiff = newMaxMp - player.maxMp;
-          player.maxMp = newMaxMp;
-          player.mp = Math.min(player.maxMp, player.mp + mpDiff);
-
-          // Recalculate max AP on level up
-          const newMaxAp = characters.calcMaxAp(player);
-          const apDiff = newMaxAp - player.maxAp;
-          player.maxAp = newMaxAp;
-          player.ap = Math.min(player.maxAp, player.ap + apDiff);
-
-          // Track leveled up players for critical update
-          leveledUpPlayers.push({
-            id: player.id,
-            name: player.name,
-            level: player.level,
-            hp: player.hp,
-            maxHp: player.maxHp,
-            maxMp: player.maxMp,
-            maxAp: player.maxAp,
-          });
-
-          // Send level up event via WebRTC preferred
-          const levelUpPacket = {
-            message: player.name + ' advanced to level ' + player.level + '!',
-            type: 'success',
-          };
-          broadcastToParty(partyId, 'eventLog', levelUpPacket);
-        }
-        characters.calcMiscStats(player);
-        void saveCharacter(player.name, player);
-      });
-    }
-  });
-
-  // OPTIMIZATION: Send targeted critical update for leveled up players instead of full state
-  if (leveledUpPlayers.length > 0) {
-    broadcastCriticalUpdate(partyId, party, {
-      actor: null,
-      target: null,
-      leveledUp: leveledUpPlayers,
-    });
-  }
-
-  // Prefer WebRTC for full state after XP award
-  broadcastFullState(partyId, party);
-}
-
-const actionIntervals = new Map();
-const spellCastIntervals = new Map();
-
-// Debug function: Poll server stats every 30 seconds
+// Debug function: Poll server stats every 30 seconds// Debug function: Poll server stats every 30 seconds
 setInterval(() => {
   const mem = process.memoryUsage();
   console.log('[Server Stats]', { connectedClients: io.sockets.sockets.size, totalParties: parties.size, memory: { rss: Math.round(mem.rss / 1024 / 1024), heapUsed: Math.round(mem.heapUsed / 1024 / 1024), heapTotal: Math.round(mem.heapTotal / 1024 / 1024) }, uptime: Math.round(process.uptime()), actionIntervals: actionIntervals.size, spawnTimers: spawnTimers.size, parties: Array.from(parties.values()).map((p) => ({ partyId: p.partyId, players: p.players.size, floor: p.floor, combatActive: p.combatActive })) });
@@ -2009,55 +1203,10 @@ setInterval(
   5 * 60 * 1000,
 );
 
-// ═══════════════════════════════════════════════════════════════════
-// UNIFIED REGENERATION SYSTEM - Consolidates HP/MP/AP regen + Saint system
-// ═══════════════════════════════════════════════════════════════════
-function startRegenSystem() {
-  setInterval(() => {
-    for (const [partyId, party] of parties) {
-      const inCombat = party.combatActive,
-        live = livePlayers(party);
-      if (live.length === 0) continue;
-
-      if (party.floor === 0) live.forEach((p) => (p.ap = Math.min(p.maxAp, p.ap + 5)));
-
-      live.forEach((p) => {
-        // HP Regen (effective attributes include equipment bonuses)
-        let hpRegen =
-          (inCombat ? 0.09 : 0.18) +
-          characters.getEffectiveAttribute(p, 'vit') / 366 +
-          characters.getEffectiveAttribute(p, 'str') / 444 +
-          characters.getEffectiveAttribute(p, 'for') / 677;
-        p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 1.8 : 3.5));
-
-        // MP Regen (effective attributes include equipment bonuses)
-        let mpRegen =
-          (inCombat ? 0.08 : 0.22) +
-          characters.getEffectiveAttribute(p, 'int') / 422 +
-          characters.getEffectiveAttribute(p, 'cnc') / 311 +
-          characters.getEffectiveAttribute(p, 'wis') / 677;
-        p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 2.1 : 3.4));
-
-        // AP Regen (effective attributes include equipment bonuses)
-        let apRegen =
-          (inCombat ? 0.01 : 0.26) +
-          characters.getEffectiveAttribute(p, 'int') / 422 +
-          characters.getEffectiveAttribute(p, 'cnc') / 311 +
-          characters.getEffectiveAttribute(p, 'wis') / 677;
-        p.ap = Math.min(p.maxAp, p.ap + apRegen * (inCombat ? 0.01 : 2.1));
-
-        // HP/MP changes are emitted by the consolidated delta broadcaster
-        // on the critical cadence (≤200ms), so no extra queueing here.
-      });
-    }
-  }, 100);
-}
-
 function startBroadcastSystem() {
   const interval = setInterval(() => {
     const now = Date.now();
     const isCombat = (party) => party.combatActive;
-    const isTown = (party) => party.floor === 0;
 
     for (const [partyId, party] of parties.entries()) {
       // No live players in this party: nothing to broadcast.
@@ -2078,7 +1227,7 @@ function startBroadcastSystem() {
 
       // Update max action bar during combat (derived from live player count).
       if (isCombat(party)) {
-        const live = livePlayers(party);
+        const live = combat.livePlayers(party);
         for (const p of live) p.maxActionBar = 105 + live.length;
       }
 
@@ -2199,7 +1348,7 @@ function embarkParty(partyId, party, dungeon) {
 
   generateEnemies(party);
   party.combatActive = true;
-  startActionBarSystem(partyId, party);
+  combat.startActionBarSystem(partyId, party);
 
   const embarkPacket = {
     partyId,
@@ -2342,38 +1491,17 @@ io.on('connection', (socket) => {
   });
 });
 
-// 🩸 Start global regeneration and broadcast system
-const regenIntervalId = startRegenSystem();
-const broadcastIntervalId = startBroadcastSystem();
-
-// Initialize DoT system
-function initDotSystem() {
-  const EFFECT_FIELDS = ['effects'];
-  const hasActiveEffects = (party) => {
-    const combatants = [...party.players.values(), ...(party.enemies || [])];
-    return combatants.some((c) => EFFECT_FIELDS.some((f) => Array.isArray(c[f]) && c[f].length > 0));
-  };
-  // Process all effects every 1000ms for all parties
-  const dotInterval = setInterval(() => {
-    for (const [partyId, party] of parties.entries()) {
-      const active = hasActiveEffects(party);
-      buffEngine.processEffects(party);
-      if (active) {
-        broadcastCriticalUpdate(partyId, party);
-      }
-    }
-  }, 1000);
-  return dotInterval;
-}
+combat.startRegenSystem();
+startBroadcastSystem();
 
 // Start DoT system
-const dotIntervalId = initDotSystem();
+combat.initDotSystem();
 
 server.listen(25561, async () => {
   try {
     abilities = await loadAbilities();
     skillEngine.initSkillEngine(abilities);
-    console.log('[INIT] Loaded ' + abilities.length + ' abilities and initialized skill engine');
+    console.log(`[INIT] Loaded ${abilities.length} abilities and initialized skill engine`);
   } catch (err) {
     console.error('[INIT] Failed to initialize abilities/skill engine:', err);
   }

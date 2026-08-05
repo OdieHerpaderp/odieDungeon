@@ -69,9 +69,9 @@ function estimateDamageModifier(item) {
 
 function weaponBonusWeight(stat, item) {
   const type = item?.type || "melee";
-  if (type === "magic" && (stat === "INT" || stat === "CNC")) return 1.5;
-  if (type === "ranged" && stat === "DEX") return 1.5;
-  if (type === "melee" && stat === "STR") return 1.5;
+  if (type === "magic" && (stat === "INT" || stat === "CNC")) return 1.3;
+  if (type === "ranged" && stat === "DEX") return 1.3;
+  if (type === "melee" && stat === "STR") return 1.3;
   if (stat === "HP") return 0.7;
   if (stat === "VIT") return 1.2;
   return 1.0;
@@ -87,9 +87,8 @@ function scoreWeapon(item) {
 function normalize(score, minScore, maxScore) {
   const span = maxScore - minScore;
   if (span === 0) return 30;
-  const raw = 20 + ((score - minScore) / span) * 20;
-  const rounded = Math.round(raw);
-  return Math.round(rounded * 2) / 2;
+  const raw = 15 + ((score - minScore) / span) * 30;
+  return Math.round(raw);
 }
 
 function pad(s, n) {

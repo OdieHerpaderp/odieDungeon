@@ -16,7 +16,7 @@
       "STR": 0.4
     },
     "range": 1,
-    "value": 25,
+    "value": 24,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -45,8 +45,8 @@
     "type": "melee",
     "subType": "polearms",
     "twoHanded": true,
-    "damage": 15,
-    "spellPower": 1,
+    "damage": 16,
+    "spellPower": 2,
     "attackSpeed": 0.9,
     "bonuses": {
       "DEX": 9,
@@ -57,7 +57,7 @@
       "DEX": 0.4
     },
     "range": 1,
-    "value": 32,
+    "value": 36,
     "description": "A heavy slow polearm — high damage output over time."
   },
   {
@@ -66,8 +66,8 @@
     "type": "melee",
     "subType": "polearms",
     "twoHanded": true,
-    "damage": 15,
-    "spellPower": 1,
+    "damage": 17,
+    "spellPower": 2,
     "attackSpeed": 0.9,
     "bonuses": {
       "DEX": 6,
@@ -78,7 +78,28 @@
       "STR": 0.7
     },
     "range": 1,
-    "value": 35,
+    "value": 41,
+    "description": "A small and fast melee weapon for quick strikes."
+  },
+  {
+    "id": "bardiche",
+    "name": "Bardiche",
+    "type": "melee",
+    "subType": "polearms",
+    "twoHanded": true,
+    "damage": 18,
+    "spellPower": 2,
+    "attackSpeed": 0.9,
+    "bonuses": {
+      "DEX": 7,
+      "STR": 12
+    },
+    "damageModifiers": {
+      "DEX": 0.3,
+      "STR": 0.7
+    },
+    "range": 1,
+    "value": 44,
     "description": "A small and fast melee weapon for quick strikes."
   }
 ]

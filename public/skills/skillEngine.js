@@ -1,4 +1,4 @@
-import { calcSkillLv, calcXpForLevel, calcXpForNextLevel, getEffectiveAttribute, attributeScaling } from '../../utils.js';
+import { calcSkillLv, calcXpForLevel, calcXpForNextLevel, attributeScaling } from '../../utils.js';
 import * as itemGenerator from '../gear/itemGenerator.js';
 
 const catalog = itemGenerator.getCatalog();
@@ -124,7 +124,7 @@ export function awardArmorProficiencyXp(skillsState, mitigatedAmount, player) {
 
   let nextState = skillsState;
   for (const [type, count] of Object.entries(typeCounts)) {
-    const share = Math.round((mitigatedAmount * count) / total);
+    const share = (mitigatedAmount * count) / total;
     if (share > 0) {
       nextState = awardSkillXp(nextState, ARMOR_TYPE_TO_SKILL[type], share);
     }
@@ -205,25 +205,12 @@ export function applyAbilityCast(player, ability, now) {
 
 export const calculateAttributeScaling = attributeScaling;
 
-// New function to calculate healing based on skill level
 export function calculateHealAmount(ability, player) {
   if (!ability || !player) return 0;
-
-  let healAmount = ability.healAmount || 0;
   const skillLevel = getSkillLevel(player.skillsState, ability.skillId);
-  const skillMultiplier = 1 + skillLevel * 0.03;
-
-  if (!ability.castUsesWeaponDamageModel) {
-    const weapon = getEquippedItem(player, 'weapon');
-    const resolvedWeapon = weapon?.id
-      ? itemGenerator.resolveItem('weapon', weapon.id, weapon.level || 1, weapon.rarity || 1)
-      : null;
-    healAmount += resolvedWeapon?.spellPower || 0;
-  }
-
-  const attributeMultiplier = calculateAttributeScaling(player, ability.attributeDamageScale);
-
-  return Math.floor((healAmount + attributeMultiplier / 3) * skillMultiplier * attributeMultiplier);
+  const healBase = ability.healAmount || 0;
+  const attrBonus = calculateAttributeScaling(player, ability.attributeDamageScale);
+  return (healBase + attrBonus) * (90 + skillLevel) / 50;
 }
 
 // New function to award XP for healing actions
@@ -232,33 +219,9 @@ export function awardHealXp(skillsState, amountHealed, skillId) {
   return awardSkillXp(skillsState, skillId, healingXp);
 }
 
-// New function to calculate damage scaling for multi-target attacks
-export function calculateDamageScalingForMultipleTargets(baseDamage, numTargets, abilityType = 'damage', player) {
+export function calculateDamageScalingForMultipleTargets(baseDamage, numTargets) {
   if (numTargets <= 1) return baseDamage;
-  const weapon = getEquippedItem(player, 'weapon');
-  const fullWeapon = weapon?.id ? catalog.weapon.find((w) => w.id === weapon.id) : null;
-  const damageModifiers = fullWeapon?.damageModifiers || {};
-  const entries = Object.entries(damageModifiers);
-  if (entries.length === 0) return baseDamage;
-
-  let sum = 0;
-  for (const [stat, weight] of entries) {
-    if (typeof weight !== 'number') continue;
-    sum += getEffectiveAttribute(player, stat) * weight;
-  }
-
-  const attributeMultiplier = 1 + sum * 0.03;
-  const scaled = baseDamage * attributeMultiplier;
-
-  switch (abilityType) {
-    case 'aoe':
-      return scaled * Math.pow(0.85, numTargets - 1);
-    case 'cone':
-      return scaled * Math.pow(0.9, numTargets - 1);
-    case 'damage':
-    default:
-      return scaled * Math.pow(0.75, numTargets - 1);
-  }
+  return baseDamage / (1 + numTargets / 2);
 }
 
 // New function to get targets for an ability based on its properties

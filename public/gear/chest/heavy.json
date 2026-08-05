@@ -14,7 +14,7 @@
       "CNC": -1
     },
     "range": 1,
-    "value": 40,
+    "value": 45,
     "description": "Heavy protective armor made of metal plates."
   },
   {
@@ -32,7 +32,7 @@
       "CNC": -0.5
     },
     "range": 1,
-    "value": 38,
+    "value": 43,
     "description": "Heavy armor forged from iron plates, balancing weight and protection."
   },
   {
@@ -49,7 +49,7 @@
       "AGI": -0.3
     },
     "range": 1,
-    "value": 35,
+    "value": 37,
     "description": "Heavy cuirass etched with calibration runes, turning endurance into unyielding resilience and arcane discipline."
   }
 ]

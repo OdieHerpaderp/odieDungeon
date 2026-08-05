@@ -14,7 +14,7 @@
       "CNC": -0.5
     },
     "range": 1,
-    "value": 28,
+    "value": 27,
     "description": "Heavy greaves crafted from solid iron for unwavering defense."
   },
   {
@@ -31,7 +31,7 @@
       "AGI": -0.3
     },
     "range": 1,
-    "value": 26,
+    "value": 24,
     "description": "Heavy greaves inscribed with sustaining runes, steadying the body and replenishing arcane reserves."
   },
   {
@@ -49,7 +49,7 @@
       "CNC": -1
     },
     "range": 1,
-    "value": 32,
+    "value": 34,
     "description": "Heavy greaves forged from solid metal plates."
   }
 ]

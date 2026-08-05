@@ -4,9 +4,9 @@
     "name": "Magic Rune",
     "type": "magic",
     "subType": "runes",
-    "damage": 9,
-    "spellPower": 4,
-    "attackSpeed": 0.9,
+    "damage": 7,
+    "spellPower": 6,
+    "attackSpeed": 0.7,
     "bonuses": {
       "CNC": 4,
       "INT": 4
@@ -16,7 +16,27 @@
       "INT": 0.5
     },
     "range": 16,
-    "value": 26,
+    "value": 21,
     "description": "A powerful magic rod that casts spells with high damage."
+  },
+  {
+    "id": "etchedRune",
+    "name": "Etched Rune",
+    "type": "magic",
+    "subType": "runes",
+    "damage": 8,
+    "spellPower": 7,
+    "attackSpeed": 0.7,
+    "bonuses": {
+      "CNC": 7,
+      "INT": 7
+    },
+    "damageModifiers": {
+      "CNC": 0.5,
+      "INT": 0.5
+    },
+    "range": 16,
+    "value": 25,
+    "description": "A rune inscribed with precise magical circuits, channeling raw arcane energy."
   }
 ]

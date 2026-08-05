@@ -77,8 +77,8 @@ function clamp(value, min, max) {
 
 export function calculateItemStat(baseValue, level, rarity) {
   if (typeof baseValue !== 'number') return baseValue;
-  const levelMultiplier = 0.6 + level / 17;
-  const rarityMultiplier = 0.6 + rarity / 10;
+  const levelMultiplier = 0.6 + level / 13;
+  const rarityMultiplier = 0.6 + rarity / 8;
   return Math.round(baseValue * levelMultiplier * rarityMultiplier * 100) / 100;
 }
 
@@ -86,14 +86,14 @@ export function calculateItemTier(item) {
   if (!item) return null;
   const level = Number.isFinite(item.level) ? item.level : 1;
   const rarity = Number.isFinite(item.rarity) ? item.rarity : 1;
-  return (calculateItemStat(51.1, level, rarity) - 21.1) / 2.5;
+  return (calculateItemStat(51.1, level, rarity) - 22.1) / 3;
 }
 
 export function calculateItemPrice(baseValue, level, rarity) {
   if (typeof baseValue !== 'number') return baseValue;
-  const levelMult = Math.pow(0.7 + level * 0.9, 1.3);
-  const rarityMult = Math.pow(0.7 + rarity * 1.5, 1.5);
-  return Math.round(Math.pow(baseValue * (0.8 + levelMult / 11) * (0.8 + rarityMult / 8) * 1.8, 1.25)) / 10;
+  const levelMult = Math.pow(0.8 + level * 0.9, 1.2);
+  const rarityMult = Math.pow(0.8 + rarity * 1.6, 1.3);
+  return Math.round(Math.pow(baseValue * (0.9 + levelMult / 11) * (0.9 + rarityMult / 7) * 1.8, 1.25)) / 10;
 }
 
 function calculateBonuses(baseBonuses, level, rarity) {
@@ -174,7 +174,7 @@ export function calculateItemStats(item) {
   const baseBonuses = item.baseBonuses != null ? item.baseBonuses : baseItem.bonuses;
 
   if (typeof baseDamage === 'number')
-    calculatedItem.damage = calculateItemStat(baseDamage, item.level, item.rarity);
+    calculatedItem.damage = 1 + calculateItemStat(3 + baseDamage, item.level, item.rarity);
   if (typeof baseSpellPower === 'number')
     calculatedItem.spellPower = calculateItemStat(baseSpellPower, item.level, item.rarity);
   if (typeof baseAttackSpeed === 'number') calculatedItem.attackSpeed = baseAttackSpeed;
@@ -202,15 +202,15 @@ export function generateScaledItem(dungeonData, categoryPool) {
   const category = categoryPool[Math.floor(Math.random() * categoryPool.length)];
   const itemCatalog = defaultCatalog[category];
   const baseItem = pickRandom(itemCatalog, (i) => 1 / (i.value + 1));
-  let itemLevel = 0.1 + Math.pow(0.1 + (baseLevel / 1.3 + floorAmount / 13) + Math.random() * (baseLevel * 3.6 + 1), 0.9) / 2;
-  let itemRarity = 0.3 + Math.pow(0.5 + Math.random() * (baseLevel * 2.5 + 6), 0.65) / 2.4;
+  let itemLevel = 0.2 + Math.pow(0.2 + (baseLevel / 1.6 + floorAmount / 13) + Math.random() * (baseLevel * 3.6 + 6), 0.88) / 1.9;
+  let itemRarity = 0.2 + Math.pow(0.6 + Math.random() * (baseLevel * 2.2 + 11), 0.46) / 2;
   itemRarity = Number(itemRarity.toFixed(1));
   const avgValue = itemCatalog.reduce((s, i) => s + (i.value || 1), 0) / itemCatalog.length;
   const bias = Math.sqrt((avgValue + 1) / (baseItem.value + 1));
   itemLevel /= bias;
   itemRarity /= bias;
   itemLevel = Math.max(1, Math.min(99, Math.round(itemLevel)));
-  itemRarity = Math.max(1, Math.min(6, Number(itemRarity.toFixed(1))));
+  itemRarity = Math.max(1, Math.min(7, Number(itemRarity.toFixed(1))));
   const generatedItem = generateRandomItem(category, { level: itemLevel, rarity: itemRarity }, itemCatalog, baseItem.id);
   const calculatedValue = calculateItemPrice(generatedItem.baseValue, generatedItem.level, generatedItem.rarity);
   generatedItem.price = Math.max(10, Number.isFinite(calculatedValue) ? calculatedValue : 10);

@@ -66,7 +66,7 @@ export function restockShopWithDungeonScaling(party, dungeon, dungeonData) {
   const categoryPool = ['weapon', 'chest', 'headgear', 'shoes', 'offHand'];
 
   for (const category of categoryPool) {
-    const count = 3 + Math.floor(Math.random() * 2); // 2-4 items
+    const count = 4 + Math.floor(Math.random() * 3); // 4-7 items
     for (let i = 0; i < count; i++) {
       // Pass a single-category pool so the generator's random pick always
       // resolves to this category.

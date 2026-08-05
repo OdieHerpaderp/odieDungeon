@@ -10,7 +10,7 @@
       "VIT": 2
     },
     "range": 1,
-    "value": 24,
+    "value": 20,
     "description": "Light protective armor made from animal hide."
   },
   {
@@ -25,7 +25,7 @@
       "AP": 11
     },
     "range": 1,
-    "value": 34,
+    "value": 35,
     "description": "A light robe woven for spellcasters, shielding the mind more than the body."
   },
   {
@@ -40,7 +40,7 @@
       "AP": 11
     },
     "range": 1,
-    "value": 34,
+    "value": 35,
     "description": "A light robe woven for devout casters, shielding the spirit more than the body."
   },
   {
@@ -54,7 +54,7 @@
       "DEX": 5
     },
     "range": 1,
-    "value": 27,
+    "value": 26,
     "description": "Light protective armor made from animal hide."
   },
   {
@@ -69,7 +69,7 @@
       "STR": 3
     },
     "range": 1,
-    "value": 29,
+    "value": 28,
     "description": "Light armor tailored for silent strikes and swift escapes."
   }
 ]

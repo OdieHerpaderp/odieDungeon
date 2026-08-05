@@ -11,7 +11,7 @@
       "AGI": 2
     },
     "range": 1,
-    "value": 25,
+    "value": 22,
     "description": "Medium boots of chitin that spring with every step."
   },
   {
@@ -26,7 +26,7 @@
       "VIT": 2
     },
     "range": 1,
-    "value": 27,
+    "value": 26,
     "description": "Medium boots reinforced with interlinked metal rings."
   },
   {
@@ -41,7 +41,7 @@
       "VIT": 2
     },
     "range": 1,
-    "value": 26,
+    "value": 24,
     "description": "Medium boots of overlapping metal scales that absorb hard impacts."
   },
   {
@@ -56,7 +56,7 @@
       "CNC": 3
     },
     "range": 1,
-    "value": 26,
+    "value": 24,
     "description": "Medium boots of textured wyrmhide that spring with every step yet shrug off heavy blows."
   },
   {
@@ -73,7 +73,7 @@
       "AGI": -0.5
     },
     "range": 1,
-    "value": 26,
+    "value": 24,
     "description": "Medium greaves inscribed with sustaining runes, steadying the body and replenishing arcane reserves."
   }
 ]

@@ -4,7 +4,7 @@
     "name": "Hand Wraps",
     "type": "melee",
     "subType": "pugilism",
-    "damage": 8,
+    "damage": 7,
     "spellPower": 1,
     "attackSpeed": 1.6,
     "bonuses": {
@@ -17,7 +17,7 @@
       "DEX": 0.3
     },
     "range": 1,
-    "value": 22,
+    "value": 16,
     "description": "Worn cloth wraps that protect the knuckles for brawling."
   },
   {
@@ -25,7 +25,7 @@
     "name": "Boxing Gloves",
     "type": "melee",
     "subType": "pugilism",
-    "damage": 9,
+    "damage": 8,
     "spellPower": 1,
     "attackSpeed": 1.7,
     "bonuses": {
@@ -38,7 +38,7 @@
       "DEX": 0.3
     },
     "range": 1,
-    "value": 25,
+    "value": 21,
     "description": "Padded gloves built for delivering powerful punches."
   },
   {
@@ -46,7 +46,7 @@
     "name": "Punch Dagger",
     "type": "melee",
     "subType": "pugilism",
-    "damage": 10,
+    "damage": 9,
     "spellPower": 1,
     "attackSpeed": 1.7,
     "bonuses": {
@@ -59,7 +59,7 @@
       "DEX": 0.3
     },
     "range": 1,
-    "value": 27,
+    "value": 25,
     "description": "Padded gloves built for delivering powerful punches."
   },
   {
@@ -67,7 +67,7 @@
     "name": "Brass Knuckles",
     "type": "melee",
     "subType": "pugilism",
-    "damage": 11,
+    "damage": 10,
     "spellPower": 1,
     "attackSpeed": 1.7,
     "bonuses": {
@@ -80,7 +80,7 @@
       "DEX": 0.3
     },
     "range": 1,
-    "value": 29,
+    "value": 28,
     "description": "Padded gloves built for delivering powerful punches."
   }
 ]

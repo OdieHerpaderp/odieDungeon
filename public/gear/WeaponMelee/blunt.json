@@ -15,7 +15,26 @@
       "STR": 1
     },
     "range": 1,
-    "value": 21,
+    "value": 16,
+    "description": "A basic sword for melee combat."
+  },
+  {
+    "id": "golfClub",
+    "name": "Golf Club",
+    "type": "melee",
+    "subType": "blunt",
+    "damage": 9,
+    "spellPower": 1,
+    "attackSpeed": 1.1,
+    "bonuses": {
+      "STR": 3,
+      "AGI": 3
+    },
+    "damageModifiers": {
+      "STR": 1
+    },
+    "range": 1,
+    "value": 19,
     "description": "A basic sword for melee combat."
   },
   {
@@ -34,7 +53,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 25,
+    "value": 24,
     "description": "A basic sword for melee combat."
   },
   {
@@ -72,8 +91,68 @@
       "STR": 1
     },
     "range": 1,
-    "value": 29,
+    "value": 30,
     "description": "A flail."
+  },
+  {
+    "id": "mace",
+    "name": "Mace",
+    "type": "melee",
+    "subType": "blunt",
+    "damage": 11,
+    "spellPower": 1,
+    "attackSpeed": 1.1,
+    "bonuses": {
+      "STR": 7,
+      "INT": 4
+    },
+    "damageModifiers": {
+      "STR": 0.9,
+      "INT": 0.1
+    },
+    "range": 1,
+    "value": 27,
+    "description": "A ceremonial staff."
+  },
+  {
+    "id": "sceptre",
+    "name": "Sceptre",
+    "type": "melee",
+    "subType": "blunt",
+    "damage": 12,
+    "spellPower": 1,
+    "attackSpeed": 1.1,
+    "bonuses": {
+      "STR": 8,
+      "INT": 4
+    },
+    "damageModifiers": {
+      "STR": 0.9,
+      "INT": 0.1
+    },
+    "range": 1,
+    "value": 29,
+    "description": "A ceremonial staff."
+  },
+  {
+    "id": "stopSign",
+    "name": "Stop Sign",
+    "type": "melee",
+    "subType": "blunt",
+    "twoHanded": true,
+    "damage": 16,
+    "spellPower": 2,
+    "attackSpeed": 0.9,
+    "bonuses": {
+      "STR": 9,
+      "VIT": 5
+    },
+    "damageModifiers": {
+      "STR": 1
+    },
+    "range": 1,
+    "value": 38,
+    "description": "For when you foe needs to yield."
   },
   {
     "id": "ironMaul",
@@ -81,18 +160,18 @@
     "type": "melee",
     "subType": "blunt",
     "twoHanded": true,
-    "damage": 15,
-    "spellPower": 1,
+    "damage": 17,
+    "spellPower": 2,
     "attackSpeed": 0.9,
     "bonuses": {
       "STR": 10,
-      "VIT": 7
+      "VIT": 6
     },
     "damageModifiers": {
       "STR": 1
     },
     "range": 1,
-    "value": 34,
+    "value": 41,
     "description": "A basic sword for melee combat."
   }
 ]

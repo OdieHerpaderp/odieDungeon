@@ -6,7 +6,7 @@
     "subType": "bow",
     "range": 18,
     "damage": 12,
-    "spellPower": 0,
+    "spellPower": 1,
     "attackSpeed": 1.3,
     "bonuses": {
       "CNC": 6,
@@ -16,7 +16,7 @@
       "CNC": 0.6,
       "DEX": 0.4
     },
-    "value": 26,
+    "value": 25,
     "description": "A short bow for quick shots at close range."
   },
   {
@@ -26,7 +26,7 @@
     "subType": "bow",
     "range": 24,
     "damage": 14,
-    "spellPower": 0,
+    "spellPower": 1,
     "attackSpeed": 1.1,
     "bonuses": {
       "CNC": 6,
@@ -36,7 +36,7 @@
       "CNC": 0.7,
       "DEX": 0.3
     },
-    "value": 27,
+    "value": 26,
     "description": "A balanced ranged weapon with moderate damage and good attack speed."
   },
   {
@@ -46,7 +46,27 @@
     "subType": "bow",
     "range": 28,
     "damage": 16,
-    "spellPower": 0,
+    "spellPower": 1,
+    "attackSpeed": 1,
+    "bonuses": {
+      "CNC": 7,
+      "STR": 6
+    },
+    "damageModifiers": {
+      "STR": 0.4,
+      "CNC": 0.6
+    },
+    "value": 27,
+    "description": "A long bow that fires arrows at great range."
+  },
+  {
+    "id": "compositeBow",
+    "name": "Composite Bow",
+    "type": "ranged",
+    "subType": "bow",
+    "range": 28,
+    "damage": 18,
+    "spellPower": 1,
     "attackSpeed": 1,
     "bonuses": {
       "CNC": 8,
@@ -56,7 +76,7 @@
       "STR": 0.4,
       "CNC": 0.6
     },
-    "value": 28,
+    "value": 31,
     "description": "A long bow that fires arrows at great range."
   }
 ]

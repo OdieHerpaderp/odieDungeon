@@ -1156,7 +1156,7 @@ function itemStatsInlineHtml(calculatedItem) {
   const span = (text, color) => `<span style="color:${color};">${text}</span>`;
   const parts = [];
   const dmg = [];
-  if (calculatedItem.damage) dmg.push(span(`DMG:${calculatedItem.damage}`, "#ff6b6b"));
+  if (calculatedItem.damage) dmg.push(span(`DMG:${Number(calculatedItem.damage).toFixed(2)}`, "#ff6b6b"));
   if (calculatedItem.spellPower) dmg.push(span(`SP:${calculatedItem.spellPower}`, "#4fc3f7"));
   if (dmg.length) parts.push(dmg.join(" "));
   const def = [];
@@ -1168,7 +1168,7 @@ function itemStatsInlineHtml(calculatedItem) {
     const mods = Object.entries(calculatedItem.damageModifiers)
       .map(([stat, weight]) => `${stat}x${Number(weight).toFixed(2)}`)
       .join(",");
-    parts.push(span(`MODS:${mods}`, "#ff6b6b"));
+    parts.push(span(`MODS:${mods}`, "#ee9b6b"));
   }
   if (calculatedItem.bonuses) {
     for (const [stat, value] of Object.entries(calculatedItem.bonuses)) {

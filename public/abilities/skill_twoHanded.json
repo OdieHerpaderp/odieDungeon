@@ -7,7 +7,7 @@
     "unlockSkillLevelMin": 2,
     "mpCostBase": 5,
     "cooldownMsBase": 2200,
-    "damageBase": 8,
+    "damageBase": 7,
     "targets": [1, 2, 0.5],
     "allowedWeaponClasses": ["melee"],
     "requiredWeaponSubTypes": [],
@@ -15,7 +15,7 @@
     "requiresTwoHandedWeapon": true,
     "castUsesWeaponDamageModel": true,
     "abilityType": "damage",
-    "attributeDamageScale": {"STR": 0.9, "VIT": 0.1, "DEX": 0.1}
+    "attributeDamageScale": {"STR": 0.7, "VIT": 0.1, "DEX": 0.1}
   },
   {
     "id": "twohanded_slam",
@@ -25,7 +25,7 @@
     "unlockSkillLevelMin": 5,
     "mpCostBase": 7,
     "cooldownMsBase": 2600,
-    "damageBase": 11,
+    "damageBase": 10,
     "targets": [1, 2, 0.5],
     "allowedWeaponClasses": ["melee"],
     "requiredWeaponSubTypes": [],
@@ -33,7 +33,7 @@
     "requiresTwoHandedWeapon": true,
     "castUsesWeaponDamageModel": true,
     "abilityType": "damage",
-    "attributeDamageScale": {"STR": 0.9, "VIT": 0.1},
+    "attributeDamageScale": {"STR": 0.7, "VIT": 0.1},
     "effects": [ { "type": "defenseDown", "amount": 0.15, "duration": 3 } ]
   },
   {
@@ -52,7 +52,7 @@
     "requiresTwoHandedWeapon": true,
     "castUsesWeaponDamageModel": true,
     "abilityType": "aoe",
-    "attributeDamageScale": {"STR": 0.8, "VIT": 0.2}
+    "attributeDamageScale": {"STR": 0.7, "VIT": 0.2}
   },
   {
     "id": "twohanded_earthquake",
@@ -62,7 +62,7 @@
     "unlockSkillLevelMin": 12,
     "mpCostBase": 12,
     "cooldownMsBase": 4200,
-    "damageBase": 18,
+    "damageBase": 15,
     "targets": [3, 5, 0.5],
     "allowedWeaponClasses": ["melee"],
     "requiredWeaponSubTypes": [],
@@ -70,6 +70,6 @@
     "requiresTwoHandedWeapon": true,
     "castUsesWeaponDamageModel": true,
     "abilityType": "aoe",
-    "attributeDamageScale": {"STR": 0.9, "VIT": 0.15, "DEX": 0.05}
+    "attributeDamageScale": {"STR": 0.7, "VIT": 0.15, "DEX": 0.05}
   }
 ]
