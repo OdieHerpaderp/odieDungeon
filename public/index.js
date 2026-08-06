@@ -89,8 +89,7 @@ function updateDungeonButtons() {
 
     buttonsHtml += `
       <button class="dungeon-btn floor-btn ${isCurrent ? "current-dungeon" : ""} ${!isUnlocked ? "locked-dungeon" : ""}" 
-        data-dungeon="${dungeonKey}" 
-        onclick="selectDungeon('${dungeonKey}')" 
+        data-action="selectDungeon" data-dungeon="${dungeonKey}" 
         ${!isUnlocked ? `title="Locked until you complete the previous dungeon"` : ""}
         ${!isUnlocked ? "disabled" : ""}
       >
@@ -444,7 +443,7 @@ let _prevShopKeys = {};
 function buildGearTabsHtml(prefix) {
   const active = prefix === "equip" ? _activeEquipCat : _activeShopCat;
   return `<div class="gear-tabs">${EQUIPMENT_CATEGORIES.map(
-    (c) => `<button class="gear-tab ${c.label === active ? "active" : ""}" onclick="selectGearTab('${prefix}', '${c.label}')">${c.icon} ${c.label}</button>`
+    (c) => `<button class="gear-tab ${c.label === active ? "active" : ""}" data-action="selectGearTab" data-prefix="${prefix}" data-label="${c.label}">${c.icon} ${c.label}</button>`
   ).join("")}</div>`;
 }
 
@@ -479,7 +478,7 @@ function buildGearCategoryBody(prefix, category, equippedRow, rows) {
 }
 
 export function unequipItem(slot) {
-  window.equipInventoryItem(null, slot);
+  equipInventoryItem(null, slot);
 };
 
 function generateFloorControlHtml() {
@@ -488,9 +487,9 @@ function generateFloorControlHtml() {
       <div class="floor-display" style="margin-bottom: 8px; padding: 4px; background: rgba(0,0,0,0.3); border-radius: 4px; text-align: center;">
         <div id="floorDisplayText" style="font-size: 15px; font-weight: bold; color: #ff8;">Floor 0 - Town</div>
       </div>
-      <button class="floor-btn btn-block" onclick="embarkDungeon()" id="embarkBtn" style="background: #aa6;">🚀 Embark</button>
-      <button class="floor-btn btn-block" onclick="toggleAutoEmbark()" id="autoEmbarkBtn" style="background: #55a;">🔁 Auto-Embark: OFF</button>
-      <button class="floor-btn btn-block" onclick="escapeDungeon()" id="escapeBtn" style="background: #a55;">🏃 Escape</button>
+      <button class="floor-btn btn-block" data-action="embarkDungeon" id="embarkBtn" style="background: #aa6;">🚀 Embark</button>
+      <button class="floor-btn btn-block" data-action="toggleAutoEmbark" id="autoEmbarkBtn" style="background: #55a;">🔁 Auto-Embark: OFF</button>
+      <button class="floor-btn btn-block" data-action="escapeDungeon" id="escapeBtn" style="background: #a55;">🏃 Escape</button>
       <div style="border-top: 1px solid #444; padding-top: 1px; margin-bottom: 1px;">
         <h4 class="panel-h4">Dungeons</h4>
         <div id="dungeonButtons">
@@ -716,8 +715,8 @@ const {
 const createWindowManagerFrame = () => {
   const row = (c) => `<div style="display:flex;align-items:center;gap:0px;margin:0px 0;font-size:11px;color:#fff;">
       <span style="flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="${c.title}">${c.title}</span>
-      <button id="wm-toggle-${c.name}" onclick="wmToggle('${c.name}')" style="font-size:11px;padding:1px 2px;"></button>
-      <button onclick="wmCenter('${c.name}')" title="Center" style="font-size:11px;padding:1px 2px;">⤢</button></div>`;
+      <button id="wm-toggle-${c.name}" data-action="wmToggle" data-frame="${c.name}" style="font-size:11px;padding:1px 2px;"></button>
+      <button data-action="wmCenter" data-frame="${c.name}" title="Center" style="font-size:11px;padding:1px 2px;">⤢</button></div>`;
   const wm = jsFrame
     .create({
       name: "WindowManager",
@@ -765,6 +764,29 @@ const createWindowManagerFrame = () => {
   sync();
 };
 createWindowManagerFrame();
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-action]");
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const d = btn.dataset;
+  switch (action) {
+    case "selectDungeon":       selectDungeon(d.dungeon); break;
+    case "selectGearTab":       selectGearTab(d.prefix, d.label); break;
+    case "unequipItem":         unequipItem(d.slot); break;
+    case "equipInventoryItem":  equipInventoryItem(d.itemId, d.slot); break;
+    case "sellInventoryItem":   sellInventoryItem(d.itemId); break;
+    case "buyGear":             buyGear(`shop_${d.shopIndex}`); break;
+    case "allocatePoints":      allocatePoints(d.stat, parseInt(d.points)); break;
+    case "deallocatePoints":     deallocatePoints(d.stat); break;
+    case "togglePlayerCard":    togglePlayerCard(btn); break;
+    case "embarkDungeon":       embarkDungeon(); break;
+    case "toggleAutoEmbark":    toggleAutoEmbark(); break;
+    case "escapeDungeon":       escapeDungeon(); break;
+    case "wmToggle":            wmToggle(d.frame); break;
+    case "wmCenter":            wmCenter(d.frame); break;
+  }
+});
 
 // Global variables for state
 currentState = {};
@@ -1064,8 +1086,8 @@ function logGearBonuses(player) {
   console.log(`[CLIENT] ${player?.name || "Unknown"} gear bonuses: [${withSign}]`);
 }
 
-function statBonusHtml(player, stat) {
-  const b = getEquipmentStatBonus(player, stat);
+function statBonusHtml(player, stat, gearCache) {
+  const b = gearCache ? (gearCache.bonuses?.[stat] ?? 0) : getEquipmentStatBonus(player, stat);
   const rounded = Math.round(b);
   const text = `${rounded >= 0 ? "+" : ""}${rounded}`;
   const sign = rounded >= 0 ? "positive" : "negative";
@@ -1233,7 +1255,7 @@ function equippedHeaderHtml(calculated, slot) {
         <div class="gear-card-l1"><b>Equipped</b> ${gearCardTitle(calculated, 1)}</div>
         <div class="gear-card-l2">${stats}</div>
       </div>
-      <div class="gear-card-side"><button class="gear-act-btn gear-act-unequip" onclick="unequipItem('${slot}')">Unequip</button></div>
+      <div class="gear-card-side"><button class="gear-act-btn gear-act-unequip" data-action="unequipItem" data-slot="${slot}">Unequip</button></div>
     </div>`;
 }
 
@@ -1301,8 +1323,8 @@ export function renderEquipmentPanel(player, force = false) {
       const calc = getCalculatedItem(rep, category.equippedKey);
       const sellPrice = getSellPrice(calc);
       const action =
-        `<button class="gear-act-btn gear-act-equip" onclick="equipInventoryItem('${rep.id}', '${category.equippedKey}')">Equip</button>` +
-        `<button class="gear-act-btn gear-act-sell" onclick="sellInventoryItem('${rep.id}')">Sell ${sellPrice}g</button>`;
+        `<button class="gear-act-btn gear-act-equip" data-action="equipInventoryItem" data-item-id="${rep.id}" data-slot="${category.equippedKey}">Equip</button>` +
+        `<button class="gear-act-btn gear-act-sell" data-action="sellInventoryItem" data-item-id="${rep.id}">Sell ${sellPrice}g</button>`;
       return itemRowCard(calc, group.length, "10px", "", action, "");
     });
     return buildGearCategoryBody("equip", category, header, rows);
@@ -1386,7 +1408,7 @@ export function renderShopStock(shopStock, force = false) {
       const { item, index } = group[0];
       const price = priceByKey.get(`${item.baseItem || item.id}|${item.level ?? 1}|${item.rarity ?? 1}`);
       const calc = itemGenerator.calculateItemStats(item) || item;
-      const action = `<button class="gear-act-btn gear-act-buy" onclick="buyGear('shop_${index}')">Buy</button>`;
+      const action = `<button class="gear-act-btn gear-act-buy" data-action="buyGear" data-shop-index="${index}">Buy</button>`;
       return itemRowCard(calc, group.length, "10px", `Price: ${price}g\n`, action, `${price}g`);
     });
     return buildGearCategoryBody("shop", category, "", rows);
@@ -1588,9 +1610,16 @@ function getGearDefense(player, slot) {
 
 function computePlayerGearStats(player) {
   const bonuses = {};
-  ["str", "dex", "agi", "vit", "int", "cnc", "wis", "luk", "for", "pie"].forEach((k) => {
-    bonuses[k] = getEquipmentStatBonus(player, k);
-  });
+  const equip = player?.equipment || {};
+  for (const [slot, ref] of Object.entries(equip)) {
+    if (!ref || !ref.id) continue;
+    const item = itemGenerator.resolveItem(slot, ref.id, ref.level, ref.rarity);
+    if (!item?.bonuses) continue;
+    for (const [stat, val] of Object.entries(item.bonuses)) {
+      const k = String(stat).toLowerCase();
+      bonuses[k] = (bonuses[k] || 0) + val;
+    }
+  }
   const totalDmg = getWeaponDamageForClass(player, "melee") + getWeaponDamageForClass(player, "ranged") + getWeaponDamageForClass(player, "magic");
   const totalArmour = getGearDefense(player, "chest") + getGearDefense(player, "helmet") + getGearDefense(player, "shoes");
   return { bonuses, totalDmg, totalArmour };
@@ -1611,9 +1640,20 @@ function renderEquippedHtml(player) {
   }).join("");
 }
 
+function computePlayerGearCache(player) {
+  const gearStats = computePlayerGearStats(player);
+  return {
+    bonuses: gearStats.bonuses,
+    totalDmg: gearStats.totalDmg,
+    totalArmour: gearStats.totalArmour,
+    avgTier: getAverageItemTier(player),
+    weaponEmoji: getWeaponEmoji(player.equipment?.weapon),
+  };
+}
+
 // Shared player-card template. The "own" card shows stat-allocation buttons and
 // uses the stats-owned style; party cards omit the buttons and use stats-party.
-function buildPlayerCard(player, { statsClass, includeStatButtons }) {
+function buildPlayerCard(player, { statsClass, includeStatButtons, gearCache }) {
   const statDefs = [
     ["STR", "str"],
     ["DEX", "dex"],
@@ -1628,14 +1668,14 @@ function buildPlayerCard(player, { statsClass, includeStatButtons }) {
         `<div class="stat-row">` +
         `<span class="stat-label">${label}</span>` +
         `<span class="${stat}-val stat-val">${stat === "for" || stat === "pie" ? (player[stat] || 0).toFixed(1) : (player[stat] ?? 0)}</span>` +
-        statBonusHtml(player, stat) +
+        statBonusHtml(player, stat, gearCache) +
         (includeStatButtons ? statButtons(stat) : "") +
         `</div>`
     )
     .join("");
   const statsHtml = `<div class="stats ${statsClass}">${rows}</div>`;
   return `
-      <span class="player-toggle" onclick="togglePlayerCard(this)">▸</span><span class="level-display">⚖️${player.level} ♔${getAverageItemTier(player).toFixed(1)} ${getWeaponEmoji(player.equipment?.weapon)} ${player.name}</span>
+      <span class="player-toggle" data-action="togglePlayerCard">▸</span><span class="level-display">⚖️${player.level} ♔${(gearCache?.avgTier ?? getAverageItemTier(player)).toFixed(1)} ${gearCache?.weaponEmoji ?? getWeaponEmoji(player.equipment?.weapon)} ${player.name}</span>
       <div class="player-details">
 <div class="gold-display">
                💰 <span class="gold-text">${player.gold}</span>
@@ -1657,24 +1697,26 @@ function buildPlayerCard(player, { statsClass, includeStatButtons }) {
     `;
 }
 
-function buildPlayerContent(player) {
-  return buildPlayerCard(player, { statsClass: "stats-owned", includeStatButtons: true });
+function buildPlayerContent(player, gearCache) {
+  return buildPlayerCard(player, { statsClass: "stats-owned", includeStatButtons: true, gearCache });
 }
 
-function buildPartyPlayerContent(player) {
-  return buildPlayerCard(player, { statsClass: "stats-party", includeStatButtons: false });
+function buildPartyPlayerContent(player, gearCache) {
+  return buildPlayerCard(player, { statsClass: "stats-party", includeStatButtons: false, gearCache });
 }
 
 function createPlayerElement(player, isOwn = false) {
   const div = document.createElement("div");
   div.className = "player";
-  const content = isOwn ? buildPlayerContent(player) : buildPartyPlayerContent(player);
+  const gearCache = computePlayerGearCache(player);
+  const content = isOwn ? buildPlayerContent(player, gearCache) : buildPartyPlayerContent(player, gearCache);
 
   if (!isOwn) {
     div.innerHTML = `<div class="player-left">${content}</div>`;
   } else {
     div.innerHTML = content;
   }
+  div._gearCache = gearCache;
   div.querySelector(".player-equipped").innerHTML = renderEquippedHtml(player);
   if (!isOwn) {
     div.classList.add("collapsed");
@@ -1696,9 +1738,11 @@ export function togglePlayerCard(btn) {
 };
 
 function statButtons(stat) {
-  return ["pie", "for"].includes(stat)
-    ? ""
-    : `<span class="stat-buttons">${[1, 3, 5].map((p) => `<button onclick="allocatePoints('${stat}', ${p})">+${p}</button>`).join("")}</span>`;
+  if (["pie", "for"].includes(stat)) return "";
+  return `<span class="stat-buttons">`
+    + `<button class="dealloc-btn" data-action="deallocatePoints" data-stat="${stat}">−1</button>`
+    + [1, 3, 5].map((p) => `<button data-action="allocatePoints" data-stat="${stat}" data-points="${p}">+${p}</button>`).join("")
+    + `</span>`;
 }
 
 function updatePlayerElement(el, player, canAllocate) {
@@ -1763,15 +1807,21 @@ function updatePlayerElement(el, player, canAllocate) {
       _lastTotalArmour: -1,
       _lastGold: -1,
       _equipSnap: "",
+      _avgTier: null,
+      _weaponEmoji: null,
     });
   const isOwnPlayer = player.name === ownName;
-  const gearStats = computePlayerGearStats(player);
-  c._gearStats = gearStats;
+  c._gearStats = computePlayerGearStats(player);
   c._avgTier = getAverageItemTier(player);
+  c._weaponEmoji = getWeaponEmoji(player.equipment?.weapon);
   updatePlayerBars(ui, c, player);
   updatePlayerVitals(ui, c, player);
   updatePlayerShopAndGear(ui, c, player, isOwnPlayer);
   updatePlayerStats(ui, c, player);
+  ["str", "dex", "agi", "vit", "int", "cnc"].forEach((stat) => {
+    const btn = el.querySelector(`.dealloc-btn[data-stat="${stat}"]`);
+    if (btn) btn.disabled = (player[stat] <= 10) || (player.gold < 100);
+  });
   updatePlayerDebuffs(ui, c, player);
   updatePlayerEquipped(el, c, player);
 }
@@ -1826,7 +1876,7 @@ function updatePlayerBars(ui, c, player) {
 
 function updatePlayerVitals(ui, c, player) {
   if (ui.levelDisplay) {
-    const ld = `⚖️${player.level} ♔${(c._avgTier ?? getAverageItemTier(player)).toFixed(1)} ${getWeaponEmoji(player.equipment?.weapon)} ${player.name}`;
+    const ld = `⚖️${player.level} ♔${(c._avgTier ?? getAverageItemTier(player)).toFixed(1)} ${c._weaponEmoji ?? getWeaponEmoji(player.equipment?.weapon)} ${player.name}`;
     if (c.level !== ld) {
       ui.levelDisplay.textContent = ld;
       c.level = ld;
@@ -2020,6 +2070,10 @@ export function allocatePoints(stat, points) {
   clientNetwork.allocatePoints(stat, points);
 };
 
+export function deallocatePoints(stat) {
+  clientNetwork.deallocatePoints(stat);
+};
+
 export function buyGear(type) {
   clientNetwork.buyGear(type);
 };
@@ -2070,22 +2124,11 @@ function changeBatchSize(batchSize) {
 
 // Make exported functions available as globals for onclick handlers in generated HTML
 if (typeof window !== "undefined") {
-  window.selectDungeon = selectDungeon;
-  window.selectGearTab = selectGearTab;
-  window.unequipItem = unequipItem;
   window.joinParty = joinParty;
-  window.embarkDungeon = embarkDungeon;
-  window.toggleAutoEmbark = toggleAutoEmbark;
-  window.escapeDungeon = escapeDungeon;
   window.renderShopStock = renderShopStock;
   window.forceRefreshEquipment = forceRefreshEquipment;
   window.renderEquipmentPanel = renderEquipmentPanel;
-  window.togglePlayerCard = togglePlayerCard;
   window.updatePartyDisplay = updatePartyDisplay;
-  window.allocatePoints = allocatePoints;
-  window.buyGear = buyGear;
-  window.equipInventoryItem = equipInventoryItem;
-  window.sellInventoryItem = sellInventoryItem;
   window.leaveParty = leaveParty;
   window.flashPlayerAttack = flashPlayerAttack;
 }

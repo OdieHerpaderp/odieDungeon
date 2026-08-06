@@ -16,7 +16,7 @@
       "INT": 0.5
     },
     "range": 16,
-    "value": 21,
+    "value": 23.6,
     "description": "A powerful magic rod that casts spells with high damage."
   },
   {
@@ -36,7 +36,7 @@
       "INT": 0.5
     },
     "range": 16,
-    "value": 25,
+    "value": 27.6,
     "description": "A rune inscribed with precise magical circuits, channeling raw arcane energy."
   }
 ]

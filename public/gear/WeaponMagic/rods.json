@@ -16,7 +16,7 @@
       "INT": 0.3
     },
     "range": 16,
-    "value": 32,
+    "value": 29,
     "description": "A powerful magic rod that casts spells with high damage."
   },
   {
@@ -36,7 +36,7 @@
       "INT": 0.3
     },
     "range": 16,
-    "value": 39,
+    "value": 32,
     "description": "A powerful magic rod that casts spells with high damage."
   }
 ]

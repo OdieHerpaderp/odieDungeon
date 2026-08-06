@@ -31,6 +31,12 @@ let defaultCatalog = {
   offHand: Object.values(offHand).flat(),
 };
 
+const _resolveCache = new Map();
+
+export function clearResolveCache() {
+  _resolveCache.clear();
+}
+
 export function getCatalog() {
   return defaultCatalog;
 }
@@ -77,8 +83,8 @@ function clamp(value, min, max) {
 
 export function calculateItemStat(baseValue, level, rarity) {
   if (typeof baseValue !== 'number') return baseValue;
-  const levelMultiplier = 0.6 + level / 13;
-  const rarityMultiplier = 0.6 + rarity / 8;
+  const levelMultiplier = 0.62 + level / 13;
+  const rarityMultiplier = 0.62 + rarity / 9;
   return Math.round(baseValue * levelMultiplier * rarityMultiplier * 100) / 100;
 }
 
@@ -86,14 +92,14 @@ export function calculateItemTier(item) {
   if (!item) return null;
   const level = Number.isFinite(item.level) ? item.level : 1;
   const rarity = Number.isFinite(item.rarity) ? item.rarity : 1;
-  return (calculateItemStat(51.1, level, rarity) - 22.1) / 3;
+  return (calculateItemStat(51.1, level, rarity) - 22.9) / 3.25;
 }
 
 export function calculateItemPrice(baseValue, level, rarity) {
   if (typeof baseValue !== 'number') return baseValue;
   const levelMult = Math.pow(0.8 + level * 0.9, 1.2);
   const rarityMult = Math.pow(0.8 + rarity * 1.6, 1.3);
-  return Math.round(Math.pow(baseValue * (0.9 + levelMult / 11) * (0.9 + rarityMult / 7) * 1.8, 1.25)) / 10;
+  return Math.round(Math.pow(baseValue * (0.9 + levelMult / 11) * (0.9 + rarityMult / 7) * 1.85, 1.26)) / 10;
 }
 
 function calculateBonuses(baseBonuses, level, rarity) {
@@ -174,7 +180,7 @@ export function calculateItemStats(item) {
   const baseBonuses = item.baseBonuses != null ? item.baseBonuses : baseItem.bonuses;
 
   if (typeof baseDamage === 'number')
-    calculatedItem.damage = 1 + calculateItemStat(3 + baseDamage, item.level, item.rarity);
+    calculatedItem.damage = 1 + calculateItemStat(1 + baseDamage, item.level, item.rarity);
   if (typeof baseSpellPower === 'number')
     calculatedItem.spellPower = calculateItemStat(baseSpellPower, item.level, item.rarity);
   if (typeof baseAttackSpeed === 'number') calculatedItem.attackSpeed = baseAttackSpeed;
@@ -202,8 +208,8 @@ export function generateScaledItem(dungeonData, categoryPool) {
   const category = categoryPool[Math.floor(Math.random() * categoryPool.length)];
   const itemCatalog = defaultCatalog[category];
   const baseItem = pickRandom(itemCatalog, (i) => 1 / (i.value + 1));
-  let itemLevel = 0.2 + Math.pow(0.2 + (baseLevel / 1.6 + floorAmount / 13) + Math.random() * (baseLevel * 3.6 + 6), 0.88) / 1.9;
-  let itemRarity = 0.2 + Math.pow(0.6 + Math.random() * (baseLevel * 2.2 + 11), 0.46) / 2;
+  let itemLevel = 0.2 + Math.pow(0.2 + (baseLevel / 1.6 + floorAmount / 12) + Math.random() * (baseLevel * 3.4 + 4), 0.78) / 1.8;
+  let itemRarity = 0.3 + Math.pow(0.6 + Math.random() * (baseLevel * 2.2 + 13), 0.42) / 1.8;
   itemRarity = Number(itemRarity.toFixed(1));
   const avgValue = itemCatalog.reduce((s, i) => s + (i.value || 1), 0) / itemCatalog.length;
   const bias = Math.sqrt((avgValue + 1) / (baseItem.value + 1));
@@ -220,9 +226,13 @@ export function generateScaledItem(dungeonData, categoryPool) {
 export function updateCatalogs(catalog) {
   if (!catalog) return;
   defaultCatalog = Object.assign({}, defaultCatalog, catalog);
+  clearResolveCache();
 }
 
 export function resolveItem(slot, id, level, rarity) {
+  const key = `${slot}:${id}:${level}:${rarity}`;
+  const cached = _resolveCache.get(key);
+  if (cached) return cached;
   const base = findBaseItem(slot, id);
   if (!base) return null;
   const cat = SLOT_CATEGORY[slot] || normalizeCategory(slot);
@@ -248,5 +258,7 @@ export function resolveItem(slot, id, level, rarity) {
     baseRange: base.range,
     baseBonuses: base.bonuses,
   };
-  return calculateItemStats(ref);
+  const result = calculateItemStats(ref);
+  _resolveCache.set(key, result);
+  return result;
 }

@@ -6,7 +6,7 @@
     "skillId": "skill_shamanism",
     "unlockSkillLevelMin": 0,
     "mpCostBase": 3,
-    "cooldownMsBase": 2200,
+    "cooldownMsBase": 1800,
     "damageBase": 5,
     "maxTargets": 1,
     "allowedWeaponClasses": ["magic"],
@@ -20,7 +20,7 @@
     "skillId": "skill_shamanism",
     "unlockSkillLevelMin": 1,
     "mpCostBase": 6,
-    "cooldownMsBase": 2400,
+    "cooldownMsBase": 2000,
     "healAmount": 7,
     "effects": [
       { "type": "HPup", "amount": 2, "duration": 6 }
@@ -38,10 +38,10 @@
     "skillId": "skill_shamanism",
     "unlockSkillLevelMin": 4,
     "mpCostBase": 7,
-    "cooldownMsBase": 2800,
-    "healAmount": 8,
+    "cooldownMsBase": 2200,
+    "healAmount": 9,
     "effects": [
-      { "type": "HPup", "amount": 2, "duration": 9 }
+      { "type": "HPup", "amount": 3, "duration": 7 }
     ],
     "maxTargets": 1,
     "allowedWeaponClasses": ["magic"],
@@ -52,20 +52,39 @@
   {
     "id": "shaman_root_heal",
     "name": "Root Heal",
-    "description": "Channels earth magic to heal all allies within range with sustained regeneration.",
+    "description": "Channels earth magic to heal up to 2 allies within range with sustained regeneration.",
     "skillId": "skill_shamanism",
-    "unlockSkillLevelMin": 7,
-    "mpCostBase": 10,
-    "cooldownMsBase": 3500,
-    "healAmount": 8,
+    "unlockSkillLevelMin": 9,
+    "mpCostBase": 12,
+    "cooldownMsBase": 2400,
+    "healAmount": 14,
     "effects": [
-      { "type": "HPup", "amount": 3, "duration": 9 }
+      { "type": "HPup", "amount": 5, "duration": 8 }
     ],
-    "maxTargets": 3,
+    "maxTargets": 2,
     "allowedWeaponClasses": ["magic"],
     "requiresWeaponEquipped": true,
     "isHeal": true,
     "abilityType": "aoe",
     "attributeDamageScale": {"CNC": 0.5, "INT": 0.2}
-  }
+  },
+  {
+  "id": "shaman_spirit_mend",
+  "name": "Spirit Mend",
+  "description": "Calls forth a nature spirit to heal the caster and pulse outward, restoring HP to nearby allies over time.",
+  "skillId": "skill_shamanism",
+  "unlockSkillLevelMin": 15,
+  "mpCostBase": 14,
+  "cooldownMsBase": 2600,
+  "healAmount": 18,
+  "effects": [
+    { "type": "HPup", "amount": 6, "duration": 9 }
+  ],
+  "maxTargets": 3,
+  "allowedWeaponClasses": ["magic"],
+  "requiresWeaponEquipped": true,
+  "isHeal": true,
+  "abilityType": "aoe",
+  "attributeDamageScale": {"CNC": 0.5, "INT": 0.2}
+}
 ]

@@ -47,7 +47,7 @@ export function generateEnemies(party) {
         (enemyBonus * 0.5 + (0.2 + enemyBonus / 1.7) * effectiveFloor * 1.08) / (0.9 + enemyCount / 16) +
           Math.random() * (0.1 + effectiveFloor / 44),
         1.05 ) * 0.31 + 0.02;
-    let calcVit = Math.floor(2 + floorBonus / 1.2 + Math.random() * (0.5 + floorBonus / 9));
+    let calcVit = Math.floor(2 + floorBonus / 1.1 + Math.random() * (0.5 + floorBonus / 9));
     let calcHp = Math.floor(
       Math.pow(
         floorBonus * 0.04 * (0.02 + calcVit * 0.011) +
@@ -60,14 +60,14 @@ export function generateEnemies(party) {
       ),
     );
     calcHp = Math.round(((1.1 * calcHp) / (1.1 + enemyCount / 16)) * (0.65 + enemyBonus / 2.1));
-    let enemyAp = Math.floor(calcHp * 0.06 + floorBonus + Math.random() * (floorBonus + calcHp * 0.1));
+    let enemyAp = Math.floor(calcHp * 0.08 + floorBonus + Math.random() * (floorBonus + calcHp * 0.1));
     if (boss) {
       // Last-floor boss: single boss unit + stronger stats
       floorBonus += 1.7 + enemyBonus * 0.55;
-      floorBonus *= 1.4 + enemyBonus * 0.35;
-      calcHp = Math.round(calcHp * (2.75 + enemyBonus * 0.75));
+      floorBonus *= 1.3 + enemyBonus * 0.25;
+      calcHp = Math.round(calcHp * (2.9 + enemyBonus * 0.8));
       calcVit += 15;
-      enemyAp = Math.floor((20 + enemyAp) * 2.5);
+      enemyAp = Math.floor((30 + enemyAp) * 3.8);
     }
     party.enemies.push({
       id: `enemy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
@@ -80,7 +80,7 @@ export function generateEnemies(party) {
       maxAp: enemyAp,
       mp: Math.floor(8 + floorBonus * 1.1),
       maxMp: Math.floor(8 + floorBonus * 1.1),
-      str: Math.floor((0.8 + enemyBonus / 2.6) * floorBonus * 17 + Math.random() * (1.6 + floorBonus / 2.1)) / 10,
+      str: Math.floor((0.8 + enemyBonus / 2.7) * floorBonus * 17 + Math.random() * (1.6 + floorBonus / 2.1)) / 10,
       dex: Math.floor(1 + floorBonus * 12 + Math.random() * (2.2 + floorBonus / 1.8)) / 10,
       agi: Math.floor(1 + floorBonus * 12 + Math.random() * (2.2 + floorBonus / 1.8)) / 10,
       vit: calcVit,
@@ -103,8 +103,8 @@ export function generateEnemies(party) {
       equipment: {
         weapon: {
           id: boss ? 'stopSign' : 'woodenClub',
-          level: boss ? Math.round(6 + floorBonus / 3) : Math.round(2 + floorBonus / 4),
-          rarity: boss ? 2.7 + floorBonus / 5 : 1.4 + floorBonus / 6,
+          level: boss ? Math.round(6 + floorBonus / 5) : Math.round(3 + floorBonus / 4),
+          rarity: boss ? 2.1 + floorBonus / 8 : 1.4 + floorBonus / 7,
         },
       },
     });

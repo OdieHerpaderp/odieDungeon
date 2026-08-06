@@ -5,15 +5,15 @@
     "description": "Deals weapon damage to one foe with a ranged weapon.",
     "skillId": "skill_archery",
     "unlockSkillLevelMin": 0,
-    "mpCostBase": 4,
+    "mpCostBase": 6,
     "cooldownMsBase": 2000,
     "damageBase": 9,
     "maxTargets": 1,
     "allowedWeaponClasses": ["ranged"],
-    "requiredWeaponSubTypes": ["slings", "bows"],
+    "requiredWeaponSubTypes": ["sling", "bow"],
     "requiresWeaponEquipped": true,
     "castUsesWeaponDamageModel": true,
-    "attributeDamageScale": {"DEX": 0.9, "AGI": 0.1}
+    "attributeDamageScale": {"CNC": 0.9, "AGI": 0.1}
   },
   {
     "id": "snare_shot",
@@ -21,18 +21,18 @@
     "description": "Deals weapon damage to one foe with a ranged weapon.",
     "skillId": "skill_archery",
     "unlockSkillLevelMin": 2,
-    "mpCostBase": 5,
+    "mpCostBase": 7,
     "cooldownMsBase": 2200,
     "damageBase": 11,
     "maxTargets": 1,
     "allowedWeaponClasses": ["ranged"],
-    "requiredWeaponSubTypes": ["slings", "bows"],
+    "requiredWeaponSubTypes": ["sling", "bow"],
     "requiresWeaponEquipped": true,
     "castUsesWeaponDamageModel": true,
     "effects": [
       { "type": "actionSlow", "amount": 20, "duration": 3 }
     ],
-    "attributeDamageScale": {"DEX": 0.9, "AGI": 0.1}
+    "attributeDamageScale": {"CNC": 0.9, "AGI": 0.1}
   },
   {
     "id": "archery_double_shot",
@@ -40,15 +40,15 @@
     "description": "Deals weapon damage to up to two foes with a ranged weapon.",
     "skillId": "skill_archery",
     "unlockSkillLevelMin": 5,
-    "mpCostBase": 7,
+    "mpCostBase": 9,
     "cooldownMsBase": 2400,
     "damageBase": 9,
     "targets": [1, 2, 0.7],
     "allowedWeaponClasses": ["ranged"],
-    "requiredWeaponSubTypes": ["slings", "bows"],
+    "requiredWeaponSubTypes": ["sling", "bow"],
     "requiresWeaponEquipped": true,
     "castUsesWeaponDamageModel": true,
-    "attributeDamageScale": {"DEX": 0.9, "AGI": 0.1}
+    "attributeDamageScale": {"CNC": 0.9, "AGI": 0.1}
   },
   {
     "id": "archery_volley",
@@ -56,15 +56,15 @@
     "description": "Deals weapon damage to multiple foes with a ranged weapon.",
     "skillId": "skill_archery",
     "unlockSkillLevelMin": 10,
-    "mpCostBase": 11,
+    "mpCostBase": 13,
     "cooldownMsBase": 2600,
     "damageBase": 12,
     "targets": [2, 5, 0.5],
     "allowedWeaponClasses": ["ranged"],
-    "requiredWeaponSubTypes": ["slings", "bows"],
+    "requiredWeaponSubTypes": ["sling", "bow"],
     "requiresWeaponEquipped": true,
     "castUsesWeaponDamageModel": true,
     "abilityType": "cone",
-    "attributeDamageScale": {"DEX": 0.9, "AGI": 0.1}
+    "attributeDamageScale": {"CNC": 0.9, "AGI": 0.1}
   }
 ]

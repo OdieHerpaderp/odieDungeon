@@ -11,7 +11,7 @@
       "AGI": 5
     },
     "range": 1,
-    "value": 32,
+    "value": 27.3,
     "description": "Medium armor formed from layered chitin, balancing mobility and guard."
   },
   {
@@ -23,10 +23,10 @@
     "bonuses": {
       "STR": 6,
       "VIT": 3,
-      "AGI": -0.3
+      "AGI": -0.2
     },
     "range": 1,
-    "value": 29,
+    "value": 25.9,
     "description": "Medium armor made of interlinked metal rings."
   },
   {
@@ -36,13 +36,13 @@
     "defense": 15,
     "magicResist": 2,
     "bonuses": {
-      "STR": 5,
+      "STR": 8,
       "DEX": 3,
-      "VIT": 4,
+      "VIT": 2,
       "AGI": -0.3
     },
     "range": 1,
-    "value": 33,
+    "value": 27.8,
     "description": "Medium armor of overlapping metal scales that shifts with your movement."
   },
   {
@@ -57,7 +57,7 @@
       "CNC": 3
     },
     "range": 1,
-    "value": 31,
+    "value": 26.9,
     "description": "Medium jerkin of enchanted wyrmhide — no metal, yet as tough as the best plate studded mail."
   },
   {
@@ -74,7 +74,7 @@
       "AGI": -0.5
     },
     "range": 1,
-    "value": 33,
+    "value": 27.1,
     "description": "Medium cuirass etched with calibration runes, granting vitality and combat focus to the hybrid warrior."
   }
 ]

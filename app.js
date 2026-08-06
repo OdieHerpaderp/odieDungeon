@@ -934,6 +934,32 @@ function handleAllocatePoints(socket, data) {
   broadcastFullState(partyId, party);
 }
 
+function handleDeallocatePoints(socket, data) {
+  utils.trackSocketIoReceived('deallocatePoints', data);
+  const { partyId, stat } = data;
+  const party = parties.get(partyId);
+  if (!party) return;
+  const player = party.players.get(socket.id);
+  const VALID = ["str", "dex", "agi", "vit", "int", "cnc"];
+  if (!player || !VALID.includes(stat)) return;
+  if (player[stat] <= 10) {
+    socket.emit('eventLog', { message: `Cannot lower ${stat} below 10.`, type: 'error' });
+    return;
+  }
+  if (player.gold < 100) {
+    socket.emit('eventLog', { message: `Not enough gold (need 100g) to respec ${stat}.`, type: 'error' });
+    return;
+  }
+  player.gold -= 100;
+  player[stat] -= 1;
+  player.pointsToAllocate += 1;
+  utils.recalcDerivedMaxAndClampCurrents(player);
+  utils.trackSocketIoSent('eventLog', { message: `Refunded 1 point from ${stat} (-100g).`, type: 'info' });
+  socket.emit('eventLog', { message: `Refunded 1 point from ${stat} (-100g).`, type: 'info' });
+  void saveCharacter(player.name, player);
+  broadcastFullState(partyId, party);
+}
+
 function handleDisconnect(socket, _reason) {
   clearInterval(socket.pingInterval);
   // Clean up performance tracking
@@ -1398,6 +1424,8 @@ io.on('connection', (socket) => {
   socket.on('joinParty', (data) => handleJoinParty(socket, data));
 
   socket.on('allocatePoints', (data) => handleAllocatePoints(socket, data));
+
+  socket.on('deallocatePoints', (data) => handleDeallocatePoints(socket, data));
 
   // 🏃 Escape Dungeon handler (return to Town after combat, reset progress)
   socket.on('escapeDungeon', (data) => handleEscapeDungeon(socket, data));

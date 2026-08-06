@@ -5,14 +5,14 @@
     "type": "light",
     "slot": "offHand",
     "subType": "shield",
-    "defense": 7,
+    "defense": 9,
     "magicResist": 2,
     "bonuses": {
-      "DEX": 4,
-      "AGI": 2
+      "DEX": 5,
+      "AGI": 5
     },
     "range": 1,
-    "value": 19,
+    "value": 24,
     "description": "A light shield"
   },
   {
@@ -21,15 +21,33 @@
     "type": "medium",
     "slot": "offHand",
     "subType": "shield",
-    "defense": 9,
+    "defense": 12,
     "magicResist": 3,
     "bonuses": {
-      "STR": 4,
-      "AGI": 3
+      "STR": 6,
+      "AGI": 6
     },
     "range": 1,
-    "value": 21,
+    "value": 26,
     "description": "A medium shield"
+  },
+  {
+    "id": "sqShield",
+    "name": "Square Shield",
+    "type": "heavy",
+    "slot": "offHand",
+    "subType": "shield",
+    "defense": 14,
+    "magicResist": 4,
+    "bonuses": {
+      "VIT": 8,
+      "STR": 4,
+      "HP": 9,
+      "AGI": -0.7
+    },
+    "range": 1,
+    "value": 29.8,
+    "description": "A heavy shield"
   },
   {
     "id": "kiteShield",
@@ -37,16 +55,16 @@
     "type": "heavy",
     "slot": "offHand",
     "subType": "shield",
-    "defense": 11,
+    "defense": 15,
     "magicResist": 4,
     "bonuses": {
-      "VIT": 6,
-      "STR": 4,
-      "HP": 8,
-      "AGI": -1
+      "VIT": 10,
+      "STR": 3,
+      "HP": 11,
+      "AGI": -1.3
     },
     "range": 1,
-    "value": 33,
+    "value": 31.1,
     "description": "A heavy shield"
   },
   {
@@ -55,14 +73,15 @@
     "type": "light",
     "slot": "offHand",
     "subType": "book",
-    "defense": 1,
-    "magicResist": 4,
+    "defense": 2,
+    "magicResist": 6,
     "bonuses": {
-      "INT": 3,
+      "INT": 5,
+      "CNC": 5,
       "AP": 5
     },
     "range": 1,
-    "value": 15,
+    "value": 23,
     "description": "A light spellbook"
   },
   {
@@ -71,15 +90,15 @@
     "type": "light",
     "slot": "offHand",
     "subType": "book",
-    "defense": 1,
-    "magicResist": 5,
+    "defense": 2,
+    "magicResist": 7,
     "bonuses": {
-      "INT": 3,
-      "CNC": 3,
-      "AP": 6
+      "INT": 6,
+      "CNC": 6,
+      "AP": 7
     },
     "range": 1,
-    "value": 19,
+    "value": 24.6,
     "description": "A weighty tome"
   },
   {
@@ -88,16 +107,16 @@
     "type": "light",
     "slot": "offHand",
     "subType": "book",
-    "defense": 1,
-    "magicResist": 6,
+    "defense": 2,
+    "magicResist": 8,
     "bonuses": {
-      "INT": 4,
-      "CNC": 4,
-      "AP": 8,
-      "MP": 4
+      "INT": 7,
+      "CNC": 7,
+      "AP": 9,
+      "MP": 8
     },
     "range": 1,
-    "value": 26,
+    "value": 28.7,
     "description": "A forbidden grimoire"
   }
 ]

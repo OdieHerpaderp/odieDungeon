@@ -6,7 +6,7 @@
     "skillId": "skill_survival",
     "unlockSkillLevelMin": 0,
     "mpCostBase": 4,
-    "cooldownMsBase": 2000,
+    "cooldownMsBase": 1600,
     "healAmount": 6,
         "effects": [
       { "type": "HPup", "amount": 2, "duration": 6 }
@@ -24,7 +24,7 @@
     "skillId": "skill_survival",
     "unlockSkillLevelMin": 3,
     "mpCostBase": 5,
-    "cooldownMsBase": 2300,
+    "cooldownMsBase": 1800,
     "healAmount": 7,
     "effects": [
       { "type": "HPup", "amount": 3, "duration": 7 }
@@ -42,7 +42,7 @@
     "skillId": "skill_survival",
     "unlockSkillLevelMin": 6,
     "mpCostBase": 7,
-    "cooldownMsBase": 2600,
+    "cooldownMsBase": 2000,
     "healAmount": 11,
     "targets": [1, 2, 0.7],
     "allowedWeaponClasses": ["magic","ranged","melee"],
@@ -55,15 +55,33 @@
     "name": "Mass Bandage",
     "description": "Lays out bandages, healing up to 3 allies.",
     "skillId": "skill_survival",
-    "unlockSkillLevelMin": 12,
-    "mpCostBase": 12,
-    "cooldownMsBase": 3000,
-    "healAmount": 14,
+    "unlockSkillLevelMin": 9,
+    "mpCostBase": 13,
+    "cooldownMsBase": 2200,
+    "healAmount": 15,
     "targets": [2, 3, 0.7],
     "allowedWeaponClasses": ["magic","ranged","melee"],
     "requiresWeaponEquipped": false,
     "isHeal": true,
     "abilityType": "aoe",
     "attributeDamageScale": {"CNC": 0.3, "INT": 0.2}
-  }
+  },
+  {
+  "id": "survival_triage_bond",
+  "name": "Triage Bond",
+  "description": "Focuses healing energy on the two most wounded allies, instantly restoring HP and establishing a bond that sustains recovery.",
+  "skillId": "skill_survival",
+  "unlockSkillLevelMin": 15,
+  "mpCostBase": 15,
+  "cooldownMsBase": 2400,
+  "healAmount": 28,
+  "effects": [
+    { "type": "HPup", "amount": 2, "duration": 6 }
+  ],
+  "targets": [2, 2, 0.7],
+  "allowedWeaponClasses": ["magic", "ranged", "melee"],
+  "requiresWeaponEquipped": false,
+  "isHeal": true,
+  "attributeDamageScale": {"CNC": 0.3, "INT": 0.2}
+}
 ]

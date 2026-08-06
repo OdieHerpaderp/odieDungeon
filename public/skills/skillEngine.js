@@ -210,7 +210,7 @@ export function calculateHealAmount(ability, player) {
   const skillLevel = getSkillLevel(player.skillsState, ability.skillId);
   const healBase = ability.healAmount || 0;
   const attrBonus = calculateAttributeScaling(player, ability.attributeDamageScale);
-  return (healBase + attrBonus) * (90 + skillLevel) / 50;
+  return (healBase + attrBonus) * (95 + skillLevel) / 40;
 }
 
 // New function to award XP for healing actions

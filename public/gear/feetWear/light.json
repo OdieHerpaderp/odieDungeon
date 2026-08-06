@@ -10,7 +10,7 @@
       "DEX": 2
     },
     "range": 1,
-    "value": 15,
+    "value": 20,
     "description": "Simple travel boots for light armor."
   },
   {
@@ -24,7 +24,7 @@
       "DEX": 2
     },
     "range": 1,
-    "value": 18,
+    "value": 21.2,
     "description": "Simple travel boots for light armor."
   },
   {
@@ -39,7 +39,7 @@
       "AP": 4
     },
     "range": 1,
-    "value": 25,
+    "value": 24.3,
     "description": "Simple travel boots for light armor."
   },
   {
@@ -54,7 +54,7 @@
       "AP": 4
     },
     "range": 1,
-    "value": 25,
+    "value": 24.3,
     "description": "Simple travel boots blessed for the faithful."
   },
   {
@@ -69,7 +69,7 @@
       "STR": 2
     },
     "range": 1,
-    "value": 22,
+    "value": 23.2,
     "description": "Padded boots designed for quiet, rapid movement."
   },
   {
@@ -83,7 +83,36 @@
       "DEX": 5
     },
     "range": 1,
-    "value": 22,
+    "value": 23.2,
     "description": "Light boots of cured hide, offering quiet tread and agile movement."
+  },
+  {
+    "id": "rangerBoots",
+    "name": "Ranger Boots",
+    "type": "light",
+    "defense": 7,
+    "magicResist": 1,
+    "bonuses": {
+      "AGI": 4,
+      "DEX": 4,
+      "CNC": 5
+    },
+    "range": 1,
+    "value": 24.4,
+    "description": "Quiet boots with reinforced focus channels along the soles."
+  },
+  {
+    "id": "peltBoots",
+    "name": "Pelt Boots",
+    "type": "light",
+    "defense": 5,
+    "magicResist": 1,
+    "bonuses": {
+      "STR": 9,
+      "AGI": 4
+    },
+    "range": 1,
+    "value": 23.6,
+    "description": "Heavy pelt boots grounded for strength and sure footing."
   }
 ]

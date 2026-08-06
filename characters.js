@@ -336,8 +336,8 @@ export function calcMaxMp(player) {
   const cncEff = getEffectiveAttribute(player, 'cnc');
   let output =
     24 +
-    (player.level * 0.6 + intEff * 1.4 + cncEff * 0.6 + player.wis * 0.1 + getEquipmentBonus(player, 'mp'));
-  return Math.round(Math.pow(output * 1.3, 0.96));
+    (player.level * 0.6 + intEff * 1.4 + cncEff * 0.2 + getEquipmentBonus(player, 'mp'));
+  return Math.round(Math.pow(output * 1.2, 0.94));
 }
 
 export function calcMaxAp(player) {

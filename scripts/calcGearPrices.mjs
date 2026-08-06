@@ -37,8 +37,10 @@ const SURVIVABILITY = new Set(["VIT", "HP"]);
 
 function bonusWeight(stat) {
   if (stat === "HP") return 0.7;
-  if (stat === "VIT") return 1.4;
-  return SURVIVABILITY.has(stat) ? 1.4 : 1.0;
+  if (stat === "MP") return 0.8;
+  if (stat === "AP") return 0.9;
+  if (stat === "VIT") return 1.2;
+  return SURVIVABILITY.has(stat) ? 1.2 : 1.0;
 }
 
 function sumBonuses(item, weightFn) {
@@ -52,7 +54,7 @@ function scoreDefensive(item, slot) {
 }
 
 const TYPICAL_STATS = {
-  melee: { STR: 20, DEX: 15, AGI: 15, VIT: 10 },
+  melee: { STR: 20, DEX: 15, AGI: 15, VIT: 13 },
   ranged: { STR: 10, DEX: 25, AGI: 15 },
   magic: { INT: 25, CNC: 25 },
 };
@@ -62,7 +64,7 @@ function estimateDamageModifier(item) {
   const type = item.type || "melee";
   const stats = TYPICAL_STATS[type] || TYPICAL_STATS.melee;
   const bonus = Object.entries(mods).reduce((sum, [stat, weight]) => {
-    return sum + (stats[stat] || 0) * weight * 0.03;
+    return sum + (stats[stat] || 0) * weight * 0.035;
   }, 0);
   return 1 + bonus;
 }
@@ -87,8 +89,8 @@ function scoreWeapon(item) {
 function normalize(score, minScore, maxScore) {
   const span = maxScore - minScore;
   if (span === 0) return 30;
-  const raw = 15 + ((score - minScore) / span) * 30;
-  return Math.round(raw);
+  const raw = 20 + ((score - minScore) / span) * 15;
+  return Math.round(raw * 10) / 10;
 }
 
 function pad(s, n) {
@@ -108,11 +110,11 @@ function updateGearPrices() {
           const it = JSON.parse(fs.readFileSync(path.join(GEAR_DIR, f.file), "utf8"));
           return it.map((item) => scoreFn(item, f.slot));
         });
-    const minScore = Math.round(Math.min(...allScores) * 100) / 100;
-    const maxScore = Math.round(Math.max(...allScores) * 100) / 100;
+    const minScore = Math.round(Math.min(...allScores) * 200) / 200;
+    const maxScore = Math.round(Math.max(...allScores) * 200) / 200;
 
     items.forEach((item, i) => {
-      item.value = normalize(Math.round(scores[i] * 100) / 100, minScore, maxScore);
+      item.value = normalize(Math.round(scores[i] * 200) / 200, minScore, maxScore);
     });
 
     fs.writeFileSync(filePath, `${JSON.stringify(items, null, 2)}\n`);
@@ -137,16 +139,16 @@ function main() {
 
   for (const kind of ["defensive", "weapon"]) {
     const allScores = categories[kind].flatMap((c) => c.scores);
-    const minScore = Math.round(Math.min(...allScores) * 100) / 100;
-    const maxScore = Math.round(Math.max(...allScores) * 100) / 100;
+    const minScore = Math.round(Math.min(...allScores) * 200) / 200;
+    const maxScore = Math.round(Math.max(...allScores) * 200) / 200;
 
     for (const { file, items, scores } of categories[kind]) {
       console.log(`\n=== ${file} (${kind}) ===`);
       console.log(pad("id", 16) + pad("score", 10) + pad("current", 10) + pad("calc", 10) + pad("delta", 8));
       items.forEach((item, i) => {
-        const calc = normalize(Math.round(scores[i] * 100) / 100, minScore, maxScore);
+        const calc = normalize(Math.round(scores[i] * 200) / 200, minScore, maxScore);
         const delta = calc - item.value;
-        console.log(pad(item.id, 16) + pad(Math.round(scores[i] * 100) / 100, 10) + pad(item.value, 10) + pad(calc, 10) + pad(delta, 8));
+        console.log(pad(item.id, 16) + pad(Math.round(scores[i] * 200) / 200, 10) + pad(item.value, 10) + pad(calc, 10) + pad(delta, 8));
       });
     }
   }

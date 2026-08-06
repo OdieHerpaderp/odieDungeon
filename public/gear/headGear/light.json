@@ -10,7 +10,7 @@
       "DEX": 2
     },
     "range": 1,
-    "value": 15,
+    "value": 20,
     "description": "A basic hat for light armor."
   },
   {
@@ -24,7 +24,7 @@
       "DEX": 3
     },
     "range": 1,
-    "value": 20,
+    "value": 22,
     "description": "Light protective headwear made from animal hide."
   },
   {
@@ -39,7 +39,7 @@
       "AP": 5
     },
     "range": 1,
-    "value": 25,
+    "value": 24.2,
     "description": "A pointed light hat that hums faintly with arcane focus."
   },
   {
@@ -54,7 +54,7 @@
       "AP": 5
     },
     "range": 1,
-    "value": 25,
+    "value": 24.2,
     "description": "A humble light hat that glows softly with divine focus."
   },
   {
@@ -69,7 +69,36 @@
       "STR": 2
     },
     "range": 1,
-    "value": 25,
+    "value": 24.4,
     "description": "A dark mask that conceals identity and sharpens reflexes."
+  },
+  {
+    "id": "rangerHat",
+    "name": "Ranger Hood",
+    "type": "light",
+    "defense": 7,
+    "magicResist": 1,
+    "bonuses": {
+      "AGI": 4,
+      "DEX": 3,
+      "CNC": 5
+    },
+    "range": 1,
+    "value": 24,
+    "description": "A hooded cap that sharpens a ranger's focus and tracking."
+  },
+  {
+    "id": "peltCap",
+    "name": "Pelt Cap",
+    "type": "light",
+    "defense": 5,
+    "magicResist": 1,
+    "bonuses": {
+      "STR": 8,
+      "AGI": 3
+    },
+    "range": 1,
+    "value": 22.8,
+    "description": "A hood of coarse pelt that wraps the head in brute resilience."
   }
 ]

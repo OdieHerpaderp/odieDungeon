@@ -3,7 +3,7 @@
     "id": "slingshot",
     "name": "Slingshot",
     "type": "ranged",
-    "subType": "slings",
+    "subType": "sling",
     "range": 12,
     "damage": 10,
     "spellPower": 0,
@@ -16,7 +16,7 @@
       "CNC": 0.6,
       "AGI": 0.4
     },
-    "value": 15,
+    "value": 20.6,
     "description": "A basic slingshot for quick ranged attacks."
   }
 ]

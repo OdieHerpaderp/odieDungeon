@@ -16,7 +16,7 @@
       "STR": 0.4
     },
     "range": 1,
-    "value": 24,
+    "value": 25,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -36,7 +36,7 @@
       "DEX": 0.5
     },
     "range": 1,
-    "value": 28,
+    "value": 27,
     "description": "A fast thrusting polearm — faster than spear but lower damage ceiling."
   },
   {
@@ -57,7 +57,7 @@
       "DEX": 0.4
     },
     "range": 1,
-    "value": 36,
+    "value": 31.2,
     "description": "A heavy slow polearm — high damage output over time."
   },
   {
@@ -78,7 +78,7 @@
       "STR": 0.7
     },
     "range": 1,
-    "value": 41,
+    "value": 33.4,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -99,7 +99,7 @@
       "STR": 0.7
     },
     "range": 1,
-    "value": 44,
+    "value": 35,
     "description": "A small and fast melee weapon for quick strikes."
   }
 ]

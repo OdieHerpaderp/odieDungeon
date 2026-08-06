@@ -17,7 +17,7 @@
       "DEX": 0.3
     },
     "range": 1,
-    "value": 16,
+    "value": 21.2,
     "description": "Worn cloth wraps that protect the knuckles for brawling."
   },
   {
@@ -38,7 +38,7 @@
       "DEX": 0.3
     },
     "range": 1,
-    "value": 21,
+    "value": 23.8,
     "description": "Padded gloves built for delivering powerful punches."
   },
   {
@@ -59,7 +59,7 @@
       "DEX": 0.3
     },
     "range": 1,
-    "value": 25,
+    "value": 25.4,
     "description": "Padded gloves built for delivering powerful punches."
   },
   {
@@ -80,7 +80,7 @@
       "DEX": 0.3
     },
     "range": 1,
-    "value": 28,
+    "value": 27,
     "description": "Padded gloves built for delivering powerful punches."
   }
 ]

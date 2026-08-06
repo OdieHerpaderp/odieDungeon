@@ -14,14 +14,14 @@
       "CNC": -0.5
     },
     "range": 1,
-    "value": 27,
+    "value": 25.1,
     "description": "Heavy greaves crafted from solid iron for unwavering defense."
   },
   {
     "id": "runicGreaves",
     "name": "Runic Greaves",
     "type": "heavy",
-    "defense": 9,
+    "defense": 8,
     "magicResist": 2,
     "bonuses": {
       "VIT": 3,
@@ -31,7 +31,7 @@
       "AGI": -0.3
     },
     "range": 1,
-    "value": 24,
+    "value": 23.2,
     "description": "Heavy greaves inscribed with sustaining runes, steadying the body and replenishing arcane reserves."
   },
   {
@@ -41,7 +41,7 @@
     "defense": 10,
     "magicResist": 1,
     "bonuses": {
-      "VIT": 6,
+      "VIT": 7,
       "STR": 4,
       "HP": 14,
       "AGI": -1,
@@ -49,7 +49,25 @@
       "CNC": -1
     },
     "range": 1,
-    "value": 34,
+    "value": 28.2,
     "description": "Heavy greaves forged from solid metal plates."
+  },
+  {
+    "id": "conquistadorGreaves",
+    "name": "Conquistador Greaves",
+    "type": "heavy",
+    "defense": 11,
+    "magicResist": 1,
+    "bonuses": {
+      "VIT": 10,
+      "STR": 4,
+      "HP": 14,
+      "AGI": -1,
+      "INT": -1,
+      "CNC": -1
+    },
+    "range": 1,
+    "value": 30,
+    "description": "Ornate conquistador greaves, bearing thicker plates than common mail."
   }
 ]

@@ -1170,6 +1170,9 @@ class ClientNetwork {
   allocatePoints(stat, points) {
     this._sendAction("allocatePoints", { stat, points });
   }
+  deallocatePoints(stat) {
+    this._sendAction("deallocatePoints", { stat });
+  }
   assignAbilitySlot(slotIndex, abilityId) {
     this._sendAction("assignAbilitySlot", { slotIndex, abilityId });
   }

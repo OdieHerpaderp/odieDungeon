@@ -6,11 +6,29 @@
     "skillId": "skill_miracles",
     "unlockSkillLevelMin": 0,
     "mpCostBase": 3,
-    "cooldownMsBase": 2200,
+    "cooldownMsBase": 1800,
     "damageBase": 5,
     "maxTargets": 1,
     "allowedWeaponClasses": ["magic"],
     "requiresWeaponEquipped": true,
+    "attributeDamageScale": {"INT": 0.5, "CNC": 0.2}
+  },
+  {
+    "id": "miracle_quick_mend",
+    "name": "Quick Mend",
+    "description": "Places a brief blessing on one ally, restoring HP and AP over time.",
+    "skillId": "skill_miracles",
+    "unlockSkillLevelMin": 2,
+    "mpCostBase": 6,
+    "cooldownMsBase": 2000,
+    "effects": [
+      { "type": "HPup", "amount": 3, "duration": 4 },
+      { "type": "APup", "amount": 3, "duration": 4 }
+    ],
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["magic"],
+    "requiresWeaponEquipped": true,
+    "isHeal": true,
     "attributeDamageScale": {"INT": 0.5, "CNC": 0.2}
   },
   {
@@ -19,11 +37,11 @@
     "description": "Places a blessing on one ally, healing them and sustaining recovery over time.",
     "skillId": "skill_miracles",
     "unlockSkillLevelMin": 3,
-    "mpCostBase": 7,
-    "cooldownMsBase": 3200,
-    "healAmount": 9,
+    "mpCostBase": 8,
+    "cooldownMsBase": 2200,
+    "healAmount": 11,
     "effects": [
-      { "type": "HPup", "amount": 2, "duration": 10 }
+      { "type": "HPup", "amount": 4, "duration": 6 }
     ],
     "maxTargets": 1,
     "allowedWeaponClasses": ["magic"],
@@ -37,9 +55,9 @@
     "description": "Channels divine light to heal all allies within range instantly.",
     "skillId": "skill_miracles",
     "unlockSkillLevelMin": 6,
-    "mpCostBase": 13,
-    "cooldownMsBase": 4000,
-    "healAmount": 16,
+    "mpCostBase": 14,
+    "cooldownMsBase": 2400,
+    "healAmount": 19,
     "targets": [2, 3, 0.5],
     "allowedWeaponClasses": ["magic"],
     "requiresWeaponEquipped": true,
@@ -48,21 +66,43 @@
     "attributeDamageScale": {"INT": 0.5, "CNC": 0.2}
   },
   {
-    "id": "miracle_quick_mend",
-    "name": "Quick Mend",
-    "description": "Places a brief blessing on one ally, restoring HP and AP over time.",
-    "skillId": "skill_miracles",
-    "unlockSkillLevelMin": 2,
-    "mpCostBase": 5,
-    "cooldownMsBase": 2800,
-    "effects": [
-      { "type": "HPup", "amount": 1, "duration": 3 },
-      { "type": "APup", "amount": 1, "duration": 3 }
-    ],
-    "maxTargets": 1,
-    "allowedWeaponClasses": ["magic"],
-    "requiresWeaponEquipped": true,
-    "isHeal": true,
-    "attributeDamageScale": {"INT": 0.5, "CNC": 0.2}
-  }
+  "id": "miracle_restoration_ward",
+  "name": "Restoration Ward",
+  "description": "Creates a ward of divine energy that instantly heals all allies within range and grants them a protective blessing that mitigates incoming damage over time.",
+  "skillId": "skill_miracles",
+  "unlockSkillLevelMin": 10,
+  "mpCostBase": 17,
+  "cooldownMsBase": 2600,
+  "healAmount": 23,
+  "effects": [
+    { "type": "HPup", "amount": 3, "duration": 6 },
+    { "type": "APup", "amount": 4, "duration": 6 }
+  ],
+  "targets": [2, 3, 0.5],
+  "allowedWeaponClasses": ["magic"],
+  "requiresWeaponEquipped": true,
+  "isHeal": true,
+  "abilityType": "aoe",
+  "attributeDamageScale": {"INT": 0.5, "CNC": 0.2}
+},
+  {
+  "id": "miracle_divine_intervention",
+  "name": "Divine Intervention",
+  "description": "Channels divine power to instantly heal all allies and coat them in a healing aura that restores HP over time.",
+  "skillId": "skill_miracles",
+  "unlockSkillLevelMin": 15,
+  "mpCostBase": 24,
+  "cooldownMsBase": 2800,
+  "healAmount": 31,
+  "effects": [
+    { "type": "HPup", "amount": 7, "duration": 6 },
+    { "type": "APup", "amount": 6, "duration": 6 }
+  ],
+  "targets": [2, 4, 0.5],
+  "allowedWeaponClasses": ["magic"],
+  "requiresWeaponEquipped": true,
+  "isHeal": true,
+  "abilityType": "aoe",
+  "attributeDamageScale": {"INT": 0.5, "CNC": 0.2}
+}
 ]

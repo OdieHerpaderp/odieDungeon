@@ -16,7 +16,7 @@
       "CNC": 0.6,
       "DEX": 0.4
     },
-    "value": 25,
+    "value": 25.4,
     "description": "A short bow for quick shots at close range."
   },
   {
@@ -25,7 +25,7 @@
     "type": "ranged",
     "subType": "bow",
     "range": 24,
-    "damage": 14,
+    "damage": 13,
     "spellPower": 1,
     "attackSpeed": 1.1,
     "bonuses": {
@@ -36,7 +36,7 @@
       "CNC": 0.7,
       "DEX": 0.3
     },
-    "value": 26,
+    "value": 25.4,
     "description": "A balanced ranged weapon with moderate damage and good attack speed."
   },
   {
@@ -45,15 +45,16 @@
     "type": "ranged",
     "subType": "bow",
     "range": 28,
-    "damage": 16,
+    "damage": 14,
     "spellPower": 1,
     "attackSpeed": 1,
     "bonuses": {
       "CNC": 7,
-      "STR": 6
+      "DEX": 6
     },
     "damageModifiers": {
-      "STR": 0.4,
+      "STR": 0.1,
+      "DEX": 0.3,
       "CNC": 0.6
     },
     "value": 27,
@@ -65,7 +66,7 @@
     "type": "ranged",
     "subType": "bow",
     "range": 28,
-    "damage": 18,
+    "damage": 15,
     "spellPower": 1,
     "attackSpeed": 1,
     "bonuses": {
@@ -73,10 +74,32 @@
       "STR": 7
     },
     "damageModifiers": {
-      "STR": 0.4,
-      "CNC": 0.6
+      "STR": 0.2,
+      "DEX": 0.3,
+      "CNC": 0.5
     },
-    "value": 31,
+    "value": 27.9,
+    "description": "A long bow that fires arrows at great range."
+  },
+  {
+    "id": "greatBow",
+    "name": "Great Bow",
+    "type": "ranged",
+    "subType": "bow",
+    "range": 28,
+    "damage": 16,
+    "spellPower": 1,
+    "attackSpeed": 1,
+    "bonuses": {
+      "CNC": 9,
+      "STR": 7
+    },
+    "damageModifiers": {
+      "STR": 0.3,
+      "DEX": 0.3,
+      "CNC": 0.4
+    },
+    "value": 29.1,
     "description": "A long bow that fires arrows at great range."
   }
 ]

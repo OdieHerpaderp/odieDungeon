@@ -15,7 +15,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 16,
+    "value": 21.1,
     "description": "A basic sword for melee combat."
   },
   {
@@ -34,7 +34,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 19,
+    "value": 22.7,
     "description": "A basic sword for melee combat."
   },
   {
@@ -53,7 +53,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 24,
+    "value": 24.9,
     "description": "A basic sword for melee combat."
   },
   {
@@ -72,7 +72,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 27,
+    "value": 26.6,
     "description": "A basic sword for melee combat."
   },
   {
@@ -91,7 +91,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 30,
+    "value": 28.2,
     "description": "A flail."
   },
   {
@@ -111,7 +111,7 @@
       "INT": 0.1
     },
     "range": 1,
-    "value": 27,
+    "value": 26.3,
     "description": "A ceremonial staff."
   },
   {
@@ -131,7 +131,7 @@
       "INT": 0.1
     },
     "range": 1,
-    "value": 29,
+    "value": 27.5,
     "description": "A ceremonial staff."
   },
   {
@@ -151,7 +151,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 38,
+    "value": 32,
     "description": "For when you foe needs to yield."
   },
   {
@@ -171,7 +171,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 41,
+    "value": 33.7,
     "description": "A basic sword for melee combat."
   }
 ]

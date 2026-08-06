@@ -190,15 +190,15 @@ export function createCombatEngine({
     const offHandDef = target.equipment?.offHand?.defense || target.offHand || 0;
     const defenseDown = buffEngine.sumEffectAmount(target.effects, 'defenseDown', 0.9);
     const mitigationTerm =
-      (0.6 * (1.75 + Math.random()) * (target.equipment?.helmet?.defense || target.helmet || 1) +
-        0.6 * (1.75 + Math.random()) * (target.equipment?.chest?.defense || target.chest || 1) +
-        0.6 * (1.75 + Math.random()) * (target.equipment?.shoes?.defense || target.shoes || 1) +
-        0.6 * (1.75 + Math.random()) * offHandDef +
-        0.05 * (1.75 + Math.random()) * target.vit) / 6;
+      (0.65 * (1.8 + Math.random()) * (target.equipment?.helmet?.defense || target.helmet || 1) +
+        0.65 * (1.8 + Math.random()) * (target.equipment?.chest?.defense || target.chest || 1) +
+        0.65 * (1.8 + Math.random()) * (target.equipment?.shoes?.defense || target.shoes || 1) +
+        0.65 * (1.8 + Math.random()) * offHandDef +
+        0.06 * (1.8 + Math.random()) * target.vit) / 5;
     const defenseUp = buffEngine.sumEffectAmount(target.effects, 'defenseUp', 0.5);
     const effectiveMitigation = (defenseDown > 0 ? mitigationTerm * (1 - defenseDown) : mitigationTerm) + defenseUp;
-    const cappedMitigation = Math.min(effectiveMitigation, rawDamage * 0.75);
-    damage = Math.max(0, Math.round(damage - cappedMitigation / 5) / 0.999 + mitigationTerm / 120);
+    const cappedMitigation = Math.min(effectiveMitigation, rawDamage * 0.95);
+    damage = Math.max(0, Math.round(damage - cappedMitigation / 3) / 0.999 + mitigationTerm / 120);
     const mitigated = Math.max(0, rawDamage - damage + 0.1);
 
     updateCombatStats(actor, party, true, crit, damage, roll);
@@ -404,6 +404,7 @@ export function createCombatEngine({
             player.level++;
             player.xpToNext = Math.floor((player.xpToNext + 8) * 1.08);
             player.pointsToAllocate += Math.floor(3);
+            player.str++; player.dex++; player.agi++; player.vit++; player.int++; player.cnc++;
 
             const newMaxHp = characters.calcMaxHp(player);
             const hpDiff = newMaxHp - player.maxHp;
@@ -757,22 +758,19 @@ export function createCombatEngine({
           const hpRegen =
             (inCombat ? 0.11 : 0.19) +
             characters.getEffectiveAttribute(p, 'vit') / 366 +
-            characters.getEffectiveAttribute(p, 'str') / 444 +
-            characters.getEffectiveAttribute(p, 'for') / 677;
+            characters.getEffectiveAttribute(p, 'str') / 477;
           p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 1.9 : 3.5));
 
           const mpRegen =
-            (inCombat ? 0.09 : 0.22) +
+            (inCombat ? 0.14 : 0.22) +
             characters.getEffectiveAttribute(p, 'int') / 422 +
-            characters.getEffectiveAttribute(p, 'cnc') / 311 +
-            characters.getEffectiveAttribute(p, 'wis') / 677;
-          p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 2.5 : 3.7));
+            characters.getEffectiveAttribute(p, 'cnc') / 533;
+          p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 2.4 : 3.4));
 
           const apRegen =
             (inCombat ? 0.01 : 0.26) +
             characters.getEffectiveAttribute(p, 'int') / 422 +
-            characters.getEffectiveAttribute(p, 'cnc') / 311 +
-            characters.getEffectiveAttribute(p, 'wis') / 677;
+            characters.getEffectiveAttribute(p, 'cnc') / 333;
           p.ap = Math.min(p.maxAp, p.ap + apRegen * (inCombat ? 0.01 : 2.3));
         });
       }

@@ -12,6 +12,33 @@ const collapsedGroups = new Set();
 const collapsedAbilityGroups = new Set();
 import { calcSkillLv, calcXpForLevel, calcXpForNextLevel } from './skillMath.js';
 
+let _skillsDelegationAttached = false;
+function attachSkillsDelegation() {
+  if (_skillsDelegationAttached) return;
+  _skillsDelegationAttached = true;
+  const root = document.getElementById("skillsPanel");
+  const slotsRoot = document.getElementById("abilitySlotsPanel");
+  [root, slotsRoot].forEach((el) => {
+    if (!el) return;
+    el.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-action]");
+      if (!btn) return;
+      const d = btn.dataset;
+      switch (btn.dataset.action) {
+        case "toggleSkillExpand":     toggleSkillExpand(d.skillId, btn); break;
+        case "toggleGroupExpand":     toggleGroupExpand(decodeURIComponent(d.group), btn); break;
+        case "toggleAbilityGroup":    toggleAbilityGroup(d.skillId, btn); break;
+        case "selectAbilitySlot":     selectAbilitySlot(parseInt(d.slotIndex)); break;
+        case "unequipAbilitySlot":
+          e.stopPropagation();
+          unequipAbilitySlot(parseInt(d.slotIndex));
+          break;
+        case "equipAbility":          equipAbility(d.abilityId); break;
+      }
+    });
+  });
+}
+
 // Local safeArray so browser code can normalize references without a server import.
 function safeArray(value) {
   return Array.isArray(value) ? value : [];
@@ -231,7 +258,7 @@ function buildSkillRow(player, id, state, def) {
 
   return `
       <div class="skill-row mb-6">
-        <div class="skill-header clickable-row" onclick="window.toggleSkillExpand('${id}', this)">
+        <div class="skill-header clickable-row" data-action="toggleSkillExpand" data-skill-id="${id}">
           <span class="text-info" style="font-size:10px; width:10px;">${arrow}</span>
           <strong class="text-truncate" style="flex:1;">${label}</strong>
           <span class="text-dim">Lv${currentLevel}</span>
@@ -278,7 +305,7 @@ function buildSkillsPanel(player) {
       const rowsDisplay = isCollapsed ? "none" : "block";
       return `
       <div class="skill-group mb-6">
-        <div class="skill-group-header clickable-row" onclick="window.toggleGroupExpand('${encodeURIComponent(group)}', this)">
+        <div class="skill-group-header clickable-row" data-action="toggleGroupExpand" data-group="${group}">
           <span class="skill-group-arrow text-info" style="font-size:10px; width:10px;">${arrow}</span>
           <span class="text-info-bold">${group}</span>
         </div>
@@ -357,14 +384,14 @@ function buildAbilitySlotsColumn(player) {
     const skillLabel = ability ? formatDisplayLabel(ability.skillId) : "-";
     const isSelected = index === selectedSlotIndex;
     const highlightStyle = isSelected ? "background:#4caf50;" : "background:#2a2a2a;";
-    const clearButton = assignedId ? `<button onclick="event.stopPropagation(); window.unequipAbilitySlot(${index})" class="btn-sm">🗑️</button>` : "";
+    const clearButton = assignedId ? `<button data-action="unequipAbilitySlot" data-slot-index="${index}" class="btn-sm">🗑️</button>` : "";
     const cooldownText = formatCooldownText(player, assignedId);
     const cooldownColor = cooldownText === "Ready" ? "#8fe28b" : "#ffd166";
 
     return `
       <div class="ability-slot-row">
         <div data-cd-slot="${index}" data-cd-id="${assignedId}" class="ability-cd-text" style="color:${cooldownColor}; min-width:26px; font-size:11px; text-align:center;">${cooldownText}</div>
-        <div onclick="window.selectAbilitySlot(${index})" class="ability-card" style="${highlightStyle} border-radius:3px;">
+        <div data-action="selectAbilitySlot" data-slot-index="${index}" class="ability-card" style="${highlightStyle} border-radius:3px;">
           <div class="text-info-bold" style="min-width:18px;">S${index + 1}</div>
           <div class="flex-col">
             <div class="text-truncate">${name}</div>
@@ -460,7 +487,7 @@ function buildAbilityList(player, filterAvailable = false) {
             <div class="text-info ability-meta">MP:${ability.mpCostBase ?? "-"} • CD:${ability.cooldownMsBase ? (ability.cooldownMsBase / 1000).toFixed(1) + "s" : "-"}${!unlocked ? ` • Req Lv.${requiredLevel}` : ""}</div>
             ${weaponReq ? `<div class="text-warn ability-meta">${weaponReq}</div>` : ""}
           </div>
-          <button onclick="window.equipAbility('${ability.id}')" ${btnDisabled} class="btn-sm">${btnLabel}</button>
+          <button data-action="equipAbility" data-ability-id="${ability.id}" ${btnDisabled} class="btn-sm">${btnLabel}</button>
         </div>
       `;
         })
@@ -472,7 +499,7 @@ function buildAbilityList(player, filterAvailable = false) {
 
       return `
       <div class="ability-group mb-6">
-        <div class="ability-group-header clickable-row" onclick="window.toggleAbilityGroup('${skillId}', this)" style="margin-bottom:3px;">
+        <div class="ability-group-header clickable-row" data-action="toggleAbilityGroup" data-skill-id="${skillId}" style="margin-bottom:3px;">
           <span class="ability-group-arrow text-info" style="font-size:10px; width:10px;">${arrow}</span>
           <span class="text-info-bold">${groupLabel}</span>
         </div>
@@ -625,6 +652,7 @@ export async function renderSkillPanel(player, force = false) {
   if (!force && now - _skillPanelLastRender < 500) return;
   _skillPanelLastRender = now;
   await Promise.all([renderSkillsPanel(player), renderAbilitySlotsPanel(player)]);
+  attachSkillsDelegation();
 }
 
 // Make exported functions available as globals for onclick handlers in generated HTML
@@ -632,12 +660,6 @@ if (typeof window !== "undefined") {
   window.startCooldownsTick = startCooldownsTick;
   window.stopCooldownsTick = stopCooldownsTick;
   window.calcSkillLv = calcSkillLv;
-  window.toggleGroupExpand = toggleGroupExpand;
-  window.toggleSkillExpand = toggleSkillExpand;
-  window.toggleAbilityGroup = toggleAbilityGroup;
-  window.selectAbilitySlot = selectAbilitySlot;
-  window.equipAbility = equipAbility;
-  window.unequipAbilitySlot = unequipAbilitySlot;
   window.toggleAvailableFilter = toggleAvailableFilter;
   window.renderSkillsPanel = renderSkillsPanel;
   window.renderAbilitySlotsPanel = renderAbilitySlotsPanel;
