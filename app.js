@@ -29,7 +29,7 @@ export { server };
 // UNIFIED BROADCAST SYSTEM
 // A single consolidated delta emitter (emitPartyDeltas) drives periodic
 // player + enemy updates. Full-state syncs (reconnect, embark, escape,
-// death, level-up) use buildFullStatePacket. Gear/shop changes use
+// death, level-up) use characters.buildFullStatePacket. Gear/shop changes use
 // broadcastCriticalGearUpdate (single WebRTC-first emit).
 // ═══════════════════════════════════════════════════════════════════
 
@@ -93,29 +93,8 @@ function broadcastToParty(partyId, eventType, packet, options = {}) {
   // WebRTC delivered the message; nothing to fall back to on Socket.IO.
 }
 
-// Full-state packet used for reconnect / lifecycle syncs. Iterates
-// party.players entries directly (no O(n²) find) and uses the Map key as
-// each player's canonical id.
-function buildFullStatePacket(party, partyId) {
-  const packet = { partyId, timestamp: Date.now() };
-  packet.players = Array.from(party.players, ([socketId, p]) => ({ ...p, id: socketId }));
-  packet.enemies = party.enemies || [];
-  packet.floor = party.floor;
-  packet.dungeon = party.dungeon || 'field';
-  packet.dungeonFloors = party.dungeonFloors || {};
-  packet.highestVisitedFloors = party.highestVisitedFloors || {};
-  packet.completedDungeons = party.completedDungeons || {};
-  packet.combatActive = party.combatActive || false;
-  packet.combatTurn = party.combatTurn || 0;
-  packet.autoEmbark = party.autoEmbark || false;
-  packet.shopStock = party.shopStock || [];
-  packet.shopSellRatio = characters.SHOP_SELL_RATIO;
-  packet._fullState = true;
-  return packet;
-}
-
 function broadcastFullState(partyId, party) {
-  broadcastToParty(partyId, 'partyUpdate', buildFullStatePacket(party, partyId));
+  broadcastToParty(partyId, 'partyUpdate', characters.buildFullStatePacket(party, partyId));
 }
 
 function broadcastCriticalUpdate(partyId, party, targetInfo = null) {
@@ -195,26 +174,6 @@ function broadcastCriticalGearUpdate(partyId, party) {
   broadcastToParty(partyId, 'gameDelta', packet, { noBatch: true });
 }
 
-// Rebuild a shop-stock-compatible item from a compact inventory entry so a
-// player-sold item can be listed in the store again. The result matches the
-// shape produced by generateScaledItem (full item with base* fields, price,
-// and a timestamp), which the client already renders via calculateItemStats.
-function makeShopItemFromInventory(inventoryItem) {
-  if (!inventoryItem || !inventoryItem.id) return null;
-  const resolved = itemGenerator.resolveItem(
-    inventoryItem.slot,
-    inventoryItem.id,
-    inventoryItem.level,
-    inventoryItem.rarity,
-  );
-  if (!resolved || typeof resolved.baseValue !== 'number') return null;
-
-  // List at full value (same formula as the dungeon restock), min 10g.
-  resolved.price = Math.max(10, itemGenerator.calculateItemPrice(resolved.baseValue, resolved.level, resolved.rarity));
-  resolved.timestamp = Date.now();
-  return resolved;
-}
-
 function handleGearPurchase(socket, gearType, partyId) {
   const party = parties.get(partyId);
   if (!party || party.combatActive || party.floor !== 0) {
@@ -223,74 +182,35 @@ function handleGearPurchase(socket, gearType, partyId) {
     return;
   }
   const player = party.players.get(socket.id);
-  if (!player) {
+  if (!player) return;
+
+  if (!gearType.startsWith('shop_')) {
+    socket.emit('eventLog', { message: 'Invalid purchase request.', type: 'error' });
     return;
   }
 
-  let item;
-  let slot;
-  let cost = 30;
-  let itemIndex = -1; // For identifying items from shop stock
-
-  if (gearType === 'randomGear') {
-    const categoryPool = ['weapon', 'chest', 'headgear', 'shoes'];
-    const category = categoryPool[Math.floor(Math.random() * categoryPool.length)];
-    const level = Math.max(1, Math.min(99, (player.level || 1) + Math.floor(Math.random() * 5) - 2));
-    const rarity = 1 + Math.floor(Math.random() * 6);
-    item = itemGenerator.generateRandomItem(category, { level, rarity });
-    slot =
-      category === 'weapon' ? 'weapon' : category === 'chest' ? 'chest' : category === 'shoes' ? 'shoes' : 'helmet';
-    const calculatedValue = itemGenerator.calculateItemPrice(item.baseValue, item.level, item.rarity);
-    cost = Math.max(10, Number.isFinite(calculatedValue) ? calculatedValue : 10);
-  } else if (gearType.startsWith('shop_')) {
-    // Handle purchase from shop stock
-    const index = parseInt(gearType.split('_')[1]);
-    if (isNaN(index) || index < 0 || index >= party.shopStock.length) {
-      socket.emit('eventLog', { message: 'Invalid item selection.', type: 'error' });
-      return;
-    }
-
-    item = party.shopStock[index];
-    cost = item.price || 40; // Use the item's price if available
-    itemIndex = index;
-  } else {
-    const itemPool = catalog[gearType] || [];
-    item = itemPool[0];
-    slot =
-      gearType === 'weapon' || gearType === 'weaponMelee' || gearType === 'weaponRanged' || gearType === 'weaponMagic'
-        ? 'weapon'
-        : gearType === 'chest'
-          ? 'chest'
-          : gearType === 'helmet'
-            ? 'helmet'
-            : gearType === 'shoes'
-              ? 'shoes'
-              : null;
-  }
-
-  if (!item) {
-    socket.emit('eventLog', { message: 'No gear available for that slot.', type: 'error' });
+  const index = parseInt(gearType.split('_')[1]);
+  if (isNaN(index) || index < 0 || index >= party.shopStock.length) {
+    socket.emit('eventLog', { message: 'Invalid item selection.', type: 'error' });
     return;
   }
+
+  const item = party.shopStock[index];
+  const cost = item.price || 40;
 
   if (player.gold < cost) {
-    socket.emit('eventLog', { message: `Not enough gold for ${gearType}!`, type: 'error' });
+    socket.emit('eventLog', { message: `Not enough gold for ${item.displayName || item.id || 'gear'}!`, type: 'error' });
     return;
   }
+
+  party.shopStock.splice(index, 1);
 
   player.gold -= cost;
   player.equipment = player.equipment || {};
   player.inventory = utils.safeArray(player.inventory);
 
-  // If this is a shop stock item, remove it from the stock
-  if (itemIndex !== -1) {
-    party.shopStock.splice(itemIndex, 1);
-  }
-
-  const inventoryItem = utils.toInventoryItem(item, slot);
+  const inventoryItem = utils.toInventoryItem(item, item.slot || 'weapon');
   player.inventory.push(inventoryItem);
-
-  // Force a new array reference to ensure change detection by the delta system
   player.inventory = [...player.inventory];
 
   void saveCharacter(player.name, player);
@@ -300,8 +220,6 @@ function handleGearPurchase(socket, gearType, partyId) {
   socket.emit('eventLog', { message: `Added ${displayName}${rarityText} to inventory.`, type: 'success' });
 
   assert(player.gold >= 0, 'gold negative after purchase');
-
-  // Send gear/inventory on the critical path so the client refreshes panels immediately.
   broadcastCriticalGearUpdate(partyId, party);
 }
 
@@ -325,7 +243,7 @@ function handleEquipItem(socket, data) {
     return;
   }
 
-  const normalizedSlot = slot === 'headgear' ? 'helmet' : slot === 'chest' ? 'chest' : slot === 'shield' || slot === 'book' ? 'offHand' : slot;
+  const normalizedSlot = characters.normalizeSlot(slot);
   player.equipment = player.equipment || {};
 
   // Get the currently equipped item in this slot (if any) to put back in inventory
@@ -433,10 +351,10 @@ function handleSellItem(socket, data) {
   player.inventory = player.inventory.filter((entry) => entry !== inventoryItem);
 
   // Add the sold item back to the store so other players (or the same
-  // player) can buy it again. It gets a fresh timestamp and a full-value
-  // price, then is capped/sorted like the restock path.
+  // player) can buy it again. It is priced and then capped/sorted
+  // like the restock path.
   party.shopStock = utils.safeArray(party.shopStock);
-  const returnedShopItem = makeShopItemFromInventory(inventoryItem);
+  const returnedShopItem = characters.makeShopItemFromInventory(inventoryItem);
   if (returnedShopItem) {
     party.shopStock.push(returnedShopItem);
     characters.sortAndCapShopStock(party);
@@ -460,7 +378,7 @@ function handleUnequipItem(socket, data) {
   const player = party.players.get(socket.id);
   if (!player) return;
 
-  const normalizedSlot = slot === 'headgear' ? 'helmet' : slot === 'chest' ? 'chest' : slot === 'shield' || slot === 'book' ? 'offHand' : slot;
+  const normalizedSlot = characters.normalizeSlot(slot);
   player.equipment = player.equipment || {};
   const unequippedItem = player.equipment[normalizedSlot];
 
@@ -869,7 +787,7 @@ async function handleJoinParty(socket, data) {
     console.log(`[SERVER] Player ${name} joined with socket.id: ${socket.id} to party ${partyId}`);
     void saveCharacter(name, character);
 
-    const fullState = buildFullStatePacket(party, partyId);
+    const fullState = characters.buildFullStatePacket(party, partyId);
     broadcastFullState(partyId, party);
     utils.trackSocketIoSent('joinedParty', { partyId, player: character, fullState });
     socket.emit('joinedParty', { partyId, player: character, fullState });
@@ -1003,7 +921,7 @@ function handleLateDisconnect(socket) {
   if (!player) return;
 
   party.players.delete(socket.id);
-  broadcastPlayerUpdate(party.id, party, socket.id);
+  broadcastPlayerUpdate(party.partyId, party, socket.id);
   socket.emit('eventLog', { message: 'Disconnected.', type: 'info' });
 }
 
@@ -1018,7 +936,6 @@ function broadcastPlayerUpdate(partyId, party, socketId) {
   lastGameDelta.delete(partyId);
   emitPartyDeltas(partyId, party, Date.now());
 }
-
 
 const app = express();
 const server = http.createServer(app);
@@ -1101,12 +1018,9 @@ webrtcServer.on('webrtcStateRestore', (socketId) => {
 
   // Re-baseline deltas so the freshly pushed full state becomes the new reference.
   deltaTracker.resetBaseline(targetPartyId, targetParty);
-  const fullState = buildFullStatePacket(targetParty, targetPartyId);
+  const fullState = characters.buildFullStatePacket(targetParty, targetPartyId);
   const sent = webrtcServer.sendMessage(socketId, 'partyUpdate', fullState);
-    console.log(`[WebRTC Restore] Sent full state to reconnected socket ${socketId}: ${sent ? 'ok' : 'failed'}`);
-
-  // Re-apply the delta baseline now that the client has the canonical state.
-  deltaTracker.resetBaseline(targetPartyId, targetParty);
+  console.log(`[WebRTC Restore] Sent full state to reconnected socket ${socketId}: ${sent ? 'ok' : 'failed'}`);
 });
 
 // Helper function to broadcast to party via WebRTC (delegated to webrtcServer)
@@ -1165,9 +1079,6 @@ function startSpawnTimer(partyId, party) {
   spawnTimers.set(partyId, timer);
 }
 
-
-
-
 // Re-baseline the per-player/enemy delta state for a party to the current
 // server state. Used on embark/escape/dungeon-change so changes made before
 // the reset cannot be swallowed or overwrite the freshly-synced client state.
@@ -1179,55 +1090,13 @@ function resetPartyDeltaBaseline(partyId) {
   deltaTracker.resetBaseline(partyId, party);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Debug function: Poll server stats every 30 seconds// Debug function: Poll server stats every 30 seconds
+// Server stats: poll memory/parties/clients every 8s
 setInterval(() => {
   const mem = process.memoryUsage();
   console.log('[Server Stats]', { connectedClients: io.sockets.sockets.size, totalParties: parties.size, memory: { rss: Math.round(mem.rss / 1024 / 1024), heapUsed: Math.round(mem.heapUsed / 1024 / 1024), heapTotal: Math.round(mem.heapTotal / 1024 / 1024) }, uptime: Math.round(process.uptime()), actionIntervals: actionIntervals.size, spawnTimers: spawnTimers.size, parties: Array.from(parties.values()).map((p) => ({ partyId: p.partyId, players: p.players.size, floor: p.floor, combatActive: p.combatActive })) });
 }, 8000);
 
-// Periodic shop sweep: every 5 minutes, drop any shop item older than
-// characters.SHOP_ITEM_MAX_AGE_MS. Items without a timestamp (legacy/pre-feature stock)
-// are kept for backward compatibility.
-setInterval(
-  () => {
-    const now = Date.now();
-    let partiesScanned = 0;
-    let itemsRemoved = 0;
 
-    for (const [partyId, party] of parties) {
-       if (!party || !utils.safeArray(party.shopStock).length) continue;
-      const before = party.shopStock.length;
-      const kept = party.shopStock.filter((item) => {
-        if (item.timestamp === undefined) return true; // don't expire legacy items
-        return now - item.timestamp < characters.SHOP_ITEM_MAX_AGE_MS;
-      });
-      if (kept.length !== before) {
-        itemsRemoved += before - kept.length;
-        party.shopStock = kept;
-        broadcastCriticalGearUpdate(partyId, party);
-      }
-      partiesScanned++;
-    }
-
-    if (itemsRemoved > 0 || partiesScanned > 0) {
-      console.log(`[Shop Sweep] Scanned ${partiesScanned} parties, removed ${itemsRemoved} expired items.`);
-    }
-  },
-  5 * 60 * 1000,
-);
 
 function startBroadcastSystem() {
   const interval = setInterval(() => {
@@ -1456,15 +1325,14 @@ io.on('connection', (socket) => {
       return;
     }
 
-    if (abilityId && !abilities.some((ability) => ability.id === abilityId)) {
-      socket.emit('eventLog', { message: 'Unknown ability.', type: 'error' });
-      return;
-    }
-
-    // Validate skill requirements for the ability
     if (abilityId) {
       const ability = abilities.find((a) => a.id === abilityId);
-      if (ability && ability.unlockSkillLevelMin) {
+      if (!ability) {
+        socket.emit('eventLog', { message: 'Unknown ability.', type: 'error' });
+        return;
+      }
+      // Validate skill requirements for the ability
+      if (ability.unlockSkillLevelMin) {
         const requiredSkillLevel = ability.unlockSkillLevelMin;
         const skillId = ability.skillId;
 
@@ -1501,17 +1369,7 @@ io.on('connection', (socket) => {
   socket.on('sellItem', (data) => handleSellItem(socket, data));
   socket.on('disconnect', () => handleLateDisconnect(socket));
 
-  // Register shop purchase handlers
-  socket.on('buyRandomGear', (partyId) => handleGearPurchase(socket, 'randomGear', partyId));
-  socket.on('buyChest', (partyId) => handleGearPurchase(socket, 'chest', partyId));
-  socket.on('buyWeapon', (partyId) => handleGearPurchase(socket, 'weapon', partyId));
-  socket.on('buyWeaponMelee', (partyId) => handleGearPurchase(socket, 'weaponMelee', partyId));
-  socket.on('buyWeaponRanged', (partyId) => handleGearPurchase(socket, 'weaponRanged', partyId));
-  socket.on('buyWeaponMagic', (partyId) => handleGearPurchase(socket, 'weaponMagic', partyId));
-  socket.on('buyShoes', (partyId) => handleGearPurchase(socket, 'shoes', partyId));
-  socket.on('buyHelmet', (partyId) => handleGearPurchase(socket, 'helmet', partyId));
-
-  // Handle purchases from shop stock
+  // Register shop purchase handler
   socket.on('buyShopItem', (data) => {
     if (data && data.partyId && data.index !== undefined) {
       handleGearPurchase(socket, `shop_${data.index}`, data.partyId);

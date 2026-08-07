@@ -41,8 +41,58 @@ export const MAX_SHOP_ITEMS = 255;
 // Ratio applied to item sell price when selling back to the shop (0.5 = 50% of buy price).
 export const SHOP_SELL_RATIO = 0.5;
 
-// How long a shop item stays on the shelf before the expiry sweep removes it.
-export const SHOP_ITEM_MAX_AGE_MS = 30 * 60 * 1000;
+// Canonical slot names for gear categories. Used by normalizeSlot (equip/unequip).
+export const CATEGORY_TO_SLOT = {
+  weapon: 'weapon', weaponMelee: 'weapon', weaponRanged: 'weapon', weaponMagic: 'weapon',
+  chest: 'chest', helmet: 'helmet', headgear: 'helmet',
+  shoes: 'shoes', shield: 'offHand', book: 'offHand', offHand: 'offHand',
+};
+
+/** Normalize client-facing slot names to canonical internal keys */
+export function normalizeSlot(slot) {
+  return CATEGORY_TO_SLOT[slot] ?? slot;
+}
+
+// Full-state packet used for reconnect / lifecycle syncs. Iterates
+// party.players entries directly (no O(n²) find) and uses the Map key as
+// each player's canonical id.
+export function buildFullStatePacket(party, partyId) {
+  const packet = { partyId, timestamp: Date.now() };
+  packet.players = Array.from(party.players, ([socketId, p]) => ({ ...p, id: socketId }));
+  packet.enemies = party.enemies || [];
+  packet.floor = party.floor;
+  packet.dungeon = party.dungeon || 'field';
+  packet.dungeonFloors = party.dungeonFloors || {};
+  packet.highestVisitedFloors = party.highestVisitedFloors || {};
+  packet.completedDungeons = party.completedDungeons || {};
+  packet.combatActive = party.combatActive || false;
+  packet.combatTurn = party.combatTurn || 0;
+  packet.autoEmbark = party.autoEmbark || false;
+  packet.shopStock = party.shopStock || [];
+  packet.shopSellRatio = SHOP_SELL_RATIO;
+  packet._fullState = true;
+  return packet;
+}
+
+// Rebuild a shop-stock-compatible item from a compact inventory entry so a
+// player-sold item can be listed in the store again. The result matches the
+// shape produced by generateScaledItem (full item with base* fields, price,
+// and a price), which the client already renders via calculateItemStats.
+export function makeShopItemFromInventory(inventoryItem) {
+  if (!inventoryItem || !inventoryItem.id) return null;
+  const resolved = itemGenerator.resolveItem(
+    inventoryItem.slot,
+    inventoryItem.id,
+    inventoryItem.level,
+    inventoryItem.rarity,
+  );
+  if (!resolved || typeof resolved.baseValue !== 'number') return null;
+
+  // List at full value (same formula as the dungeon restock), min 10g.
+  resolved.price = Math.max(10, itemGenerator.calculateItemPrice(resolved.baseValue, resolved.level, resolved.rarity));
+  return resolved;
+}
+
 
 // Sort the shop stock by price (most expensive first) so the priciest items
 // appear at the top, then cap to MAX_SHOP_ITEMS (keeping the highest-priced).
@@ -71,9 +121,6 @@ export function restockShopWithDungeonScaling(party, dungeon, dungeonData) {
       // Pass a single-category pool so the generator's random pick always
       // resolves to this category.
       const item = itemGenerator.generateScaledItem(dungeonData, [category]);
-      // Timestamp so the periodic expiry sweep can drop items older than
-      // SHOP_ITEM_MAX_AGE_MS.
-      item.timestamp = Date.now();
       party.shopStock.push(item);
     }
   }

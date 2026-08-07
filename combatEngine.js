@@ -762,7 +762,7 @@ export function createCombatEngine({
           p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 1.9 : 3.5));
 
           const mpRegen =
-            (inCombat ? 0.14 : 0.22) +
+            (inCombat ? 0.24 : 0.28) +
             characters.getEffectiveAttribute(p, 'int') / 422 +
             characters.getEffectiveAttribute(p, 'cnc') / 533;
           p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 2.4 : 3.4));

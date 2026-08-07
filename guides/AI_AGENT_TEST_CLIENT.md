@@ -89,7 +89,6 @@ client only issues the player-driven actions.
 | `unequip <slot>` | Unequip a slot. | `unequipItem` |
 | `use <itemId>` | Use a consumable from inventory. | `useItem` |
 | `sell <itemId>` | Sell an inventory item for gold. | `sellItem` |
-| `buy <kind>` | Buy gear. `kind` ∈ `armour|weapon|weaponMelee|weaponRanged|weaponMagic|helmet|shoes|random`. | `buyArmour` / `buyWeapon` / etc. / `buyRandomGear` |
 | `buyshop <index>` | Buy the item at `index` from the current shop stock. | `buyShopItem` |
 | `ability <slot 0-7> <abilityId>` | Assign an ability to a slot. Empty `abilityId` clears the slot. | `assignAbilitySlot` |
 | `donate` | Donate 50 gold (raises PIE). | `donate` |

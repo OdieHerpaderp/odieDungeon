@@ -638,7 +638,7 @@ const frameConfigs = [
     title: "👤 Current Player",
     left: 2,
     top: 50,
-    width: 315,
+    width: 320,
     height: 230,
     minWidth: 200,
     minHeight: 150,
@@ -659,9 +659,9 @@ const frameConfigs = [
   {
     name: "PartyMembers",
     title: "🛡️ Party Members",
-    left: 320,
+    left: 322,
     top: 50,
-    width: 315,
+    width: 300,
     height: 230,
     minWidth: 200,
     minHeight: 150,
@@ -670,7 +670,7 @@ const frameConfigs = [
   {
     name: "Enemies",
     title: "👹 Enemies",
-    left: 630,
+    left: 626,
     top: 50,
     width: 440,
     height: 230,
@@ -1892,12 +1892,7 @@ function updatePlayerShopAndGear(ui, c, player, isOwnPlayer) {
   if (!isOwnPlayer) return;
   const goldChanged = Math.abs(player.gold - (c._lastGold ?? -1)) > 0.01;
   const gearChanged = (c._gearStats?.totalDmg ?? -1) !== (c._lastTotalDmg ?? -1) || (c._gearStats?.totalArmour ?? -1) !== (c._lastTotalArmour ?? -1);
-  if (goldChanged || gearChanged) {
-    const gs = ui.goldText?.textContent;
-    if (gs) {
-      const buyRandomGearBtn = shopFrame.$("#buyRandomGearBtn");
-      if (buyRandomGearBtn) buyRandomGearBtn.textContent = `🎲 Random Gear: 40g`;
-    }
+  if (goldChanged) {
     c._lastGold = player.gold;
   }
   const dmg =

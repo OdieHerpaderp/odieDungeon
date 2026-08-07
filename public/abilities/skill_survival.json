@@ -8,7 +8,7 @@
     "mpCostBase": 4,
     "cooldownMsBase": 1600,
     "healAmount": 6,
-        "effects": [
+    "effects": [
       { "type": "HPup", "amount": 2, "duration": 6 }
     ],
     "maxTargets": 1,
@@ -67,21 +67,58 @@
     "attributeDamageScale": {"CNC": 0.3, "INT": 0.2}
   },
   {
-  "id": "survival_triage_bond",
-  "name": "Triage Bond",
-  "description": "Focuses healing energy on the two most wounded allies, instantly restoring HP and establishing a bond that sustains recovery.",
-  "skillId": "skill_survival",
-  "unlockSkillLevelMin": 15,
-  "mpCostBase": 15,
-  "cooldownMsBase": 2400,
-  "healAmount": 28,
-  "effects": [
-    { "type": "HPup", "amount": 2, "duration": 6 }
-  ],
-  "targets": [2, 2, 0.7],
-  "allowedWeaponClasses": ["magic", "ranged", "melee"],
-  "requiresWeaponEquipped": false,
-  "isHeal": true,
-  "attributeDamageScale": {"CNC": 0.3, "INT": 0.2}
-}
+    "id": "survival_mending_salve",
+    "name": "Mending Salve",
+    "description": "Applies a concentrated herbal salve to one ally, providing a strong instant heal and sustaining recovery.",
+    "skillId": "skill_survival",
+    "unlockSkillLevelMin": 12,
+    "mpCostBase": 9,
+    "cooldownMsBase": 2100,
+    "healAmount": 18,
+    "effects": [
+      { "type": "HPup", "amount": 4, "duration": 6 }
+    ],
+    "maxTargets": 1,
+    "allowedWeaponClasses": ["magic", "ranged", "melee"],
+    "requiresWeaponEquipped": false,
+    "isHeal": true,
+    "attributeDamageScale": {"CNC": 0.3, "INT": 0.2}
+  },
+  {
+    "id": "survival_triage_bond",
+    "name": "Triage Bond",
+    "description": "Focuses healing energy on the two most wounded allies, instantly restoring HP and establishing a bond that sustains recovery.",
+    "skillId": "skill_survival",
+    "unlockSkillLevelMin": 15,
+    "mpCostBase": 15,
+    "cooldownMsBase": 2400,
+    "healAmount": 28,
+    "effects": [
+      { "type": "HPup", "amount": 2, "duration": 6 }
+    ],
+    "targets": [2, 2, 0.7],
+    "allowedWeaponClasses": ["magic", "ranged", "melee"],
+    "requiresWeaponEquipped": false,
+    "isHeal": true,
+    "attributeDamageScale": {"CNC": 0.3, "INT": 0.2}
+  },
+  {
+    "id": "survival_herbal_salvation",
+    "name": "Herbal Salvation",
+    "description": "Lays healing herbs across the battlefield, restoring HP to up to 4 allies and sustaining their recovery.",
+    "skillId": "skill_survival",
+    "unlockSkillLevelMin": 20,
+    "mpCostBase": 18,
+    "cooldownMsBase": 2800,
+    "healAmount": 38,
+    "effects": [
+      { "type": "HPup", "amount": 5, "duration": 8 }
+    ],
+    "targets": [3, 4, 0.6],
+    "abilityType": "aoe",
+    "allowedWeaponClasses": ["magic", "ranged", "melee"],
+    "requiresWeaponEquipped": false,
+    "isHeal": true,
+    "attributeDamageScale": {"CNC": 0.3, "INT": 0.2}
+  }
 ]

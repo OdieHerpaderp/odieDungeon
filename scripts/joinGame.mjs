@@ -19,7 +19,6 @@
 //   unequip <slot>                   unequip a slot (weapon/chest/helmet/shoes)
 //   use <itemId>                     use a consumable
 //   sell <itemId>                    sell an inventory item
-//   buy <chest|weapon|weaponMelee|weaponRanged|weaponMagic|helmet|shoes|random>
 //   buyshop <index>                  buy an item from the shop stock by index
 //   ability <slotIndex> <abilityId>  assign an ability to a slot (0-7); abilityId empty to clear
 //   donate                           donate 50 gold
@@ -631,27 +630,6 @@ rl.on("line", (line) => {
       sendTimed("sellItem", { partyId: PARTY, itemId: args[0] }, "fullState", `sell ${args[0]}`);
       log(`sell ${args[0]}`);
       break;
-    case "buy": {
-      const kind = args[0];
-      const map = {
-        chest: "buyChest",
-        weapon: "buyWeapon",
-        weaponmelee: "buyWeaponMelee",
-        weaponranged: "buyWeaponRanged",
-        weaponmagic: "buyWeaponMagic",
-        helmet: "buyHelmet",
-        shoes: "buyShoes",
-        random: "buyRandomGear",
-      };
-      const event = map[(kind || "").toLowerCase()];
-      if (!event) {
-        log("usage: buy <chest|weapon|weaponMelee|weaponRanged|weaponMagic|helmet|shoes|random>");
-        break;
-      }
-      sendTimed(event, PARTY, "fullState", `buy ${kind}`);
-      log(`buy ${kind}`);
-      break;
-    }
     case "buyshop": {
       const index = parseInt(args[0], 10);
       if (isNaN(index)) {
@@ -749,8 +727,7 @@ function showHelp() {
       "  unequip <slot>                   unequip a slot",
       "  use <itemId>                     use a consumable",
       "  sell <itemId>                    sell an inventory item",
-      "  buy <kind>                       buy gear (chest|weapon|weaponMelee|weaponRanged|weaponMagic|helmet|shoes|random)",
-      "  buyshop <index>                  buy from shop stock",
+       "  buyshop <index>                  buy from shop stock",
       "  ability <slot 0-7> <abilityId>   assign ability to slot",
       "  donate                           donate 50 gold",
       "  latency                          print latency diagnostics (server RTT, command round-trips, packet gaps)",
