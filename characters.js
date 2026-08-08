@@ -36,10 +36,10 @@ export { getEffectiveAttribute, getAttributeDamageModifier } from './utils.js';
 
 // Maximum number of items a shop can hold. Shared so the sell-to-shop path can
 // apply the same cap/re-sort as the dungeon restock path.
-export const MAX_SHOP_ITEMS = 255;
+export const MAX_SHOP_ITEMS = 511;
 
-// Ratio applied to item sell price when selling back to the shop (0.5 = 50% of buy price).
-export const SHOP_SELL_RATIO = 0.5;
+// Ratio applied to item sell price when selling back to the shop (0.75 = 75% of buy price).
+export const SHOP_SELL_RATIO = 0.75;
 
 // Canonical slot names for gear categories. Used by normalizeSlot (equip/unequip).
 export const CATEGORY_TO_SLOT = {
@@ -116,7 +116,7 @@ export function restockShopWithDungeonScaling(party, dungeon, dungeonData) {
   const categoryPool = ['weapon', 'chest', 'headgear', 'shoes', 'offHand'];
 
   for (const category of categoryPool) {
-    const count = 4 + Math.floor(Math.random() * 3); // 4-7 items
+    const count = 5 + Math.floor(Math.random() * 4); // 5-9 items
     for (let i = 0; i < count; i++) {
       // Pass a single-category pool so the generator's random pick always
       // resolves to this category.
@@ -382,7 +382,7 @@ export function calcMaxMp(player) {
   const intEff = getEffectiveAttribute(player, 'int');
   const cncEff = getEffectiveAttribute(player, 'cnc');
   let output =
-    24 +
+    18 +
     (player.level * 0.6 + intEff * 1.4 + cncEff * 0.2 + getEquipmentBonus(player, 'mp'));
   return Math.round(Math.pow(output * 1.2, 0.94));
 }

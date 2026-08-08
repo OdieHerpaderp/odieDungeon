@@ -14,7 +14,7 @@
       "CNC": -0.5
     },
     "range": 1,
-    "value": 25.1,
+    "value": 30.1,
     "description": "Heavy greaves crafted from solid iron for unwavering defense."
   },
   {
@@ -31,7 +31,7 @@
       "AGI": -0.3
     },
     "range": 1,
-    "value": 23.2,
+    "value": 28.2,
     "description": "Heavy greaves inscribed with sustaining runes, steadying the body and replenishing arcane reserves."
   },
   {
@@ -49,7 +49,7 @@
       "CNC": -1
     },
     "range": 1,
-    "value": 28.2,
+    "value": 33.2,
     "description": "Heavy greaves forged from solid metal plates."
   },
   {
@@ -67,7 +67,7 @@
       "CNC": -1
     },
     "range": 1,
-    "value": 30,
+    "value": 35,
     "description": "Ornate conquistador greaves, bearing thicker plates than common mail."
   }
 ]

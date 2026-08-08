@@ -89,7 +89,7 @@ function scoreWeapon(item) {
 function normalize(score, minScore, maxScore) {
   const span = maxScore - minScore;
   if (span === 0) return 30;
-  const raw = 20 + ((score - minScore) / span) * 15;
+  const raw = 25 + ((score - minScore) / span) * 15;
   return Math.round(raw * 10) / 10;
 }
 

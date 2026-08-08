@@ -28,8 +28,8 @@ export function generateEnemies(party) {
   let enemyCount =
     Math.ceil(Math.random() * (0.2 + effectiveFloor / 28)) +
     enemyBonus * 0.9 +
-    effectiveFloor / 24 +
-    (enemyBonus * 0.6 + 0.2) * (0.2 + effectiveFloor / 24 + dungeonFloor / 16);
+    effectiveFloor / 25 +
+    (enemyBonus * 0.6 + 0.2) * (0.2 + effectiveFloor / 25 + dungeonFloor / 16);
 
   // Last floor boss: force a single boss unit
   if (boss) {
@@ -44,17 +44,17 @@ export function generateEnemies(party) {
     const enemyName = boss ? getRandomEnemyFromTier(enemyTiers.boss) : getRandomEnemyFromTier(tier);
     let floorBonus =
       Math.pow(
-        (enemyBonus * 0.5 + (0.2 + enemyBonus / 1.7) * effectiveFloor * 1.08) / (0.9 + enemyCount / 16) +
-          Math.random() * (0.1 + effectiveFloor / 44),
-        1.05 ) * 0.31 + 0.02;
+        (enemyBonus * 0.55 + (0.2 + enemyBonus / 1.7) * effectiveFloor * 1.083) / (0.9 + enemyCount / 16) +
+          Math.random() * (0.05 + effectiveFloor / 44),
+        1.05 ) * 0.32 + 0.015;
     let calcVit = Math.floor(2 + floorBonus / 1.1 + Math.random() * (0.5 + floorBonus / 9));
     let calcHp = Math.floor(
       Math.pow(
         floorBonus * 0.04 * (0.02 + calcVit * 0.011) +
-          calcVit * 6 +
-          floorBonus * 3 +
-          effectiveFloor * 4 +
-          32 +
+          calcVit * 6.5 +
+          floorBonus * 3.5 +
+          effectiveFloor * 4.5 +
+          36 +
           Math.random() * (calcVit * 0.04 + 0.02 + floorBonus / 55),
         1.04,
       ),
@@ -63,17 +63,17 @@ export function generateEnemies(party) {
     let enemyAp = Math.floor(calcHp * 0.08 + floorBonus + Math.random() * (floorBonus + calcHp * 0.1));
     if (boss) {
       // Last-floor boss: single boss unit + stronger stats
-      floorBonus += 1.7 + enemyBonus * 0.55;
-      floorBonus *= 1.3 + enemyBonus * 0.25;
+      floorBonus += 1.9 + enemyBonus * 0.55;
+      floorBonus *= 1.4 + enemyBonus * 0.26;
       calcHp = Math.round(calcHp * (2.9 + enemyBonus * 0.8));
       calcVit += 15;
-      enemyAp = Math.floor((30 + enemyAp) * 3.8);
+      enemyAp = Math.floor((40 + enemyAp) * 3.8);
     }
     party.enemies.push({
       id: `enemy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
       name: enemyName,
       level: floorBonus.toFixed(2),
-      gold: floorBonus * 0.008 + calcHp * 0.0018 + 0.48,
+      gold: floorBonus * 0.004 + calcHp * 0.0007 + 0.52,
       hp: calcHp,
       maxHp: calcHp,
       ap: enemyAp,
@@ -95,7 +95,7 @@ export function generateEnemies(party) {
       weaponRanged: 0.3 + floorBonus / 15 + Math.random() * (0.2 + floorBonus / 48),
       weaponMagic: 0.3 + floorBonus / 15 + Math.random() * (0.2 + floorBonus / 48),
       shoes: Math.floor(1.1 + floorBonus / 6 + Math.random() * (1 + floorBonus / 5)),
-      xpValue: Math.pow(calcHp / 27 + 0.8 + floorBonus / 13 + calcVit / 19, 0.99) / 1.2,
+      xpValue: Math.pow(calcHp / 29 + 1.1 + floorBonus / 15 + calcVit / 21, 0.99) / 1.1,
       isEnemy: true,
       isBoss: boss,
       actionBar: Math.round(Math.random() * 20),
@@ -103,8 +103,8 @@ export function generateEnemies(party) {
       equipment: {
         weapon: {
           id: boss ? 'stopSign' : 'woodenClub',
-          level: boss ? Math.round(6 + floorBonus / 5) : Math.round(3 + floorBonus / 4),
-          rarity: boss ? 2.1 + floorBonus / 8 : 1.4 + floorBonus / 7,
+          level: boss ? Math.round(11 + floorBonus / 4.5) : Math.round(3 + floorBonus / 4),
+          rarity: boss ? 2.7 + floorBonus / 7.5 : 1.45 + floorBonus / 7,
         },
       },
     });

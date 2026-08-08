@@ -97,9 +97,9 @@ export function calculateItemTier(item) {
 
 export function calculateItemPrice(baseValue, level, rarity) {
   if (typeof baseValue !== 'number') return baseValue;
-  const levelMult = Math.pow(0.8 + level * 0.9, 1.2);
-  const rarityMult = Math.pow(0.8 + rarity * 1.6, 1.3);
-  return Math.round(Math.pow(baseValue * (0.9 + levelMult / 11) * (0.9 + rarityMult / 7) * 1.85, 1.26)) / 10;
+  const levelMult = Math.pow(0.95 + level * 1.1, 1.1);
+  const rarityMult = Math.pow(0.95 + rarity * 1.6, 1.2);
+  return Math.round(Math.pow(baseValue * (0.95 + levelMult / 8) * (0.95 + rarityMult / 6) * 1.4, 1.16)) / 10;
 }
 
 function calculateBonuses(baseBonuses, level, rarity) {
@@ -125,7 +125,7 @@ export function generateRandomItem(category, options, catalog, baseItemId) {
     baseItem = pickRandom(itemCatalog);
   }
   const level = options && Number.isFinite(options.level) ? clamp(options.level, 1, 255) : Math.floor(Math.random() * 30) + 1;
-  const rarity = options && Number.isFinite(options.rarity) ? clamp(options.rarity, 1, 7) : randomFloat(1, 6);
+  const rarity = options && Number.isFinite(options.rarity) ? clamp(options.rarity, 1, 9) : randomFloat(1, 9);
 
   return {
     id: `${baseItem.id}-${Math.random().toString(36).slice(2, 8)}`,
@@ -208,15 +208,15 @@ export function generateScaledItem(dungeonData, categoryPool) {
   const category = categoryPool[Math.floor(Math.random() * categoryPool.length)];
   const itemCatalog = defaultCatalog[category];
   const baseItem = pickRandom(itemCatalog, (i) => 1 / (i.value + 1));
-  let itemLevel = 0.2 + Math.pow(0.2 + (baseLevel / 1.6 + floorAmount / 12) + Math.random() * (baseLevel * 3.4 + 4), 0.78) / 1.8;
-  let itemRarity = 0.3 + Math.pow(0.6 + Math.random() * (baseLevel * 2.2 + 13), 0.42) / 1.8;
+  let itemLevel = 0.1 + Math.pow(0.1 + (baseLevel / 1.2 + floorAmount / 3) + Math.random() * (baseLevel * 4.4 + 1), 0.86) / 1.7;
+  let itemRarity = 0.3 + Math.pow(0.3 + Math.random() * (baseLevel * 2.4 + 9), 0.49) / 1.7;
   itemRarity = Number(itemRarity.toFixed(1));
   const avgValue = itemCatalog.reduce((s, i) => s + (i.value || 1), 0) / itemCatalog.length;
   const bias = Math.sqrt((avgValue + 1) / (baseItem.value + 1));
   itemLevel /= bias;
   itemRarity /= bias;
   itemLevel = Math.max(1, Math.min(99, Math.round(itemLevel)));
-  itemRarity = Math.max(1, Math.min(7, Number(itemRarity.toFixed(1))));
+  itemRarity = Math.max(1, Math.min(9, Number(itemRarity.toFixed(1))));
   const generatedItem = generateRandomItem(category, { level: itemLevel, rarity: itemRarity }, itemCatalog, baseItem.id);
   const calculatedValue = calculateItemPrice(generatedItem.baseValue, generatedItem.level, generatedItem.rarity);
   generatedItem.price = Math.max(10, Number.isFinite(calculatedValue) ? calculatedValue : 10);

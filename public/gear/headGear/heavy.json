@@ -14,7 +14,7 @@
       "CNC": -0.5
     },
     "range": 1,
-    "value": 26.7,
+    "value": 31.7,
     "description": "A sturdy iron helm offering reliable protection."
   },
   {
@@ -31,7 +31,7 @@
       "AGI": -0.3
     },
     "range": 1,
-    "value": 24.9,
+    "value": 29.9,
     "description": "Heavy crown of rune-forged metal, hardening against both blade and spell while fueling hybrid resolve."
   },
   {
@@ -49,7 +49,7 @@
       "CNC": -1
     },
     "range": 1,
-    "value": 28.9,
+    "value": 33.9,
     "description": "Heavy protective helmet made of metal plates."
   },
   {
@@ -67,7 +67,7 @@
       "CNC": -1
     },
     "range": 1,
-    "value": 30.7,
+    "value": 35.7,
     "description": "A towering full helm forged for the heaviest of battles."
   },
   {
@@ -85,7 +85,7 @@
       "CNC": -1
     },
     "range": 1,
-    "value": 30.7,
+    "value": 35.7,
     "description": "A plumed helm of conquistador plate, sturdier than the standard issue."
   }
 ]

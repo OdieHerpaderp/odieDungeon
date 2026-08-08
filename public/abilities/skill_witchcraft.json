@@ -50,6 +50,22 @@
     "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
   },
   {
+    "id": "hexing_curse",
+    "name": "Hexing Curse",
+    "description": "Deals damage to one foe and weakens them, lowering their attack damage.",
+    "skillId": "skill_witchcraft",
+    "unlockSkillLevelMin": 6,
+    "mpCostBase": 10,
+    "cooldownMsBase": 3300,
+    "damageBase": 12,
+    "effects": [
+      { "type": "weaken", "amount": 0.30, "duration": 6 }
+    ],
+    "maxTargets": 1,
+    "requiresWeaponEquipped": false,
+    "attributeDamageScale": {"INT": 0.9, "CNC": 0.1}
+  },
+  {
     "id": "withering_blight",
     "name": "Withering Blight",
     "description": "Deals damage to one foe, lowers their defense, and deals damage over time.",

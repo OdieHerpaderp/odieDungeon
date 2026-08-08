@@ -16,7 +16,7 @@
       "STR": 0.4
     },
     "range": 1,
-    "value": 25,
+    "value": 30.4,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -36,7 +36,7 @@
       "DEX": 0.5
     },
     "range": 1,
-    "value": 27,
+    "value": 32.7,
     "description": "A fast thrusting polearm — faster than spear but lower damage ceiling."
   },
   {
@@ -45,7 +45,7 @@
     "type": "melee",
     "subType": "polearms",
     "twoHanded": true,
-    "damage": 16,
+    "damage": 14,
     "spellPower": 2,
     "attackSpeed": 0.9,
     "bonuses": {
@@ -57,7 +57,7 @@
       "DEX": 0.4
     },
     "range": 1,
-    "value": 31.2,
+    "value": 35.8,
     "description": "A heavy slow polearm — high damage output over time."
   },
   {
@@ -66,7 +66,7 @@
     "type": "melee",
     "subType": "polearms",
     "twoHanded": true,
-    "damage": 17,
+    "damage": 15,
     "spellPower": 2,
     "attackSpeed": 0.9,
     "bonuses": {
@@ -78,7 +78,7 @@
       "STR": 0.7
     },
     "range": 1,
-    "value": 33.4,
+    "value": 38.2,
     "description": "A small and fast melee weapon for quick strikes."
   },
   {
@@ -87,7 +87,7 @@
     "type": "melee",
     "subType": "polearms",
     "twoHanded": true,
-    "damage": 18,
+    "damage": 16,
     "spellPower": 2,
     "attackSpeed": 0.9,
     "bonuses": {
@@ -99,7 +99,7 @@
       "STR": 0.7
     },
     "range": 1,
-    "value": 35,
+    "value": 40,
     "description": "A small and fast melee weapon for quick strikes."
   }
 ]

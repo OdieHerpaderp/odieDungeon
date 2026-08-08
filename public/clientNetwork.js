@@ -884,6 +884,10 @@ class ClientNetwork {
       });
     }
 
+    // Snapshot enemy ids before applying updates so we can compute exactly
+    // which enemies changed/new (for a targeted re-render) afterwards.
+    const prevEnemyIds = new Set(this.currentState.enemies.map((e) => e.id));
+
     if (data.enemyUpdates) {
       this._applyEntityUpdates(data.enemyUpdates, {
         currentArr: this.currentState.enemies,
@@ -917,7 +921,19 @@ class ClientNetwork {
       (data.playerUpdates && Object.keys(data.playerUpdates).length > 0) ||
       (data.enemyUpdates && Object.keys(data.enemyUpdates).length > 0) ||
       (data.combatActive === false && prevCombatActive === true);
-    if (changed) this.uiCallbacks.updatePartyDisplay(this.currentState);
+    if (changed) {
+      // Targeted enemy re-render: ids present in enemyUpdates plus any newly
+      // spawned enemies (absent from prevEnemyIds). Empty when only players or
+      // party fields changed, which is fine since enemy element updates are skipped then.
+      const dirtyEnemyIds = new Set();
+      if (data.enemyUpdates) {
+        for (const id of Object.keys(data.enemyUpdates)) dirtyEnemyIds.add(id);
+      }
+      for (const e of this.currentState.enemies) {
+        if (!prevEnemyIds.has(e.id)) dirtyEnemyIds.add(e.id);
+      }
+      this.uiCallbacks.updatePartyDisplay(this.currentState, dirtyEnemyIds);
+    }
   }
 
   handleFullStateUpdate(data) {

@@ -795,6 +795,7 @@ let ownName,
   clientNetwork,
   ownPlayerElement = null;
 let _renderRafId = null;
+let _dirtyEnemyIds = null;
 const playerElements = new Map(),
   playerIdElements = new Map(),
   enemyElements = new Map(),
@@ -1124,12 +1125,13 @@ function getColourFromRarity(rarity) {
   const map = {
     1: { text: "#bbb", bg: "#2a2a2a", border: "#444" },
     2: { text: "#eee", bg: "#3a3a3a", border: "#666" },
-    3: { text: "#4caf50", bg: "#1b3a1b", border: "#2e7d32" },
-    4: { text: "#42a5f5", bg: "#152238", border: "#1565c0" },
-    5: { text: "#ab47bc", bg: "#2a1a3a", border: "#6a1b9a" },
-    6: { text: "#ef5350", bg: "#3a1a1a", border: "#c62828" },
+    3: { text: "#4ccf50", bg: "#1b3a1b", border: "#2e7d32" },
+    4: { text: "#42d5d5", bg: "#153138", border: "#15c0ba" },
+    5: { text: "#4295f5", bg: "#152238", border: "#1565c0" },
+    6: { text: "#ab47bc", bg: "#2a1a3a", border: "#6a1b9a" },
+    7: { text: "#ef5350", bg: "#3a1a1a", border: "#c62828" },
   };
-  if (r >= 7) return { text: "#ff9800", bg: "#3a2a1a", border: "#ef6c00" };
+  if (r >= 8) return { text: "#ff9800", bg: "#3b2912", border: "#f46c00" };
   return map[r] || map[1];
 }
 
@@ -1432,12 +1434,19 @@ export function forceRefreshEquipment() {
 };
 
 // Update party display function (moved after renderShopStock to ensure function availability)
-export function updatePartyDisplay(data) {
+export function updatePartyDisplay(data, changedIds) {
   if (!data || !Array.isArray(data.players) || !Array.isArray(data.enemies)) {
     console.warn("no data for updatePartydisplay!", { players: data?.players, enemies: data?.enemies });
     return;
   }
   currentState = data;
+  if (changedIds === undefined) {
+    _dirtyEnemyIds = null;
+  } else if (_dirtyEnemyIds !== null) {
+    changedIds.forEach((id) => _dirtyEnemyIds.add(id));
+  } else {
+    _dirtyEnemyIds = changedIds instanceof Set ? changedIds : new Set(changedIds);
+  }
   if (_renderRafId === null) {
     _renderRafId = requestAnimationFrame(flushRender);
   }
@@ -1445,6 +1454,8 @@ export function updatePartyDisplay(data) {
 
 function flushRender() {
   _renderRafId = null;
+  const dirty = _dirtyEnemyIds;
+  _dirtyEnemyIds = null;
   const data = currentState;
   if (!data || !Array.isArray(data.players) || !Array.isArray(data.enemies)) return;
   const ownPlayerDataTemp = data.players.find((p) => p.name === ownName);
@@ -1452,11 +1463,18 @@ function flushRender() {
   syncDungeonUI(data);
   syncEmbarkAndAuto(data);
   renderActivePlayers(data);
-  renderActiveEnemies(data);
+  renderActiveEnemies(data, dirty);
   refreshSidePanels(data, ownPlayerDataTemp);
 }
 
+// Last-synced dungeon/floor/combat state (used for change detection within a single render pass).
+let _lastSyncFloor = null;
+let _lastSyncDungeon = null;
+let _lastSyncCombatActive = null;
+
 function syncDungeonUI(data) {
+  _lastSyncFloor = data.floor;
+  _lastSyncDungeon = data.dungeon;
   const dungeonName = data.dungeon ? data.dungeon.charAt(0).toUpperCase() + data.dungeon.slice(1) : "Town";
   const dungeonFloors = data.dungeonFloors || {};
   const currentDungeonFloor = dungeonFloors[data.dungeon] || data.floor;
@@ -1489,6 +1507,7 @@ function syncDungeonUI(data) {
 function syncEmbarkAndAuto(data) {
   const liveEnemies = data.enemies.filter((e) => e.hp > 0);
   const combatActive = data.combatActive || liveEnemies.length > 0;
+  _lastSyncCombatActive = combatActive;
 
   if (data.autoEmbark !== undefined) {
     autoEmbarkEnabled = data.autoEmbark;
@@ -1568,7 +1587,7 @@ function renderActivePlayers(data) {
   }
 }
 
-function renderActiveEnemies(data) {
+function renderActiveEnemies(data, dirty) {
   const currentEnemyIds = new Set(data.enemies.map((e) => e.id));
   data.enemies.forEach((enemy) => {
     let element = enemyElements.get(enemy.id);
@@ -1577,7 +1596,9 @@ function renderActiveEnemies(data) {
       document.getElementById("enemies").appendChild(element);
       enemyElements.set(enemy.id, element);
     }
-    updateEnemyElement(element, enemy);
+    if (dirty === null || dirty.has(enemy.id)) {
+      updateEnemyElement(element, enemy);
+    }
   });
 
   for (let [id, element] of enemyElements) {
@@ -1589,10 +1610,15 @@ function renderActiveEnemies(data) {
 }
 
 function refreshSidePanels(data, ownPlayerDataTemp) {
-  if (window.renderEquipmentPanel && ownPlayerDataTemp) {
-    window.renderEquipmentPanel(ownPlayerDataTemp);
+  const inCombat = data.combatActive || data.enemies.some((e) => e.hp > 0);
+  // Equipment and shop panels are static during combat — skip them to save cycles.
+  if (!inCombat) {
+    if (window.renderEquipmentPanel && ownPlayerDataTemp) {
+      window.renderEquipmentPanel(ownPlayerDataTemp);
+    }
+    if (window.renderShopStock) window.renderShopStock(data.shopStock);
   }
-  if (window.renderShopStock) window.renderShopStock(data.shopStock);
+  // Skills and ability slots update every tick (cooldowns,ActionBar, XP) — always render.
   if (window.renderSkillPanel) window.renderSkillPanel(ownPlayerDataTemp);
   refreshDungeonListIfChanged(currentState);
 }
@@ -1675,13 +1701,13 @@ function buildPlayerCard(player, { statsClass, includeStatButtons, gearCache }) 
     .join("");
   const statsHtml = `<div class="stats ${statsClass}">${rows}</div>`;
   return `
-      <span class="player-toggle" data-action="togglePlayerCard">▸</span><span class="level-display">⚖️${player.level} ♔${(gearCache?.avgTier ?? getAverageItemTier(player)).toFixed(1)} ${gearCache?.weaponEmoji ?? getWeaponEmoji(player.equipment?.weapon)} ${player.name}</span>
+      <span class="player-toggle" data-action="togglePlayerCard">▸</span><span class="level-display">⚖️${player.level} ♔${(gearCache?.avgTier ?? 0).toFixed(1)} ${gearCache?.weaponEmoji ?? ''} ${player.name}</span>
       <div class="player-details">
-<div class="gold-display">
-               💰 <span class="gold-text">${player.gold}</span>
-               ⚔️ <span class="total-damage-text">${getWeaponDamageForClass(player, "melee") + getWeaponDamageForClass(player, "ranged") + getWeaponDamageForClass(player, "magic")}</span>
-                🛡️ <span class="total-armour-text">${getGearDefense(player, "chest") + getGearDefense(player, "helmet") + getGearDefense(player, "shoes")}</span>
-           </div>
+            <div class="gold-display">
+                💰 <span class="gold-text">${player.gold}</span>
+                ⚔️ <span class="total-damage-text">${gearCache.totalDmg}</span>
+                 🛡️ <span class="total-armour-text">${gearCache.totalArmour}</span>
+            </div>
           <div class="xp-bar"><div class="xp-fill"></div></div>
           <div class="xp-points">📖XP: <span class="xp-text">0/0</span> | Points: <span class="points-text">0</span></div>
           ${statsHtml}
@@ -1876,7 +1902,7 @@ function updatePlayerBars(ui, c, player) {
 
 function updatePlayerVitals(ui, c, player) {
   if (ui.levelDisplay) {
-    const ld = `⚖️${player.level} ♔${(c._avgTier ?? getAverageItemTier(player)).toFixed(1)} ${c._weaponEmoji ?? getWeaponEmoji(player.equipment?.weapon)} ${player.name}`;
+    const ld = `⚖️${player.level} ♔${c._avgTier.toFixed(1)} ${c._weaponEmoji} ${player.name}`;
     if (c.level !== ld) {
       ui.levelDisplay.textContent = ld;
       c.level = ld;
@@ -1895,9 +1921,8 @@ function updatePlayerShopAndGear(ui, c, player, isOwnPlayer) {
   if (goldChanged) {
     c._lastGold = player.gold;
   }
-  const dmg =
-    c._gearStats?.totalDmg ?? getWeaponDamageForClass(player, "melee") + getWeaponDamageForClass(player, "ranged") + getWeaponDamageForClass(player, "magic");
-  const arm = c._gearStats?.totalArmour ?? getGearDefense(player, "chest") + getGearDefense(player, "helmet") + getGearDefense(player, "shoes");
+  const dmg = c._gearStats?.totalDmg ?? 0;
+  const arm = c._gearStats?.totalArmour ?? 0;
   if (ui.totalDmgText && c._lastTotalDmg !== dmg) {
     ui.totalDmgText.textContent = dmg;
     c._lastTotalDmg = dmg;
@@ -1969,32 +1994,26 @@ function getWeaponEmoji(weaponRef) {
   return calc && WEAPON_EMOJI_MAP[calc.type] ? WEAPON_EMOJI_MAP[calc.type] : "";
 }
 
+function countDebuffType(effects, type) {
+  let n = 0;
+  for (let i = 0; i < effects.length; i++) {
+    const e = effects[i];
+    if (e.type === type && (e.duration || 0) > 0) n++;
+  }
+  return n;
+}
+
 function buildDebuffsHtml(entity) {
   const badges = [];
-  const add = (arr, label, color) => {
-    const n = (arr || []).filter((e) => (e.duration || 0) > 0).length;
-    if (n > 0) badges.push(`<span class="debuff-badge" style="color:${color};border-color:${color};">${label} ${n}</span>`);
-  };
-  add(
-    entity.effects?.filter((e) => e.type === "weaken"),
-    "Weakened",
-    "#b388ff"
-  );
-  add(
-    entity.effects?.filter((e) => e.type === "vulnerability"),
-    "Vulnerable",
-    "#ff6b6b"
-  );
-  add(
-    entity.effects?.filter((e) => e.type === "defenseDown"),
-    "Exposed",
-    "#4fc3f7"
-  );
-  add(
-    entity.effects?.filter((e) => e.type === "actionSlow"),
-    "Slowed",
-    "#ffd166"
-  );
+  const effects = entity.effects || [];
+  const weakenCount = countDebuffType(effects, "weaken");
+  const vulnCount = countDebuffType(effects, "vulnerability");
+  const defDownCount = countDebuffType(effects, "defenseDown");
+  const slowCount = countDebuffType(effects, "actionSlow");
+  if (weakenCount > 0) badges.push(`<span class="debuff-badge" style="color:#b388ff;border-color:#b388ff;">Weakened ${weakenCount}</span>`);
+  if (vulnCount > 0) badges.push(`<span class="debuff-badge" style="color:#ff6b6b;border-color:#ff6b6b;">Vulnerable ${vulnCount}</span>`);
+  if (defDownCount > 0) badges.push(`<span class="debuff-badge" style="color:#4fc3f7;border-color:#4fc3f7;">Exposed ${defDownCount}</span>`);
+  if (slowCount > 0) badges.push(`<span class="debuff-badge" style="color:#ffd166;border-color:#ffd166;">Slowed ${slowCount}</span>`);
   return badges.length ? `<div class="debuffs">${badges.join("")}</div>` : "";
 }
 
@@ -2029,35 +2048,32 @@ function updateEnemyElement(el, enemy) {
       apFill: el.querySelector(".ap-fill"),
       apText: el.querySelector(".ap-text"),
       debuffs: el.querySelector(".debuffs"),
-      nameHeader: el.querySelector(".stats strong"),
     });
-  const cache = el._state || (el._state = { hpPct: "", apPct: "", debuffsHtml: "", weaponEmoji: "" });
+  const cache = el._state || (el._state = { hpPct: "", apPct: "", debuffsSig: "" });
 
   const hpPct = `${Math.max(0, (enemy.hp / enemy.maxHp) * 100)}%`;
   if (cache.hpPct !== hpPct) {
-    ui.hpFill.style.width = hpPct;
+    ui.hpFill.style.transform = `scaleX(${Math.max(0, enemy.hp / enemy.maxHp)})`;
     ui.hpText.textContent = `❤️${Math.round(enemy.hp)}/${enemy.maxHp}`;
     cache.hpPct = hpPct;
   }
 
   const apPct = `${Math.max(0, ((enemy.ap || 0) / (enemy.maxAp || 1)) * 100)}%`;
   if (cache.apPct !== apPct) {
-    ui.apFill.style.width = apPct;
+    ui.apFill.style.transform = `scaleX(${Math.max(0, (enemy.ap || 0) / (enemy.maxAp || 1))})`;
     ui.apText.textContent = `🛡️${Math.round(enemy.ap || 0)}/${enemy.maxAp || 0}`;
     cache.apPct = apPct;
   }
 
-  const debuffsHtml = buildDebuffsHtml(enemy);
-  if (cache.debuffsHtml !== debuffsHtml) {
-    if (ui.debuffs) ui.debuffs.innerHTML = debuffsHtml;
-    cache.debuffsHtml = debuffsHtml;
-  }
-
-  const wEmoji = getWeaponEmoji(enemy.equipment?.weapon);
-  if (cache.weaponEmoji !== wEmoji && ui.nameHeader) {
-    const levelStr = `⚖️${enemy.level} `;
-    ui.nameHeader.innerHTML = `${levelStr}<span class="weapon-emoji">${wEmoji}</span> ${enemy.name}`;
-    cache.weaponEmoji = wEmoji;
+  const effects = enemy.effects || [];
+  const debuffsSig =
+    countDebuffType(effects, "weaken") + "|" +
+    countDebuffType(effects, "vulnerability") + "|" +
+    countDebuffType(effects, "defenseDown") + "|" +
+    countDebuffType(effects, "actionSlow");
+  if (cache.debuffsSig !== debuffsSig) {
+    if (ui.debuffs) ui.debuffs.innerHTML = buildDebuffsHtml(enemy);
+    cache.debuffsSig = debuffsSig;
   }
 }
 

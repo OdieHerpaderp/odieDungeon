@@ -15,7 +15,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 21.1,
+    "value": 26.2,
     "description": "A basic sword for melee combat."
   },
   {
@@ -34,7 +34,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 22.7,
+    "value": 28,
     "description": "A basic sword for melee combat."
   },
   {
@@ -53,7 +53,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 24.9,
+    "value": 30.4,
     "description": "A basic sword for melee combat."
   },
   {
@@ -72,7 +72,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 26.6,
+    "value": 32.3,
     "description": "A basic sword for melee combat."
   },
   {
@@ -91,7 +91,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 28.2,
+    "value": 34,
     "description": "A flail."
   },
   {
@@ -111,7 +111,7 @@
       "INT": 0.1
     },
     "range": 1,
-    "value": 26.3,
+    "value": 31.9,
     "description": "A ceremonial staff."
   },
   {
@@ -131,7 +131,7 @@
       "INT": 0.1
     },
     "range": 1,
-    "value": 27.5,
+    "value": 33.2,
     "description": "A ceremonial staff."
   },
   {
@@ -140,7 +140,7 @@
     "type": "melee",
     "subType": "blunt",
     "twoHanded": true,
-    "damage": 16,
+    "damage": 15,
     "spellPower": 2,
     "attackSpeed": 0.9,
     "bonuses": {
@@ -151,7 +151,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 32,
+    "value": 37.4,
     "description": "For when you foe needs to yield."
   },
   {
@@ -160,7 +160,7 @@
     "type": "melee",
     "subType": "blunt",
     "twoHanded": true,
-    "damage": 17,
+    "damage": 16,
     "spellPower": 2,
     "attackSpeed": 0.9,
     "bonuses": {
@@ -171,7 +171,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 33.7,
+    "value": 39.3,
     "description": "A basic sword for melee combat."
   }
 ]

@@ -15,7 +15,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 26.9,
+    "value": 32.6,
     "description": "A basic sword for melee combat."
   },
   {
@@ -35,8 +35,28 @@
       "STR": 0.8
     },
     "range": 1,
-    "value": 27.7,
+    "value": 33.5,
     "description": "A broad, single-edged long blade designed for swift, precise strikes. Favored by duelists who rely on agility over brute force."
+  },
+  {
+    "id": "estoc",
+    "name": "Estoc",
+    "type": "melee",
+    "subType": "longBlade",
+    "damage": 11,
+    "spellPower": 1,
+    "attackSpeed": 1.3,
+    "bonuses": {
+      "DEX": 8,
+      "STR": 8
+    },
+    "damageModifiers": {
+      "DEX": 0.4,
+      "STR": 0.6
+    },
+    "range": 1,
+    "value": 34.4,
+    "description": "A stiff thrusting blade favoring agility and precision over raw heft."
   },
   {
     "id": "claymore",
@@ -54,8 +74,48 @@
       "STR": 1
     },
     "range": 1,
-    "value": 28.5,
+    "value": 34.3,
     "description": "A canonical longBlade upgrade."
+  },
+  {
+    "id": "zweihander",
+    "name": "Zweihänder",
+    "type": "melee",
+    "subType": "longBlade",
+    "twoHanded": true,
+    "damage": 14,
+    "spellPower": 2,
+    "attackSpeed": 0.9,
+    "bonuses": {
+      "STR": 9,
+      "DEX": 5
+    },
+    "damageModifiers": {
+      "STR": 1
+    },
+    "range": 1,
+    "value": 36.2,
+    "description": "A great two-handed long blade bridging the gap between claymore and greatsword."
+  },
+  {
+    "id": "bastardSword",
+    "name": "Bastard Sword",
+    "type": "melee",
+    "subType": "longBlade",
+    "twoHanded": true,
+    "damage": 15,
+    "spellPower": 2,
+    "attackSpeed": 0.9,
+    "bonuses": {
+      "STR": 10,
+      "DEX": 5
+    },
+    "damageModifiers": {
+      "STR": 1
+    },
+    "range": 1,
+    "value": 37.5,
+    "description": "A versatile two-handed long blade that can be wielded with one hand in a pinch."
   },
   {
     "id": "greatSword",
@@ -63,7 +123,7 @@
     "type": "melee",
     "subType": "longBlade",
     "twoHanded": true,
-    "damage": 17,
+    "damage": 16,
     "spellPower": 2,
     "attackSpeed": 0.9,
     "bonuses": {
@@ -74,7 +134,7 @@
       "STR": 1
     },
     "range": 1,
-    "value": 33.3,
+    "value": 38.9,
     "description": "A basic sword for melee combat."
   }
 ]

@@ -4,7 +4,7 @@ import * as buffEngine from './public/skills/buffEngine.js';
 import * as itemGenerator from './public/gear/itemGenerator.js';
 import * as utils from './utils.js';
 
-const ENEMY_DAMAGE_MULTIPLIER = 0.7;
+const ENEMY_DAMAGE_MULTIPLIER = 0.75;
 
 export function createCombatEngine({
   broadcastCriticalUpdate,
@@ -402,9 +402,9 @@ export function createCombatEngine({
           while (player.xp >= player.xpToNext) {
             player.xp -= player.xpToNext;
             player.level++;
-            player.xpToNext = Math.floor((player.xpToNext + 8) * 1.08);
+            player.xpToNext = Math.floor((player.xpToNext + 12) * 1.08);
             player.pointsToAllocate += Math.floor(3);
-            player.str++; player.dex++; player.agi++; player.vit++; player.int++; player.cnc++;
+            //player.str++; player.dex++; player.agi++; player.vit++; player.int++; player.cnc++;
 
             const newMaxHp = characters.calcMaxHp(player);
             const hpDiff = newMaxHp - player.maxHp;
@@ -757,21 +757,21 @@ export function createCombatEngine({
         live.forEach((p) => {
           const hpRegen =
             (inCombat ? 0.11 : 0.19) +
-            characters.getEffectiveAttribute(p, 'vit') / 366 +
-            characters.getEffectiveAttribute(p, 'str') / 477;
+            characters.getEffectiveAttribute(p, 'vit') / 355 +
+            characters.getEffectiveAttribute(p, 'str') / 466;
           p.hp = Math.min(p.maxHp, p.hp + hpRegen * (inCombat ? 1.9 : 3.5));
 
           const mpRegen =
-            (inCombat ? 0.24 : 0.28) +
+            (inCombat ? 0.19 : 0.25) +
             characters.getEffectiveAttribute(p, 'int') / 422 +
-            characters.getEffectiveAttribute(p, 'cnc') / 533;
-          p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 2.4 : 3.4));
+            characters.getEffectiveAttribute(p, 'cnc') / 544;
+          p.mp = Math.min(p.maxMp, p.mp + mpRegen * (inCombat ? 2.5 : 3.3));
 
           const apRegen =
             (inCombat ? 0.01 : 0.26) +
             characters.getEffectiveAttribute(p, 'int') / 422 +
             characters.getEffectiveAttribute(p, 'cnc') / 333;
-          p.ap = Math.min(p.maxAp, p.ap + apRegen * (inCombat ? 0.01 : 2.3));
+          p.ap = Math.min(p.maxAp, p.ap + apRegen * (inCombat ? 0.01 : 2.4));
         });
       }
     }, 100);
